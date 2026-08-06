@@ -40,6 +40,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return response.data.profile;
     },
     enabled: !!user,
+    retry: false,
   });
 
   const isReady = useAuthStore((state) => state.status !== "loading") && !profileLoading;
