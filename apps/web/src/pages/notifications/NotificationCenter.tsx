@@ -92,7 +92,7 @@ export const NotificationCenter = () => {
           </button>
 
           <Link
-            to="/profile/notification-preferences"
+            to="/settings/notifications"
             className="text-sm text-gray-600 hover:text-gray-900 font-medium border border-gray-300 rounded-md px-3 py-1.5"
           >
             Settings

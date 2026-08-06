@@ -20,7 +20,8 @@ export const UserDashboard = () => {
     return (
       <div className="p-6 max-w-7xl mx-auto">
         <div className="bg-red-50 text-red-600 p-4 rounded-lg">
-          Failed to load dashboard summary
+          <p className="font-semibold mb-2">Failed to load dashboard summary</p>
+          <p className="text-sm">Please try again later. If the problem persists, contact support.</p>
         </div>
       </div>
     );

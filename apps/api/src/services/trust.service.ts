@@ -1,9 +1,9 @@
-import { TrustRepository, UserRepository, ExchangeRepository } from "@reusedo/database";
-import type { 
-  CreateReviewData, 
-  CreateVerificationData, 
-  CreateReportData, 
-  CreateAppealData 
+import { ExchangeRepository, TrustRepository, UserRepository } from "@reusedo/database";
+import type {
+  CreateAppealData,
+  CreateReportData,
+  CreateReviewData,
+  CreateVerificationData,
 } from "@reusedo/validation";
 
 export class TrustService {
@@ -50,7 +50,7 @@ export class TrustService {
   private async recalculateTrustScore(userId: string) {
     const reviews = await this.trustRepo.getReviewsForUser(userId);
     const totalReviews = reviews.length;
-    
+
     if (totalReviews === 0) {
       await this.trustRepo.updateProfileTrustScore(userId, 0, 0, 0);
       return;
@@ -77,7 +77,12 @@ export class TrustService {
     // 5. Cap at 100
     trustScore = Math.min(Math.round(trustScore), 100);
 
-    await this.trustRepo.updateProfileTrustScore(userId, Number(averageRating.toFixed(2)), totalReviews, trustScore);
+    await this.trustRepo.updateProfileTrustScore(
+      userId,
+      Number(averageRating.toFixed(2)),
+      totalReviews,
+      trustScore,
+    );
   }
 
   // --- Verifications ---
@@ -89,9 +94,17 @@ export class TrustService {
     return this.trustRepo.getVerification(userId);
   }
 
-  async updateVerificationStatus(verificationId: string, status: "approved" | "rejected", adminNotes?: string) {
-    const updated = await this.trustRepo.updateVerificationStatus(verificationId, status, adminNotes);
-    
+  async updateVerificationStatus(
+    verificationId: string,
+    status: "approved" | "rejected",
+    adminNotes?: string,
+  ) {
+    const updated = await this.trustRepo.updateVerificationStatus(
+      verificationId,
+      status,
+      adminNotes,
+    );
+
     if (status === "approved") {
       await this.trustRepo.setProfileVerified(updated.user_id, true);
       await this.recalculateTrustScore(updated.user_id);

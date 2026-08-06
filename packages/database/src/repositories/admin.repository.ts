@@ -18,6 +18,135 @@ export const AdminRepository = {
     return { users: data, total: count || 0 };
   },
 
+  async getProducts(page = 1, limit = 20, search?: string) {
+    const supabase = getSupabaseClient(true);
+    let query = supabase.from("products").select("*, owner:profiles!products_owner_id_fkey(username, display_name)", { count: "exact" });
+    if (search) {
+      query = query.ilike("title", `%${search}%`);
+    }
+    
+    const { data, error, count } = await query
+      .range((page - 1) * limit, page * limit - 1)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return { products: data, total: count || 0 };
+  },
+
+  async updateProductStatus(productId: string, status: string, adminId: string) {
+    const supabase = getSupabaseClient(true);
+    const { data, error } = await supabase
+      .from("products")
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq("id", productId)
+      .select()
+      .single();
+    if (error) throw error;
+    await AdminRepository.createAuditLog(adminId, "UPDATE_PRODUCT_STATUS", "product", productId, null, { status });
+    return data;
+  },
+
+  async deleteProduct(productId: string, adminId: string) {
+    const supabase = getSupabaseClient(true);
+    const { error } = await supabase.from("products").delete().eq("id", productId);
+    if (error) throw error;
+    await AdminRepository.createAuditLog(adminId, "DELETE_PRODUCT", "product", productId, null, null);
+  },
+
+  async getNeeds(page = 1, limit = 20, search?: string) {
+    const supabase = getSupabaseClient(true);
+    let query = supabase.from("need_requests").select("*, owner:profiles!need_requests_owner_id_fkey(username, display_name)", { count: "exact" });
+    if (search) {
+      query = query.ilike("title", `%${search}%`);
+    }
+    
+    const { data, error, count } = await query
+      .range((page - 1) * limit, page * limit - 1)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return { needs: data, total: count || 0 };
+  },
+
+  async updateNeedStatus(needId: string, status: string, adminId: string) {
+    const supabase = getSupabaseClient(true);
+    const { data, error } = await supabase
+      .from("need_requests")
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq("id", needId)
+      .select()
+      .single();
+    if (error) throw error;
+    await AdminRepository.createAuditLog(adminId, "UPDATE_NEED_STATUS", "need", needId, null, { status });
+    return data;
+  },
+
+  async deleteNeed(needId: string, adminId: string) {
+    const supabase = getSupabaseClient(true);
+    const { error } = await supabase.from("need_requests").delete().eq("id", needId);
+    if (error) throw error;
+    await AdminRepository.createAuditLog(adminId, "DELETE_NEED", "need", needId, null, null);
+  },
+
+  async getExchanges(page = 1, limit = 20, search?: string) {
+    const supabase = getSupabaseClient(true);
+    let query = supabase.from("exchanges").select("*, requester:profiles!exchanges_requester_id_fkey(username, display_name), recipient:profiles!exchanges_recipient_id_fkey(username, display_name)", { count: "exact" });
+    
+    // Simplistic search on status for now since ID is UUID
+    if (search) {
+      query = query.ilike("status", `%${search}%`);
+    }
+    
+    const { data, error, count } = await query
+      .range((page - 1) * limit, page * limit - 1)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return { exchanges: data, total: count || 0 };
+  },
+
+  async updateExchangeStatus(exchangeId: string, status: string, adminId: string) {
+    const supabase = getSupabaseClient(true);
+    const { data, error } = await supabase
+      .from("exchanges")
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq("id", exchangeId)
+      .select()
+      .single();
+    if (error) throw error;
+    await AdminRepository.createAuditLog(adminId, "UPDATE_EXCHANGE_STATUS", "exchange", exchangeId, null, { status });
+    return data;
+  },
+
+  async getShipments(page = 1, limit = 20, search?: string) {
+    const supabase = getSupabaseClient(true);
+    let query = supabase.from("shipments").select("*, sender:profiles!shipments_sender_id_fkey(username, display_name), receiver:profiles!shipments_receiver_id_fkey(username, display_name)", { count: "exact" });
+    
+    if (search) {
+      query = query.ilike("status", `%${search}%`);
+    }
+    
+    const { data, error, count } = await query
+      .range((page - 1) * limit, page * limit - 1)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return { shipments: data, total: count || 0 };
+  },
+
+  async updateShipmentStatus(shipmentId: string, status: string, adminId: string) {
+    const supabase = getSupabaseClient(true);
+    const { data, error } = await supabase
+      .from("shipments")
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq("id", shipmentId)
+      .select()
+      .single();
+    if (error) throw error;
+    await AdminRepository.createAuditLog(adminId, "UPDATE_SHIPMENT_STATUS", "shipment", shipmentId, null, { status });
+    return data;
+  },
+
   async updateUserRole(userId: string, role: AdminRole | null) {
     const supabase = getSupabaseClient(true);
     const { data, error } = await supabase

@@ -1,7 +1,7 @@
+import { createAppealSchema } from "@reusedo/validation";
 import { Router } from "express";
 import { requireAuth } from "../middlewares/auth.middleware";
 import { TrustService } from "../services/trust.service";
-import { createAppealSchema } from "@reusedo/validation";
 
 const router = Router();
 const trustService = new TrustService();
@@ -9,7 +9,7 @@ const trustService = new TrustService();
 // Submit an appeal
 router.post("/", requireAuth, async (req, res, next) => {
   try {
-    const userId = req.user?.uid as string;
+    const userId = req.user?.profile?.id as string;
     const data = createAppealSchema.parse(req.body);
 
     const appeal = await trustService.submitAppeal(userId, data);

@@ -23,7 +23,7 @@ export const productSchema = z.object({
   exchange_preference: z.string().min(1, "Exchange preference is required"),
   district: z.string().min(1, "District is required"),
   upazila: z.string().min(1, "Upazila is required"),
-  images: z.array(z.string().url("Must be a valid image URL")).min(1, "At least one image is required"),
+  images: z.array(z.string().url("Must be a valid image URL")).default([]),
   brand: z.string().optional().nullable(),
   model: z.string().optional().nullable(),
   color: z.string().optional().nullable(),

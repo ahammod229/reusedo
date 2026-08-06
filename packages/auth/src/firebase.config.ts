@@ -2,19 +2,21 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
+const getEnvVar = (viteKey: unknown, nodeKey?: string): string | undefined => {
+  if (typeof viteKey === "string") return viteKey;
+  if (typeof process !== "undefined" && process.env) {
+    return process.env[nodeKey || ""];
+  }
+  return undefined;
+};
+
 const firebaseConfig = {
-  // biome-ignore lint/suspicious/noExplicitAny: Vite env vars
-  apiKey: (import.meta as any).env?.VITE_FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY,
-  // biome-ignore lint/suspicious/noExplicitAny: Vite env vars
-  authDomain: (import.meta as any).env?.VITE_FIREBASE_AUTH_DOMAIN || process.env.VITE_FIREBASE_AUTH_DOMAIN,
-  // biome-ignore lint/suspicious/noExplicitAny: Vite env vars
-  projectId: (import.meta as any).env?.VITE_FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID,
-  // biome-ignore lint/suspicious/noExplicitAny: Vite env vars
-  storageBucket: (import.meta as any).env?.VITE_FIREBASE_STORAGE_BUCKET || process.env.VITE_FIREBASE_STORAGE_BUCKET,
-  // biome-ignore lint/suspicious/noExplicitAny: Vite env vars
-  messagingSenderId: (import.meta as any).env?.VITE_FIREBASE_MESSAGING_SENDER_ID || process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  // biome-ignore lint/suspicious/noExplicitAny: Vite env vars
-  appId: (import.meta as any).env?.VITE_FIREBASE_APP_ID || process.env.VITE_FIREBASE_APP_ID,
+  apiKey: getEnvVar((import.meta as unknown as { env: Record<string, string> }).env?.VITE_FIREBASE_API_KEY, "VITE_FIREBASE_API_KEY"),
+  authDomain: getEnvVar((import.meta as unknown as { env: Record<string, string> }).env?.VITE_FIREBASE_AUTH_DOMAIN, "VITE_FIREBASE_AUTH_DOMAIN"),
+  projectId: getEnvVar((import.meta as unknown as { env: Record<string, string> }).env?.VITE_FIREBASE_PROJECT_ID, "VITE_FIREBASE_PROJECT_ID"),
+  storageBucket: getEnvVar((import.meta as unknown as { env: Record<string, string> }).env?.VITE_FIREBASE_STORAGE_BUCKET, "VITE_FIREBASE_STORAGE_BUCKET"),
+  messagingSenderId: getEnvVar((import.meta as unknown as { env: Record<string, string> }).env?.VITE_FIREBASE_MESSAGING_SENDER_ID, "VITE_FIREBASE_MESSAGING_SENDER_ID"),
+  appId: getEnvVar((import.meta as unknown as { env: Record<string, string> }).env?.VITE_FIREBASE_APP_ID, "VITE_FIREBASE_APP_ID"),
 };
 
 // Initialize Firebase

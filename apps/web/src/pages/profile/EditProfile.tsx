@@ -1,3 +1,4 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import { UserService } from "@reusedo/api-client";
 import {
   Button,
@@ -18,7 +19,6 @@ import {
   Textarea,
 } from "@reusedo/ui";
 import { type UpdateProfileData, updateProfileSchema } from "@reusedo/validation";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -42,6 +42,8 @@ export function EditProfile() {
       phone_number: "",
       district: "",
       upazila: "",
+      avatar_url: "",
+      cover_url: "",
     },
   });
 
@@ -54,6 +56,8 @@ export function EditProfile() {
         phone_number: profile.phone_number || "",
         district: profile.district || "",
         upazila: profile.upazila || "",
+        avatar_url: profile.avatar_url || "",
+        cover_url: profile.cover_url || "",
       });
     }
   }, [profile, form]);
@@ -144,6 +148,35 @@ export function EditProfile() {
                     </FormItem>
                   )}
                 />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="avatar_url"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Avatar URL</FormLabel>
+                        <FormControl>
+                          <Input placeholder="https://..." type="url" {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="cover_url"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cover URL</FormLabel>
+                        <FormControl>
+                          <Input placeholder="https://..." type="url" {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <FormField

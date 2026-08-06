@@ -1,0 +1,560 @@
+CREATE POLICY "Users can view their own notifications"
+    ON public.notifications
+    FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "System can insert notifications"
+    ON public.notifications
+    FOR INSERT
+    WITH CHECK (true); -- Usually inserts happen on backend with service role bypassing RLS, but if needed from authenticated user, we can allow it. We'll leave it as true for now.
+
+CREATE POLICY "Users can update their own notifications"
+    ON public.notifications
+    FOR UPDATE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own notifications"
+    ON public.notifications
+    FOR DELETE
+    USING (auth.uid() = user_id);
+
+-- Create fcm_tokens table
+CREATE TABLE IF NOT EXISTS public.fcm_tokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    token TEXT NOT NULL,
+    device_info TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(user_id, token)
+);
+
+-- Enable RLS for fcm_tokens
+ALTER TABLE public.fcm_tokens ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own fcm tokens"
+    ON public.fcm_tokens
+    FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own fcm tokens"
+    ON public.fcm_tokens
+    FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own fcm tokens"
+    ON public.fcm_tokens
+    FOR DELETE
+    USING (auth.uid() = user_id);
+
+-- Alter notification_preferences to add new columns
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE public.notification_preferences ADD COLUMN reviews BOOLEAN NOT NULL DEFAULT TRUE;
+    EXCEPTION WHEN duplicate_column THEN END;
+
+    BEGIN
+        ALTER TABLE public.notification_preferences ADD COLUMN browser_notifications BOOLEAN NOT NULL DEFAULT TRUE;
+    EXCEPTION WHEN duplicate_column THEN END;
+END $$;
+
+-- Let's create an index for quick queries on unread notifications
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id_is_read ON public.notifications(user_id, is_read);
+CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON public.notifications(created_at DESC);
+
+-- Enable realtime for notifications
+alter publication supabase_realtime add table public.notifications;
+-- M10: Shipping Module
+-- Handles shipment tracking for exchanges
+
+CREATE TABLE IF NOT EXISTS public.shipments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    exchange_id UUID NOT NULL REFERENCES public.exchanges(id) ON DELETE CASCADE,
+    sender_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    receiver_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'shipped', 'in_transit', 'delivered', 'cancelled', 'returned')),
+    tracking_number TEXT,
+    carrier TEXT,
+    estimated_delivery_date TIMESTAMPTZ,
+    shipping_address JSONB NOT NULL,
+    shipping_cost DECIMAL(10, 2) DEFAULT 0.00,
+    created_at TIMESTAMPTZ DEFAULT timezone('utc', now()) NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT timezone('utc', now()) NOT NULL,
+    UNIQUE(exchange_id)
+);
+
+-- Enable RLS
+ALTER TABLE public.shipments ENABLE ROW LEVEL SECURITY;
+
+-- Policies for shipments
+CREATE POLICY "Users can view their own shipments (sender or receiver)"
+    ON public.shipments FOR SELECT
+    USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
+
+CREATE POLICY "Users can create shipments for their exchanges"
+    ON public.shipments FOR INSERT
+    WITH CHECK (auth.uid() = sender_id);
+
+CREATE POLICY "Users can update their shipments"
+    ON public.shipments FOR UPDATE
+    USING (auth.uid() = sender_id OR auth.uid() = receiver_id)
+    WITH CHECK (auth.uid() = sender_id OR auth.uid() = receiver_id);
+
+-- Triggers for updated_at
+CREATE TRIGGER update_shipments_updated_at
+    BEFORE UPDATE ON public.shipments
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+-- M11 Trust, Reviews & Verification System Migration
+
+-- 1. Modify Profiles Table
+ALTER TABLE public.profiles
+ADD COLUMN IF NOT EXISTS trust_score INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS average_rating DECIMAL(3,2) DEFAULT 0.00,
+ADD COLUMN IF NOT EXISTS total_reviews INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT false;
+
+-- 2. Create Reviews Table
+CREATE TABLE IF NOT EXISTS public.reviews (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    exchange_id UUID NOT NULL REFERENCES public.exchanges(id) ON DELETE CASCADE,
+    reviewer_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    reviewee_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    comment TEXT,
+    positive_tags TEXT[] DEFAULT '{}',
+    negative_tags TEXT[] DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT unique_exchange_reviewer UNIQUE(exchange_id, reviewer_id)
+);
+
+-- Enable RLS for Reviews
+ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can read reviews"
+    ON public.reviews FOR SELECT
+    USING (true);
+
+CREATE POLICY "Users can create their own reviews"
+    ON public.reviews FOR INSERT
+    WITH CHECK (auth.uid() = reviewer_id);
+
+CREATE POLICY "Users can update their own reviews"
+    ON public.reviews FOR UPDATE
+    USING (auth.uid() = reviewer_id);
+
+-- 3. Create Verifications Table
+CREATE TYPE verification_document_type AS ENUM ('national_id', 'passport', 'driving_license');
+CREATE TYPE verification_status AS ENUM ('pending', 'approved', 'rejected', 'expired');
+
+CREATE TABLE IF NOT EXISTS public.verifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE UNIQUE,
+    document_type verification_document_type NOT NULL,
+    document_front_url TEXT NOT NULL,
+    document_back_url TEXT,
+    status verification_status NOT NULL DEFAULT 'pending',
+    admin_notes TEXT,
+    submitted_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Enable RLS for Verifications
+ALTER TABLE public.verifications ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own verifications"
+    ON public.verifications FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can create their own verifications"
+    ON public.verifications FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their pending verifications"
+    ON public.verifications FOR UPDATE
+    USING (auth.uid() = user_id AND status = 'pending');
+
+-- 4. Create Reports Table
+CREATE TYPE report_entity_type AS ENUM ('product', 'need', 'user', 'review', 'message');
+CREATE TYPE report_reason AS ENUM ('spam', 'fraud', 'abuse', 'fake_item', 'inappropriate', 'other');
+CREATE TYPE report_status AS ENUM ('open', 'investigating', 'resolved', 'dismissed');
+
+CREATE TABLE IF NOT EXISTS public.reports (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    reporter_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    entity_type report_entity_type NOT NULL,
+    entity_id UUID NOT NULL,
+    reason report_reason NOT NULL,
+    description TEXT,
+    status report_status NOT NULL DEFAULT 'open',
+    admin_notes TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Enable RLS for Reports
+ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own reports"
+    ON public.reports FOR SELECT
+    USING (auth.uid() = reporter_id);
+
+CREATE POLICY "Users can create reports"
+    ON public.reports FOR INSERT
+    WITH CHECK (auth.uid() = reporter_id);
+
+-- 5. Create Appeals Table
+CREATE TYPE appeal_target_type AS ENUM ('verification', 'report');
+CREATE TYPE appeal_status AS ENUM ('pending', 'approved', 'rejected');
+
+CREATE TABLE IF NOT EXISTS public.appeals (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    target_type appeal_target_type NOT NULL,
+    target_id UUID NOT NULL,
+    description TEXT NOT NULL,
+    status appeal_status NOT NULL DEFAULT 'pending',
+    admin_notes TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Enable RLS for Appeals
+ALTER TABLE public.appeals ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own appeals"
+    ON public.appeals FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can create appeals"
+    ON public.appeals FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+-- 6. Add Triggers for updated_at
+
+CREATE OR REPLACE FUNCTION update_reviews_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_reviews_updated_at
+BEFORE UPDATE ON public.reviews
+FOR EACH ROW EXECUTE FUNCTION update_reviews_updated_at();
+
+CREATE OR REPLACE FUNCTION update_verifications_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_verifications_updated_at
+BEFORE UPDATE ON public.verifications
+FOR EACH ROW EXECUTE FUNCTION update_verifications_updated_at();
+
+CREATE OR REPLACE FUNCTION update_reports_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_reports_updated_at
+BEFORE UPDATE ON public.reports
+FOR EACH ROW EXECUTE FUNCTION update_reports_updated_at();
+
+CREATE OR REPLACE FUNCTION update_appeals_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_appeals_updated_at
+BEFORE UPDATE ON public.appeals
+FOR EACH ROW EXECUTE FUNCTION update_appeals_updated_at();
+-- M12 Administration & CMS Module Database Migration
+
+-- 1. Create admin role enum
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'admin_role_type') THEN
+        CREATE TYPE admin_role_type AS ENUM ('super_admin', 'admin', 'moderator', 'support_agent', 'content_manager');
+    END IF;
+END$$;
+
+-- 2. Add role to profiles
+ALTER TABLE public.profiles 
+ADD COLUMN IF NOT EXISTS admin_role admin_role_type;
+
+-- 3. Audit Logs
+CREATE TABLE IF NOT EXISTS public.audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    admin_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    action TEXT NOT NULL,
+    entity_type TEXT NOT NULL,
+    entity_id UUID,
+    previous_value JSONB,
+    new_value JSONB,
+    ip_address TEXT,
+    user_agent TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_logs_admin_id ON public.audit_logs(admin_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_entity ON public.audit_logs(entity_type, entity_id);
+
+-- 4. CMS Pages
+CREATE TABLE IF NOT EXISTS public.cms_pages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    slug TEXT UNIQUE NOT NULL,
+    title TEXT NOT NULL,
+    content TEXT,
+    is_published BOOLEAN DEFAULT false,
+    author_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_cms_pages_slug ON public.cms_pages(slug);
+
+-- 5. Platform Settings
+CREATE TABLE IF NOT EXISTS public.platform_settings (
+    key TEXT PRIMARY KEY,
+    value JSONB NOT NULL,
+    updated_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 6. Feature Flags
+CREATE TABLE IF NOT EXISTS public.feature_flags (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    key TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    is_enabled BOOLEAN DEFAULT false,
+    scheduled_activation TIMESTAMPTZ,
+    internal_notes TEXT,
+    updated_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_feature_flags_key ON public.feature_flags(key);
+
+-- RLS Policies
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.cms_pages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.platform_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.feature_flags ENABLE ROW LEVEL SECURITY;
+
+-- Only admins can read/write these (We'll enforce read/write with service roles for backend for now)
+-- The backend uses the service role for admin tasks.
+-- So we can just leave it as closed for anon/authenticated (unless they have admin_role, but doing it in the service layer is fine too).
+CREATE POLICY "Admins can view audit_logs" ON public.audit_logs FOR SELECT USING (
+    (SELECT admin_role FROM public.profiles WHERE id = (SELECT id FROM public.profiles WHERE firebase_uid = auth.uid())) IS NOT NULL
+);
+
+CREATE POLICY "Anyone can view published cms_pages" ON public.cms_pages FOR SELECT USING (
+    is_published = true OR (SELECT admin_role FROM public.profiles WHERE id = (SELECT id FROM public.profiles WHERE firebase_uid = auth.uid())) IS NOT NULL
+);
+
+CREATE POLICY "Admins can view platform_settings" ON public.platform_settings FOR SELECT USING (
+    (SELECT admin_role FROM public.profiles WHERE id = (SELECT id FROM public.profiles WHERE firebase_uid = auth.uid())) IS NOT NULL
+);
+
+CREATE POLICY "Admins can view feature_flags" ON public.feature_flags FOR SELECT USING (
+    (SELECT admin_role FROM public.profiles WHERE id = (SELECT id FROM public.profiles WHERE firebase_uid = auth.uid())) IS NOT NULL
+);
+-- Migration: M13_search_module
+-- Description: Search, Discovery & Recommendation Engine Schema and FTS Indexes
+
+-- Enable pg_trgm extension for trigram matching (if not already enabled)
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+-- 1. Saved Searches
+CREATE TABLE IF NOT EXISTS saved_searches (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    query TEXT,
+    filters JSONB DEFAULT '{}'::JSONB,
+    type TEXT NOT NULL, -- 'global', 'products', 'needs', 'users'
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 2. Recent Searches
+CREATE TABLE IF NOT EXISTS recent_searches (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    keyword TEXT NOT NULL,
+    type TEXT DEFAULT 'global',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 3. Recently Viewed
+CREATE TABLE IF NOT EXISTS recently_viewed (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    item_type TEXT NOT NULL, -- 'product', 'need', 'user'
+    item_id UUID NOT NULL,
+    viewed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    -- We can enforce uniqueness to update viewed_at instead of duplicating
+    UNIQUE (user_id, item_type, item_id)
+);
+
+-- 4. Search Analytics
+CREATE TABLE IF NOT EXISTS search_analytics (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES profiles(id) ON DELETE SET NULL, -- Null for anonymous
+    keyword TEXT NOT NULL,
+    result_count INTEGER DEFAULT 0,
+    clicked_item_id UUID,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 5. Full-Text Search Indexes
+
+-- Products FTS Index (title and description)
+ALTER TABLE products ADD COLUMN IF NOT EXISTS fts_tsvector TSVECTOR
+    GENERATED ALWAYS AS (
+        setweight(to_tsvector('english', coalesce(title, '')), 'A') ||
+        setweight(to_tsvector('english', coalesce(description, '')), 'B')
+    ) STORED;
+
+CREATE INDEX IF NOT EXISTS products_fts_idx ON products USING GIN (fts_tsvector);
+
+-- Products tags array FTS/GIN index (useful for overlap operations)
+-- (Assuming tags is already TEXT[])
+CREATE INDEX IF NOT EXISTS products_tags_idx ON products USING GIN (tags);
+
+-- Needs FTS Index (title and description)
+ALTER TABLE needs ADD COLUMN IF NOT EXISTS fts_tsvector TSVECTOR
+    GENERATED ALWAYS AS (
+        setweight(to_tsvector('english', coalesce(title, '')), 'A') ||
+        setweight(to_tsvector('english', coalesce(description, '')), 'B')
+    ) STORED;
+
+CREATE INDEX IF NOT EXISTS needs_fts_idx ON needs USING GIN (fts_tsvector);
+
+-- Profiles Trigram Index (for partial matching on names)
+CREATE INDEX IF NOT EXISTS profiles_display_name_trgm_idx ON profiles USING GIN (display_name gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS profiles_username_trgm_idx ON profiles USING GIN (username gin_trgm_ops);
+
+-- RLS Policies
+
+-- saved_searches
+ALTER TABLE saved_searches ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage their own saved searches" ON saved_searches
+    FOR ALL USING (auth.uid() = user_id);
+
+-- recent_searches
+ALTER TABLE recent_searches ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage their own recent searches" ON recent_searches
+    FOR ALL USING (auth.uid() = user_id);
+
+-- recently_viewed
+ALTER TABLE recently_viewed ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage their own recently viewed items" ON recently_viewed
+    FOR ALL USING (auth.uid() = user_id);
+
+-- search_analytics
+ALTER TABLE search_analytics ENABLE ROW LEVEL SECURITY;
+-- Insert allowed by anyone, read only by admins (we'll keep read closed to public)
+CREATE POLICY "Anyone can insert search analytics" ON search_analytics
+    FOR INSERT WITH CHECK (true);
+-- M14: Analytics & Business Intelligence Module
+-- This module contains read-only RPCs for dashboard aggregations.
+
+-- 1. User Dashboard Summary
+CREATE OR REPLACE FUNCTION get_user_dashboard_summary(p_user_id UUID)
+RETURNS JSONB AS $$
+DECLARE
+  v_active_exchanges INT;
+  v_my_products INT;
+  v_my_needs INT;
+  v_unread_notifications INT;
+  v_trust_score INT;
+BEGIN
+  -- Count active exchanges (status = 'pending' or 'accepted' or 'shipping')
+  SELECT COUNT(*) INTO v_active_exchanges 
+  FROM exchanges 
+  WHERE (proposer_id = p_user_id OR receiver_id = p_user_id) 
+    AND status IN ('pending', 'accepted', 'shipping');
+
+  -- Count published products
+  SELECT COUNT(*) INTO v_my_products 
+  FROM products 
+  WHERE owner_id = p_user_id AND status = 'published';
+
+  -- Count open needs
+  SELECT COUNT(*) INTO v_my_needs 
+  FROM needs 
+  WHERE owner_id = p_user_id AND status = 'open';
+
+  -- Count unread notifications
+  SELECT COUNT(*) INTO v_unread_notifications
+  FROM notifications
+  WHERE user_id = p_user_id AND is_read = false;
+
+  -- Get trust score
+  SELECT trust_score INTO v_trust_score
+  FROM profiles
+  WHERE id = p_user_id;
+
+  RETURN jsonb_build_object(
+    'active_exchanges', v_active_exchanges,
+    'my_products', v_my_products,
+    'my_needs', v_my_needs,
+    'unread_notifications', v_unread_notifications,
+    'trust_score', COALESCE(v_trust_score, 0)
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+
+-- 2. Admin KPI Dashboard Summary
+CREATE OR REPLACE FUNCTION get_admin_kpi_summary()
+RETURNS JSONB AS $$
+DECLARE
+  v_total_users INT;
+  v_active_users INT;
+  v_total_products INT;
+  v_total_needs INT;
+  v_total_exchanges INT;
+  v_completed_exchanges INT;
+  v_success_rate NUMERIC;
+BEGIN
+  SELECT COUNT(*) INTO v_total_users FROM profiles;
+  
+  SELECT COUNT(*) INTO v_active_users FROM profiles WHERE is_verified = true;
+
+  SELECT COUNT(*) INTO v_total_products FROM products;
+  SELECT COUNT(*) INTO v_total_needs FROM needs;
+  SELECT COUNT(*) INTO v_total_exchanges FROM exchanges;
+  SELECT COUNT(*) INTO v_completed_exchanges FROM exchanges WHERE status = 'completed';
+
+  IF v_total_exchanges > 0 THEN
+    v_success_rate := ROUND((v_completed_exchanges::NUMERIC / v_total_exchanges::NUMERIC) * 100, 2);
+  ELSE
+    v_success_rate := 0;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'total_users', v_total_users,
+    'active_users', v_active_users,
+    'total_products', v_total_products,
+    'total_needs', v_total_needs,
+    'total_exchanges', v_total_exchanges,
+    'completed_exchanges', v_completed_exchanges,
+    'success_rate', v_success_rate
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

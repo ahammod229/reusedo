@@ -1,7 +1,7 @@
-import type { Request, Response, NextFunction } from "express";
-import type { AdminRole } from "@reusedo/validation";
 import { AdminRepository } from "@reusedo/database";
 import { UserRepository } from "@reusedo/database";
+import type { AdminRole } from "@reusedo/validation";
+import type { NextFunction, Request, Response } from "express";
 
 /**
  * Middleware to ensure the authenticated user has one of the required admin roles.

@@ -4,8 +4,8 @@
 CREATE TABLE IF NOT EXISTS public.shipments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     exchange_id UUID NOT NULL REFERENCES public.exchanges(id) ON DELETE CASCADE,
-    sender_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-    receiver_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    sender_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    receiver_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'shipped', 'in_transit', 'delivered', 'cancelled', 'returned')),
     tracking_number TEXT,
     carrier TEXT,

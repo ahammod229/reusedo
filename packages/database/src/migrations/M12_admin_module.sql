@@ -77,17 +77,17 @@ ALTER TABLE public.feature_flags ENABLE ROW LEVEL SECURITY;
 -- The backend uses the service role for admin tasks.
 -- So we can just leave it as closed for anon/authenticated (unless they have admin_role, but doing it in the service layer is fine too).
 CREATE POLICY "Admins can view audit_logs" ON public.audit_logs FOR SELECT USING (
-    (SELECT admin_role FROM public.profiles WHERE id = (SELECT id FROM public.profiles WHERE firebase_uid = auth.uid())) IS NOT NULL
+    (SELECT admin_role FROM public.profiles WHERE id = auth.uid()) IS NOT NULL
 );
 
 CREATE POLICY "Anyone can view published cms_pages" ON public.cms_pages FOR SELECT USING (
-    is_published = true OR (SELECT admin_role FROM public.profiles WHERE id = (SELECT id FROM public.profiles WHERE firebase_uid = auth.uid())) IS NOT NULL
+    is_published = true OR (SELECT admin_role FROM public.profiles WHERE id = auth.uid()) IS NOT NULL
 );
 
 CREATE POLICY "Admins can view platform_settings" ON public.platform_settings FOR SELECT USING (
-    (SELECT admin_role FROM public.profiles WHERE id = (SELECT id FROM public.profiles WHERE firebase_uid = auth.uid())) IS NOT NULL
+    (SELECT admin_role FROM public.profiles WHERE id = auth.uid()) IS NOT NULL
 );
 
 CREATE POLICY "Admins can view feature_flags" ON public.feature_flags FOR SELECT USING (
-    (SELECT admin_role FROM public.profiles WHERE id = (SELECT id FROM public.profiles WHERE firebase_uid = auth.uid())) IS NOT NULL
+    (SELECT admin_role FROM public.profiles WHERE id = auth.uid()) IS NOT NULL
 );

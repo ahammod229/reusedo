@@ -68,17 +68,17 @@ ALTER TABLE public.notification_preferences ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_addresses ENABLE ROW LEVEL SECURITY;
 
 -- Only owners can view/edit their own settings
-CREATE POLICY "Users can view their own settings" ON public.user_settings FOR SELECT USING (auth.uid() = (SELECT firebase_uid FROM profiles WHERE id = user_id));
-CREATE POLICY "Users can update their own settings" ON public.user_settings FOR UPDATE USING (auth.uid() = (SELECT firebase_uid FROM profiles WHERE id = user_id));
-CREATE POLICY "Users can insert their own settings" ON public.user_settings FOR INSERT WITH CHECK (auth.uid() = (SELECT firebase_uid FROM profiles WHERE id = user_id));
+CREATE POLICY "Users can view their own settings" ON public.user_settings FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can update their own settings" ON public.user_settings FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert their own settings" ON public.user_settings FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- Only owners can view/edit their notification preferences
-CREATE POLICY "Users can view their own notifications" ON public.notification_preferences FOR SELECT USING (auth.uid() = (SELECT firebase_uid FROM profiles WHERE id = user_id));
-CREATE POLICY "Users can update their own notifications" ON public.notification_preferences FOR UPDATE USING (auth.uid() = (SELECT firebase_uid FROM profiles WHERE id = user_id));
-CREATE POLICY "Users can insert their own notifications" ON public.notification_preferences FOR INSERT WITH CHECK (auth.uid() = (SELECT firebase_uid FROM profiles WHERE id = user_id));
+CREATE POLICY "Users can view their own notifications" ON public.notification_preferences FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can update their own notifications" ON public.notification_preferences FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert their own notifications" ON public.notification_preferences FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- Only owners can view/edit their own addresses
-CREATE POLICY "Users can view their own addresses" ON public.user_addresses FOR SELECT USING (auth.uid() = (SELECT firebase_uid FROM profiles WHERE id = user_id));
-CREATE POLICY "Users can update their own addresses" ON public.user_addresses FOR UPDATE USING (auth.uid() = (SELECT firebase_uid FROM profiles WHERE id = user_id));
-CREATE POLICY "Users can insert their own addresses" ON public.user_addresses FOR INSERT WITH CHECK (auth.uid() = (SELECT firebase_uid FROM profiles WHERE id = user_id));
-CREATE POLICY "Users can delete their own addresses" ON public.user_addresses FOR DELETE USING (auth.uid() = (SELECT firebase_uid FROM profiles WHERE id = user_id));
+CREATE POLICY "Users can view their own addresses" ON public.user_addresses FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can update their own addresses" ON public.user_addresses FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert their own addresses" ON public.user_addresses FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own addresses" ON public.user_addresses FOR DELETE USING (auth.uid() = user_id);

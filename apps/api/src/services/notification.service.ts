@@ -1,8 +1,13 @@
-import { initializeApp, getApps, cert } from "firebase-admin/app";
-import { getMessaging } from "firebase-admin/messaging";
 import { NotificationRepository, SettingsRepository } from "@reusedo/database";
-import { eventBus, EVENTS } from "./event-bus.service";
-import type { NotificationType, NotificationPriority, NotificationPreferencesData } from "@reusedo/validation";
+import type {
+  NotificationPreferencesData,
+  NotificationPriority,
+  NotificationType,
+} from "@reusedo/validation";
+import { cert, getApps, initializeApp } from "firebase-admin/app";
+import { getMessaging } from "firebase-admin/messaging";
+import { EVENTS, eventBus } from "./event-bus.service";
+import { SocketService } from "./socket.service";
 
 // Initialize Firebase Admin gracefully
 try {
@@ -52,11 +57,13 @@ export class NotificationService {
     preferenceKey?: string; // which preference to check before sending push
   }) {
     try {
-      // 1. Insert to Database (always insert unless user explicitly blocked this whole category? 
+      // 1. Insert to Database (always insert unless user explicitly blocked this whole category?
       // Usually preferences are for "push" vs "in-app", we'll assume in-app always shows unless specified.
       // But let's check preferences anyway for push.
-      const prefs = await this.settingsRepo.getNotificationPreferences(params.userId).catch(() => null);
-      
+      const prefs = await this.settingsRepo
+        .getNotificationPreferences(params.userId)
+        .catch(() => null);
+
       const notification = await this.notificationRepo.createNotification({
         user_id: params.userId,
         title: params.title,
@@ -67,11 +74,17 @@ export class NotificationService {
         related_entity_id: params.relatedEntityId || null,
       });
 
+      // Emit real-time socket event
+      SocketService.emitNotification(params.userId, {
+        type: "new_notification",
+        notification,
+      });
+
       // 2. Check Push Preferences
       let shouldSendPush = true;
       if (prefs) {
         if (!prefs.push_notifications) shouldSendPush = false;
-        
+
         if (params.preferenceKey) {
           const key = params.preferenceKey as keyof NotificationPreferencesData;
           if (prefs[key] === false) {
@@ -92,7 +105,12 @@ export class NotificationService {
     }
   }
 
-  private async sendPush(userId: string, title: string, body: string, data: Record<string, string>) {
+  private async sendPush(
+    userId: string,
+    title: string,
+    body: string,
+    data: Record<string, string>,
+  ) {
     try {
       const tokens = await this.notificationRepo.getUserFCMTokens(userId);
       if (!tokens || tokens.length === 0) return;
@@ -112,7 +130,7 @@ export class NotificationService {
       };
 
       const response = await getMessaging().sendEachForMulticast(message);
-      
+
       // Cleanup invalid tokens
       if (response.failureCount > 0) {
         const failedTokens: string[] = [];
@@ -120,8 +138,10 @@ export class NotificationService {
         response.responses.forEach((resp, idx) => {
           if (!resp.success) {
             const error = resp.error;
-            if (error?.code === "messaging/invalid-registration-token" || 
-                error?.code === "messaging/registration-token-not-registered") {
+            if (
+              error?.code === "messaging/invalid-registration-token" ||
+              error?.code === "messaging/registration-token-not-registered"
+            ) {
               failedTokens.push(tokens[idx]);
             }
           }
@@ -138,7 +158,11 @@ export class NotificationService {
 
   // --- Event Handlers ---
 
-  private async handleExchangeRequested(payload: { targetUserId: string; exchangeId: string; requesterName: string }) {
+  private async handleExchangeRequested(payload: {
+    targetUserId: string;
+    exchangeId: string;
+    requesterName: string;
+  }) {
     await this.dispatch({
       userId: payload.targetUserId,
       title: "New Exchange Request",
@@ -147,11 +171,15 @@ export class NotificationService {
       priority: "high",
       relatedEntityType: "exchange",
       relatedEntityId: payload.exchangeId,
-      preferenceKey: "exchange_updates"
+      preferenceKey: "exchange_updates",
     });
   }
 
-  private async handleExchangeAccepted(payload: { targetUserId: string; exchangeId: string; responderName: string }) {
+  private async handleExchangeAccepted(payload: {
+    targetUserId: string;
+    exchangeId: string;
+    responderName: string;
+  }) {
     await this.dispatch({
       userId: payload.targetUserId,
       title: "Exchange Accepted",
@@ -160,11 +188,15 @@ export class NotificationService {
       priority: "high",
       relatedEntityType: "exchange",
       relatedEntityId: payload.exchangeId,
-      preferenceKey: "exchange_updates"
+      preferenceKey: "exchange_updates",
     });
   }
 
-  private async handleExchangeRejected(payload: { targetUserId: string; exchangeId: string; responderName: string }) {
+  private async handleExchangeRejected(payload: {
+    targetUserId: string;
+    exchangeId: string;
+    responderName: string;
+  }) {
     await this.dispatch({
       userId: payload.targetUserId,
       title: "Exchange Rejected",
@@ -173,11 +205,15 @@ export class NotificationService {
       priority: "normal",
       relatedEntityType: "exchange",
       relatedEntityId: payload.exchangeId,
-      preferenceKey: "exchange_updates"
+      preferenceKey: "exchange_updates",
     });
   }
 
-  private async handleExchangeCancelled(payload: { targetUserId: string; exchangeId: string; cancellerName: string }) {
+  private async handleExchangeCancelled(payload: {
+    targetUserId: string;
+    exchangeId: string;
+    cancellerName: string;
+  }) {
     await this.dispatch({
       userId: payload.targetUserId,
       title: "Exchange Cancelled",
@@ -186,11 +222,15 @@ export class NotificationService {
       priority: "high",
       relatedEntityType: "exchange",
       relatedEntityId: payload.exchangeId,
-      preferenceKey: "exchange_updates"
+      preferenceKey: "exchange_updates",
     });
   }
 
-  private async handleNewMessage(payload: { targetUserId: string; conversationId: string; senderName: string }) {
+  private async handleNewMessage(payload: {
+    targetUserId: string;
+    conversationId: string;
+    senderName: string;
+  }) {
     await this.dispatch({
       userId: payload.targetUserId,
       title: "New Message",
@@ -199,11 +239,15 @@ export class NotificationService {
       priority: "normal",
       relatedEntityType: "conversation",
       relatedEntityId: payload.conversationId,
-      preferenceKey: "messages"
+      preferenceKey: "messages",
     });
   }
 
-  private async handleOfferSubmitted(payload: { targetUserId: string; needRequestId: string; offererName: string }) {
+  private async handleOfferSubmitted(payload: {
+    targetUserId: string;
+    needRequestId: string;
+    offererName: string;
+  }) {
     await this.dispatch({
       userId: payload.targetUserId,
       title: "New Offer",
@@ -212,7 +256,7 @@ export class NotificationService {
       priority: "normal",
       relatedEntityType: "need_request",
       relatedEntityId: payload.needRequestId,
-      preferenceKey: "need_requests"
+      preferenceKey: "need_requests",
     });
   }
 }

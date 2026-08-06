@@ -11,5 +11,5 @@ export const AnalyticsService = {
 
   async getAdminKpiSummary() {
     return AnalyticsRepository.getAdminKpiSummary();
-  }
+  },
 };

@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { AnalyticsService } from "../services/analytics.service";
 import { requireAuth } from "../middlewares/auth.middleware";
 import { requireAdmin } from "../middlewares/rbac.middleware";
+import { AnalyticsService } from "../services/analytics.service";
 
 export const analyticsRouter = Router();
 
@@ -30,12 +30,17 @@ analyticsRouter.get("/personal", requireAuth, async (req, res) => {
 });
 
 // Admin KPI Dashboard
-analyticsRouter.get("/admin/kpi", requireAuth, requireAdmin(["super_admin", "moderator"]), async (req, res) => {
-  try {
-    const kpi = await AnalyticsService.getAdminKpiSummary();
-    res.json(kpi);
-  } catch (error) {
-    console.error("Admin KPI Error:", error);
-    res.status(500).json({ error: "Failed to fetch admin KPIs" });
-  }
-});
+analyticsRouter.get(
+  "/admin/kpi",
+  requireAuth,
+  requireAdmin(["super_admin", "moderator"]),
+  async (req, res) => {
+    try {
+      const kpi = await AnalyticsService.getAdminKpiSummary();
+      res.json(kpi);
+    } catch (error) {
+      console.error("Admin KPI Error:", error);
+      res.status(500).json({ error: "Failed to fetch admin KPIs" });
+    }
+  },
+);

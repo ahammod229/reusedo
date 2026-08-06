@@ -13,11 +13,7 @@ import * as React from "react";
 import { Outlet } from "react-router";
 import { NotificationBadge } from "../components/NotificationBadge";
 
-// This is a placeholder user. In reality, you'd get this from your auth store.
-const DUMMY_USER = {
-  name: "John Doe",
-  email: "john@example.com",
-};
+import { useAuthStore } from "@reusedo/auth";
 
 const SIDEBAR_ITEMS = [
   { title: "Home", href: "/", icon: <Home className="h-4 w-4" /> },
@@ -41,11 +37,18 @@ const MOBILE_NAV_ITEMS = [
 
 export function MainLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const user = useAuthStore((state) => state.user);
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <Header
-        user={DUMMY_USER}
+        user={{
+          // biome-ignore lint/suspicious/noExplicitAny: user type from auth store
+          name: (user as any)?.display_name || (user as any)?.displayName || "User",
+          email: user?.email || "",
+          // biome-ignore lint/suspicious/noExplicitAny: user type from auth store
+          avatar: (user as any)?.avatar_url,
+        }}
         onMenuClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         notificationAction={<NotificationBadge />}
       />

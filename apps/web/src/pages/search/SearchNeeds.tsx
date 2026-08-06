@@ -56,7 +56,8 @@ export const SearchNeeds = () => {
             </div>
 
             <div className="flex items-center space-x-4">
-              <button type="button"
+              <button
+                type="button"
                 onClick={handleSaveSearch}
                 className="text-sm font-medium text-primary hover:bg-primary/5 px-3 py-1.5 rounded-md transition-colors"
               >
@@ -104,7 +105,8 @@ export const SearchNeeds = () => {
           ) : (
             <div className="text-center py-16 bg-gray-50 rounded-xl">
               <p className="text-gray-500 font-medium">No needs match your criteria.</p>
-              <button type="button"
+              <button
+                type="button"
                 onClick={() => setFilters(initialFilters)}
                 className="mt-4 text-primary hover:underline"
               >

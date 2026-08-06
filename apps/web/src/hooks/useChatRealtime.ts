@@ -1,13 +1,7 @@
 import type { Message } from "@reusedo/validation";
-import { createClient } from "@supabase/supabase-js";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
-
-// Initialize Supabase client for realtime only
-export const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+import { useSocket } from "../providers/SocketProvider";
 
 interface UseChatRealtimeProps {
   conversationId?: string;
@@ -16,95 +10,54 @@ interface UseChatRealtimeProps {
 
 export function useChatRealtime({ conversationId, userId }: UseChatRealtimeProps = {}) {
   const queryClient = useQueryClient();
+  const { socket } = useSocket();
 
+  // Handle global notifications
   useEffect(() => {
-    if (!supabase || !userId) return;
+    if (!socket || !userId) return;
 
-    // 1. Subscribe to Conversation updates (e.g. unread count changes) for the current user
-    const participantsChannel = supabase
-      .channel(`public:conversation_participants:user_id=eq.${userId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "conversation_participants",
-          filter: `user_id=eq.${userId}`,
-        },
-        (_payload) => {
-          // Invalidate conversations list to refresh unread counts
-          queryClient.invalidateQueries({ queryKey: ["chat", "conversations"] });
-        },
-      )
-      .subscribe();
+    const handleNotification = (payload: unknown) => {
+      // Invalidate conversations list to refresh unread counts
+      if ((payload as Record<string, unknown>).type === "new_message") {
+        queryClient.invalidateQueries({ queryKey: ["chat", "conversations"] });
+        // Can also trigger a toast notification here
+      }
+    };
+
+    socket.on("new_notification", handleNotification);
 
     return () => {
-      supabase.removeChannel(participantsChannel);
+      socket.off("new_notification", handleNotification);
     };
-  }, [userId, queryClient]);
+  }, [socket, userId, queryClient]);
 
+  // Handle specific conversation room messages
   useEffect(() => {
-    if (!supabase || !conversationId) return;
+    if (!socket || !conversationId) return;
 
-    // 2. Subscribe to Messages within a specific conversation
-    const messagesChannel = supabase
-      .channel(`public:messages:conversation_id=eq.${conversationId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `conversation_id=eq.${conversationId}`,
+    socket.emit("join_conversation", conversationId);
+
+    const handleNewMessage = (newMessage: Message) => {
+      // Optimistically update the message cache
+      queryClient.setQueryData(
+        ["chat", "messages", conversationId],
+        (oldData: Message[] | undefined) => {
+          if (!oldData) return [newMessage];
+          const exists = oldData.some((msg) => msg.id === newMessage.id);
+          if (exists) return oldData;
+          return [...oldData, newMessage];
         },
-        (payload) => {
-          const newMessage = payload.new as Message;
+      );
+      // Invalidate to ensure related data is fresh
+      queryClient.invalidateQueries({ queryKey: ["chat", "messages", conversationId] });
+      queryClient.invalidateQueries({ queryKey: ["chat", "conversation", conversationId] });
+    };
 
-          // Optimistically update the message cache
-          queryClient.setQueryData(
-            ["chat", "messages", conversationId],
-            (oldData: Message[] | undefined) => {
-              if (!oldData) return [newMessage];
-
-              // Check if we already have this message (e.g., from optimistic update during sending)
-              const exists = oldData.some((msg) => msg.id === newMessage.id);
-              if (exists) return oldData;
-
-              // Prepend new message to the list (assuming chronological order in cache)
-              return [...oldData, newMessage];
-            },
-          );
-
-          // Also invalidate to ensure related data (like reactions) is fresh
-          queryClient.invalidateQueries({ queryKey: ["chat", "messages", conversationId] });
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "messages",
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        (payload) => {
-          const updatedMessage = payload.new as Message;
-
-          queryClient.setQueryData(
-            ["chat", "messages", conversationId],
-            (oldData: Message[] | undefined) => {
-              if (!oldData) return [updatedMessage];
-              return oldData.map((msg) =>
-                msg.id === updatedMessage.id ? { ...msg, ...updatedMessage } : msg,
-              );
-            },
-          );
-        },
-      )
-      .subscribe();
+    socket.on("new_message", handleNewMessage);
 
     return () => {
-      supabase.removeChannel(messagesChannel);
+      socket.off("new_message", handleNewMessage);
+      socket.emit("leave_conversation", conversationId);
     };
-  }, [conversationId, queryClient]);
+  }, [socket, conversationId, queryClient]);
 }

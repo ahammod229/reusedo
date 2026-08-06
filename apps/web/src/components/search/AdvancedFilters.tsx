@@ -23,7 +23,9 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({ type, filters,
         {/* Category */}
         {(type === "products" || type === "needs") && (
           <div className="mb-4">
-            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+              Category
+            </label>
             <select
               name="category"
               value={filters.category || ""}
@@ -42,7 +44,9 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({ type, filters,
         {/* Location */}
         {(type === "products" || type === "needs") && (
           <div className="mb-4">
-            <label htmlFor="district" className="block text-sm font-medium text-gray-700 mb-1">District</label>
+            <label htmlFor="district" className="block text-sm font-medium text-gray-700 mb-1">
+              District
+            </label>
             <select
               name="district"
               value={filters.district || ""}
@@ -60,7 +64,9 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({ type, filters,
         {/* Condition - Products Only */}
         {type === "products" && (
           <div className="mb-4">
-            <label htmlFor="condition" className="block text-sm font-medium text-gray-700 mb-1">Condition</label>
+            <label htmlFor="condition" className="block text-sm font-medium text-gray-700 mb-1">
+              Condition
+            </label>
             <select
               name="condition"
               value={filters.condition || ""}
@@ -79,7 +85,9 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({ type, filters,
         {/* Urgency - Needs Only */}
         {type === "needs" && (
           <div className="mb-4">
-            <label htmlFor="urgency" className="block text-sm font-medium text-gray-700 mb-1">Urgency</label>
+            <label htmlFor="urgency" className="block text-sm font-medium text-gray-700 mb-1">
+              Urgency
+            </label>
             <select
               name="urgency"
               value={filters.urgency || ""}

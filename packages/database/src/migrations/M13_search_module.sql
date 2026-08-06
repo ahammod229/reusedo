@@ -61,13 +61,13 @@ CREATE INDEX IF NOT EXISTS products_fts_idx ON products USING GIN (fts_tsvector)
 CREATE INDEX IF NOT EXISTS products_tags_idx ON products USING GIN (tags);
 
 -- Needs FTS Index (title and description)
-ALTER TABLE needs ADD COLUMN IF NOT EXISTS fts_tsvector TSVECTOR
+ALTER TABLE need_requests ADD COLUMN IF NOT EXISTS fts_tsvector TSVECTOR
     GENERATED ALWAYS AS (
         setweight(to_tsvector('english', coalesce(title, '')), 'A') ||
         setweight(to_tsvector('english', coalesce(description, '')), 'B')
     ) STORED;
 
-CREATE INDEX IF NOT EXISTS needs_fts_idx ON needs USING GIN (fts_tsvector);
+CREATE INDEX IF NOT EXISTS need_requests_fts_idx ON need_requests USING GIN (fts_tsvector);
 
 -- Profiles Trigram Index (for partial matching on names)
 CREATE INDEX IF NOT EXISTS profiles_display_name_trgm_idx ON profiles USING GIN (display_name gin_trgm_ops);

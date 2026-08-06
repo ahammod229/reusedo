@@ -14,18 +14,18 @@ BEGIN
   -- Count active exchanges (status = 'pending' or 'accepted' or 'shipping')
   SELECT COUNT(*) INTO v_active_exchanges 
   FROM exchanges 
-  WHERE (proposer_id = p_user_id OR receiver_id = p_user_id) 
-    AND status IN ('pending', 'accepted', 'shipping');
+  WHERE (requester_id = p_user_id OR recipient_id = p_user_id) 
+    AND status IN ('pending', 'accepted', 'ready_for_shipping');
 
   -- Count published products
   SELECT COUNT(*) INTO v_my_products 
   FROM products 
   WHERE owner_id = p_user_id AND status = 'published';
 
-  -- Count open needs
+  -- Count published needs
   SELECT COUNT(*) INTO v_my_needs 
-  FROM needs 
-  WHERE owner_id = p_user_id AND status = 'open';
+  FROM need_requests 
+  WHERE owner_id = p_user_id AND status = 'published';
 
   -- Count unread notifications
   SELECT COUNT(*) INTO v_unread_notifications
@@ -65,9 +65,9 @@ BEGIN
   SELECT COUNT(*) INTO v_active_users FROM profiles WHERE is_verified = true;
 
   SELECT COUNT(*) INTO v_total_products FROM products;
-  SELECT COUNT(*) INTO v_total_needs FROM needs;
+  SELECT COUNT(*) INTO v_total_needs FROM need_requests;
   SELECT COUNT(*) INTO v_total_exchanges FROM exchanges;
-  SELECT COUNT(*) INTO v_completed_exchanges FROM exchanges WHERE status = 'completed';
+  SELECT COUNT(*) INTO v_completed_exchanges FROM exchanges WHERE status = 'accepted';
 
   IF v_total_exchanges > 0 THEN
     v_success_rate := ROUND((v_completed_exchanges::NUMERIC / v_total_exchanges::NUMERIC) * 100, 2);

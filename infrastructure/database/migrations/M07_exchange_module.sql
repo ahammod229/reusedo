@@ -24,8 +24,8 @@ CREATE TYPE exchange_event_type AS ENUM (
 -- 3. Create Exchanges table
 CREATE TABLE IF NOT EXISTS public.exchanges (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    requester_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-    recipient_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    requester_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    recipient_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     offered_product_ids UUID[] NOT NULL DEFAULT '{}',
     requested_product_ids UUID[] NOT NULL DEFAULT '{}',
     status exchange_status NOT NULL DEFAULT 'pending',
@@ -44,7 +44,7 @@ CREATE INDEX idx_exchanges_status ON public.exchanges(status);
 CREATE TABLE IF NOT EXISTS public.exchange_events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     exchange_id UUID NOT NULL REFERENCES public.exchanges(id) ON DELETE CASCADE,
-    actor_id UUID REFERENCES public.users(id) ON DELETE SET NULL, -- Can be null for system events like 'expired'
+    actor_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL, -- Can be null for system events like 'expired'
     action exchange_event_type NOT NULL,
     payload JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

@@ -1,5 +1,18 @@
 {
   "projects": {
     "default": "binimoy-we"
-  }
+  },
+  "targets": {
+    "binimoy-we": {
+      "hosting": {
+        "web": [
+          "binimoy-we"
+        ],
+        "admin": [
+          "binimoy-we-admin"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

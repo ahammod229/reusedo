@@ -1,4 +1,5 @@
 import { ExchangeService } from "@reusedo/api-client";
+import { useAuthStore } from "@reusedo/auth";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router";
 
@@ -12,7 +13,7 @@ import { ExchangeTimeline } from "./components/ExchangeTimeline";
 
 export const ExchangeDetails = () => {
   const { id } = useParams<{ id: string }>();
-  // const { user } = useAuthStore();
+  const { user } = useAuthStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isCounterModalOpen, setIsCounterModalOpen] = useState(false);
@@ -66,11 +67,20 @@ export const ExchangeDetails = () => {
 
   const isPendingOrCounter = exchange.status === "pending" || exchange.status === "counter_offered";
 
-  // Who's turn is it to act? If it's pending, the recipient acts.
-  // If it's counter offered, the other party acts (we'd need event history to know who exactly,
-  // but for simplicity we assume recipient can always accept a pending offer).
-  // const isRecipient = false; // TODO: Check actual user ID
-  // const isRequester = false; // TODO: Check actual user ID
+  const isRecipient = exchange.recipient_id === user?.uid;
+  const isRequester = exchange.requester_id === user?.uid;
+  const isParticipant = isRecipient || isRequester;
+
+  let canAct = false;
+  if (exchange.status === "pending") {
+    canAct = isRecipient;
+  } else if (exchange.status === "counter_offered") {
+    // Find the last counter offer event
+    const lastCounterEvent = [...events].reverse().find((e) => e.action === "counter_offered");
+    if (lastCounterEvent) {
+      canAct = lastCounterEvent.actor_id !== user?.uid;
+    }
+  }
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
@@ -104,13 +114,12 @@ export const ExchangeDetails = () => {
           </p>
         </div>
 
-        {isPendingOrCounter && (
+        {isPendingOrCounter && canAct && isParticipant && (
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setIsCounterModalOpen(true)}>
               Counter Offer
             </Button>
 
-            {/* Very basic role check for accept/reject */}
             <Button
               variant="destructive"
               onClick={() => rejectMutation.mutate()}
@@ -125,7 +134,7 @@ export const ExchangeDetails = () => {
         )}
 
         {/* Cancel button if not finished */}
-        {exchange.status === "accepted" && (
+        {exchange.status === "accepted" && isParticipant && (
           <Button
             variant="destructive"
             onClick={() => cancelMutation.mutate()}

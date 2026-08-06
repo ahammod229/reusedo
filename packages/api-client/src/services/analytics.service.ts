@@ -3,15 +3,15 @@ import type { UserDashboardSummary, PersonalAnalytics, AdminKpiSummary } from "@
 
 export const AnalyticsService = {
   getUserDashboardSummary: async (): Promise<UserDashboardSummary> => {
-    const response = await apiClient.get("/api/analytics/dashboard");
+    const response = await apiClient.get("/analytics/dashboard");
     return response.data;
   },
   getPersonalAnalytics: async (): Promise<PersonalAnalytics> => {
-    const response = await apiClient.get("/api/analytics/personal");
+    const response = await apiClient.get("/analytics/personal");
     return response.data;
   },
   getAdminKpiSummary: async (): Promise<AdminKpiSummary> => {
-    const response = await apiClient.get("/api/analytics/admin/kpi");
+    const response = await apiClient.get("/analytics/admin/kpi");
     return response.data;
   }
 };

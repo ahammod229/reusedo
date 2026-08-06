@@ -6,7 +6,6 @@ export * from "./exchanges/ExchangeList";
 export * from "./exchanges/ExchangeDetails";
 export { Explore } from "./explore";
 export { Home } from "./home";
-export { Messages } from "./messages";
 export * from "./needs/NeedList";
 export * from "./search/SavedSearches";
 export * from "./dashboard/UserDashboard";
@@ -31,10 +30,9 @@ export * from "./notifications/NotificationCenter";
 export * from "./trust/ReputationDashboard";
 export * from "./trust/VerificationForm";
 
-// Miscellaneous
-export const Help = () => <div>Help Page</div>;
-export const About = () => <div>About Us</div>;
-export const Contact = () => <div>Contact Us</div>;
+export * from "./help";
+export * from "./about";
+export * from "./contact";
 
 // Errors
 export { Forbidden, NotFound, ServerError, Unauthorized } from "./errors";

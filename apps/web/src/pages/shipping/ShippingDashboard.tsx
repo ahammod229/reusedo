@@ -1,7 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
 import { ShippingService } from "@reusedo/api-client";
-import { Card, CardContent, CardHeader, CardTitle, Button } from "@reusedo/ui";
-import { Package, Truck, CheckCircle, Clock } from "lucide-react";
+import { Button, Card, CardContent, CardHeader, CardTitle } from "@reusedo/ui";
+import { useQuery } from "@tanstack/react-query";
+import { CheckCircle, Clock, Package, Truck } from "lucide-react";
 import { Link } from "react-router";
 
 export const ShippingDashboard = () => {
@@ -17,10 +17,13 @@ export const ShippingDashboard = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'delivered': return <CheckCircle className="h-5 w-5 text-emerald-500" />;
-      case 'shipped':
-      case 'in_transit': return <Truck className="h-5 w-5 text-blue-500" />;
-      default: return <Clock className="h-5 w-5 text-amber-500" />;
+      case "delivered":
+        return <CheckCircle className="h-5 w-5 text-emerald-500" />;
+      case "shipped":
+      case "in_transit":
+        return <Truck className="h-5 w-5 text-blue-500" />;
+      default:
+        return <Clock className="h-5 w-5 text-amber-500" />;
     }
   };
 
@@ -40,12 +43,12 @@ export const ShippingDashboard = () => {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {shipments.map(shipment => (
+          {shipments.map((shipment) => (
             <Card key={shipment.id} className="hover:shadow-md transition-shadow">
               <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-2">
                   {getStatusIcon(shipment.status)}
-                  <span className="capitalize">{shipment.status.replace('_', ' ')}</span>
+                  <span className="capitalize">{shipment.status.replace("_", " ")}</span>
                 </CardTitle>
                 <span className="text-xs text-slate-500 font-mono">
                   {new Date(shipment.created_at).toLocaleDateString()}
@@ -53,9 +56,13 @@ export const ShippingDashboard = () => {
               </CardHeader>
               <CardContent className="pt-4 flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-700">Exchange ID: <span className="font-mono text-xs">{shipment.exchange_id}</span></p>
+                  <p className="text-sm font-medium text-slate-700">
+                    Exchange ID: <span className="font-mono text-xs">{shipment.exchange_id}</span>
+                  </p>
                   <p className="text-sm text-slate-500 mt-1">
-                    {shipment.tracking_number ? `Tracking: ${shipment.tracking_number}` : 'Tracking not available yet'}
+                    {shipment.tracking_number
+                      ? `Tracking: ${shipment.tracking_number}`
+                      : "Tracking not available yet"}
                   </p>
                 </div>
                 <Button variant="outline" asChild>

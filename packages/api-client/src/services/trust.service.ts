@@ -14,24 +14,24 @@ import type {
 export const TrustService = {
   // Reviews
   createReview: async (revieweeId: string, data: CreateReviewData): Promise<Review> => {
-    const response = await apiClient.post(`/api/reviews/${revieweeId}`, data);
+    const response = await apiClient.post(`/reviews/${revieweeId}`, data);
     return response.data;
   },
 
   getReviews: async (userId: string): Promise<Review[]> => {
-    const response = await apiClient.get(`/api/reviews/${userId}`);
+    const response = await apiClient.get(`/reviews/${userId}`);
     return response.data;
   },
 
   // Verifications
   submitVerification: async (data: CreateVerificationData): Promise<Verification> => {
-    const response = await apiClient.post("/api/verifications", data);
+    const response = await apiClient.post("/verifications", data);
     return response.data;
   },
 
   getVerificationStatus: async (): Promise<Verification | null> => {
     try {
-      const response = await apiClient.get("/api/verifications/me");
+      const response = await apiClient.get("/verifications/me");
       return response.data;
     } catch (error) {
       if (isAxiosError(error) && error.response?.status === 404) {
@@ -42,24 +42,24 @@ export const TrustService = {
   },
 
   updateVerificationStatus: async (verificationId: string, status: "approved" | "rejected", adminNotes?: string): Promise<Verification> => {
-    const response = await apiClient.patch(`/api/verifications/${verificationId}/status`, { status, adminNotes });
+    const response = await apiClient.patch(`/verifications/${verificationId}/status`, { status, adminNotes });
     return response.data;
   },
 
   // Reports
   submitReport: async (data: CreateReportData): Promise<Report> => {
-    const response = await apiClient.post("/api/reports", data);
+    const response = await apiClient.post("/reports", data);
     return response.data;
   },
 
   getReports: async (): Promise<Report[]> => {
-    const response = await apiClient.get("/api/reports");
+    const response = await apiClient.get("/reports");
     return response.data;
   },
 
   // Appeals
   submitAppeal: async (data: CreateAppealData): Promise<Appeal> => {
-    const response = await apiClient.post("/api/appeals", data);
+    const response = await apiClient.post("/appeals", data);
     return response.data;
   }
 };

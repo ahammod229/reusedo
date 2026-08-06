@@ -1,40 +1,24 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { supabase } from "./useChatRealtime";
+import { useSocket } from "../providers/SocketProvider";
 
 export function useNotificationRealtime(userId?: string) {
   const queryClient = useQueryClient();
+  const { socket } = useSocket();
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || !socket) return;
 
-    if (!supabase) return;
+    const handleNotification = () => {
+      // Invalidate the generic list queries so they refetch the correct page/order
+      queryClient.invalidateQueries({ queryKey: ["notifications", userId] });
+      queryClient.invalidateQueries({ queryKey: ["notification_count"] });
+    };
 
-    const channel = supabase.channel(`notifications:user:${userId}`);
-
-    channel
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${userId}`,
-        },
-        (_payload) => {
-          // Invalidate the generic list queries so they refetch the correct page/order
-          queryClient.invalidateQueries({ queryKey: ["notifications"] });
-          queryClient.invalidateQueries({ queryKey: ["notification_count"] });
-        },
-      )
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          console.log("Subscribed to realtime notifications");
-        }
-      });
+    socket.on("new_notification", handleNotification);
 
     return () => {
-      supabase?.removeChannel(channel);
+      socket.off("new_notification", handleNotification);
     };
-  }, [userId, queryClient]);
+  }, [userId, socket, queryClient]);
 }

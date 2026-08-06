@@ -1,3 +1,4 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import { UserService } from "@reusedo/api-client";
 import {
   Button,
@@ -16,7 +17,6 @@ import {
   Switch,
 } from "@reusedo/ui";
 import { type UserSettingsData, userSettingsSchema } from "@reusedo/validation";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";

@@ -149,7 +149,8 @@ export const GlobalSearch = () => {
             <div className="p-4 text-center text-gray-500">No results found for "{query}"</div>
           )}
 
-          <button type="button"
+          <button
+            type="button"
             onClick={() => {
               setIsOpen(false);
               navigate(`/search?q=${encodeURIComponent(query)}`);

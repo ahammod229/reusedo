@@ -56,13 +56,15 @@ export const SavedSearches = () => {
                 </p>
               </div>
               <div className="flex space-x-3">
-                <button type="button"
+                <button
+                  type="button"
                   onClick={() => handleRunSearch(search)}
                   className="px-4 py-2 bg-primary/10 text-primary font-medium rounded-md hover:bg-primary/20 transition-colors"
                 >
                   Run Search
                 </button>
-                <button type="button"
+                <button
+                  type="button"
                   onClick={() => deleteSearch.mutate(search.id)}
                   disabled={deleteSearch.isPending}
                   className="px-4 py-2 text-red-600 font-medium hover:bg-red-50 rounded-md transition-colors"

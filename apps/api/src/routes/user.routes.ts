@@ -1,16 +1,12 @@
-import { Router, type Request, type Response, type NextFunction } from "express";
-import { 
-  UserRepository, 
-  AddressRepository, 
-  SettingsRepository 
-} from "@reusedo/database";
-import { 
-  updateProfileSchema, 
-  addressSchema, 
+import { AddressRepository, SettingsRepository, UserRepository } from "@reusedo/database";
+import {
+  addressSchema,
   updateAddressSchema,
+  updateNotificationPreferencesSchema,
+  updateProfileSchema,
   updateUserSettingsSchema,
-  updateNotificationPreferencesSchema
 } from "@reusedo/validation";
+import { type NextFunction, type Request, type Response, Router } from "express";
 import { requireAuth } from "../middlewares/auth.middleware";
 
 const router = Router();
@@ -59,92 +55,108 @@ router.patch("/me", requireAuth, async (req: Request, res: Response, next: NextF
 });
 
 // Get user addresses
-router.get("/me/addresses", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const user = req.user;
-    if (!user) return res.status(401).json({ error: "Unauthorized" });
-    const profile = await userRepo.getProfileByUid(user.uid);
-    if (!profile) {
-      res.status(404).json({ error: "Profile not found" });
-      return;
-    }
+router.get(
+  "/me/addresses",
+  requireAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await userRepo.getProfileByUid(user.uid);
+      if (!profile) {
+        res.status(404).json({ error: "Profile not found" });
+        return;
+      }
 
-    const addresses = await addressRepo.getUserAddresses(profile.id);
-    res.json(addresses);
-  } catch (error) {
-    next(error);
-  }
-});
+      const addresses = await addressRepo.getUserAddresses(profile.id);
+      res.json(addresses);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 // Add user address
-router.post("/me/addresses", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const user = req.user;
-    if (!user) return res.status(401).json({ error: "Unauthorized" });
-    const profile = await userRepo.getProfileByUid(user.uid);
-    if (!profile) {
-      res.status(404).json({ error: "Profile not found" });
-      return;
-    }
+router.post(
+  "/me/addresses",
+  requireAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await userRepo.getProfileByUid(user.uid);
+      if (!profile) {
+        res.status(404).json({ error: "Profile not found" });
+        return;
+      }
 
-    const parseResult = addressSchema.safeParse(req.body);
-    if (!parseResult.success) {
-      res.status(400).json({ error: "Validation error", details: parseResult.error.format() });
-      return;
-    }
+      const parseResult = addressSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        res.status(400).json({ error: "Validation error", details: parseResult.error.format() });
+        return;
+      }
 
-    const address = await addressRepo.createAddress({
-      ...parseResult.data,
-      user_id: profile.id,
-      landmark: parseResult.data.landmark ?? null
-    });
-    res.status(201).json(address);
-  } catch (error) {
-    next(error);
-  }
-});
+      const address = await addressRepo.createAddress({
+        ...parseResult.data,
+        user_id: profile.id,
+        landmark: parseResult.data.landmark ?? null,
+      });
+      res.status(201).json(address);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 // Update user address
-router.put("/me/addresses/:id", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const user = req.user;
-    if (!user) return res.status(401).json({ error: "Unauthorized" });
-    const profile = await userRepo.getProfileByUid(user.uid);
-    if (!profile) {
-      res.status(404).json({ error: "Profile not found" });
-      return;
-    }
+router.put(
+  "/me/addresses/:id",
+  requireAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await userRepo.getProfileByUid(user.uid);
+      if (!profile) {
+        res.status(404).json({ error: "Profile not found" });
+        return;
+      }
 
-    const parseResult = updateAddressSchema.safeParse(req.body);
-    if (!parseResult.success) {
-      res.status(400).json({ error: "Validation error", details: parseResult.error.format() });
-      return;
-    }
+      const parseResult = updateAddressSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        res.status(400).json({ error: "Validation error", details: parseResult.error.format() });
+        return;
+      }
 
-    const address = await addressRepo.updateAddress(req.params.id, profile.id, parseResult.data);
-    res.json(address);
-  } catch (error) {
-    next(error);
-  }
-});
+      const address = await addressRepo.updateAddress(req.params.id, profile.id, parseResult.data);
+      res.json(address);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 // Delete user address
-router.delete("/me/addresses/:id", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const user = req.user;
-    if (!user) return res.status(401).json({ error: "Unauthorized" });
-    const profile = await userRepo.getProfileByUid(user.uid);
-    if (!profile) {
-      res.status(404).json({ error: "Profile not found" });
-      return;
-    }
+router.delete(
+  "/me/addresses/:id",
+  requireAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await userRepo.getProfileByUid(user.uid);
+      if (!profile) {
+        res.status(404).json({ error: "Profile not found" });
+        return;
+      }
 
-    await addressRepo.deleteAddress(req.params.id, profile.id);
-    res.status(204).end();
-  } catch (error) {
-    next(error);
-  }
-});
+      await addressRepo.deleteAddress(req.params.id, profile.id);
+      res.status(204).end();
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 // Get user settings
 router.get("/me/settings", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
@@ -165,70 +177,82 @@ router.get("/me/settings", requireAuth, async (req: Request, res: Response, next
 });
 
 // Update user settings
-router.patch("/me/settings", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const user = req.user;
-    if (!user) return res.status(401).json({ error: "Unauthorized" });
-    const profile = await userRepo.getProfileByUid(user.uid);
-    if (!profile) {
-      res.status(404).json({ error: "Profile not found" });
-      return;
-    }
+router.patch(
+  "/me/settings",
+  requireAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await userRepo.getProfileByUid(user.uid);
+      if (!profile) {
+        res.status(404).json({ error: "Profile not found" });
+        return;
+      }
 
-    const parseResult = updateUserSettingsSchema.safeParse(req.body);
-    if (!parseResult.success) {
-      res.status(400).json({ error: "Validation error", details: parseResult.error.format() });
-      return;
-    }
+      const parseResult = updateUserSettingsSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        res.status(400).json({ error: "Validation error", details: parseResult.error.format() });
+        return;
+      }
 
-    const settings = await settingsRepo.updateUserSettings(profile.id, parseResult.data);
-    res.json(settings);
-  } catch (error) {
-    next(error);
-  }
-});
+      const settings = await settingsRepo.updateUserSettings(profile.id, parseResult.data);
+      res.json(settings);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 // Get user notifications preferences
-router.get("/me/notifications", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const user = req.user;
-    if (!user) return res.status(401).json({ error: "Unauthorized" });
-    const profile = await userRepo.getProfileByUid(user.uid);
-    if (!profile) {
-      res.status(404).json({ error: "Profile not found" });
-      return;
-    }
+router.get(
+  "/me/notifications",
+  requireAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await userRepo.getProfileByUid(user.uid);
+      if (!profile) {
+        res.status(404).json({ error: "Profile not found" });
+        return;
+      }
 
-    const prefs = await settingsRepo.getNotificationPreferences(profile.id);
-    res.json(prefs);
-  } catch (error) {
-    next(error);
-  }
-});
+      const prefs = await settingsRepo.getNotificationPreferences(profile.id);
+      res.json(prefs);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 // Update user notifications preferences
-router.patch("/me/notifications", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const user = req.user;
-    if (!user) return res.status(401).json({ error: "Unauthorized" });
-    const profile = await userRepo.getProfileByUid(user.uid);
-    if (!profile) {
-      res.status(404).json({ error: "Profile not found" });
-      return;
-    }
+router.patch(
+  "/me/notifications",
+  requireAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await userRepo.getProfileByUid(user.uid);
+      if (!profile) {
+        res.status(404).json({ error: "Profile not found" });
+        return;
+      }
 
-    const parseResult = updateNotificationPreferencesSchema.safeParse(req.body);
-    if (!parseResult.success) {
-      res.status(400).json({ error: "Validation error", details: parseResult.error.format() });
-      return;
-    }
+      const parseResult = updateNotificationPreferencesSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        res.status(400).json({ error: "Validation error", details: parseResult.error.format() });
+        return;
+      }
 
-    const prefs = await settingsRepo.updateNotificationPreferences(profile.id, parseResult.data);
-    res.json(prefs);
-  } catch (error) {
-    next(error);
-  }
-});
+      const prefs = await settingsRepo.updateNotificationPreferences(profile.id, parseResult.data);
+      res.json(prefs);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 // Get public profile by username
 router.get("/:username", async (req: Request, res: Response, next: NextFunction) => {
@@ -241,7 +265,7 @@ router.get("/:username", async (req: Request, res: Response, next: NextFunction)
 
     // Filter private fields based on settings (Mock logic, real implementation should join settings)
     const settings = await settingsRepo.getUserSettings(profile.id);
-    
+
     if (!settings.public_profile_visibility) {
       res.status(404).json({ error: "User not found" });
       return;
@@ -258,7 +282,9 @@ router.get("/:username", async (req: Request, res: Response, next: NextFunction)
       // Conditionally reveal fields
       email: settings.show_email ? profile.email : undefined,
       phone_number: settings.show_phone ? profile.phone_number : undefined,
-      location: settings.show_location ? { district: profile.district, upazila: profile.upazila } : undefined,
+      location: settings.show_location
+        ? { district: profile.district, upazila: profile.upazila }
+        : undefined,
     };
 
     res.json(publicProfile);

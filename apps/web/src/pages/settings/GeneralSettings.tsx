@@ -1,38 +1,83 @@
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@reusedo/ui";
+import { ThemeToggle } from "@reusedo/ui";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@reusedo/ui";
 import { Link } from "react-router";
+import { User, MapPin } from "lucide-react";
 
 export function GeneralSettings() {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>General Settings</CardTitle>
-        <CardDescription>Manage your account's general preferences.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="bg-muted p-4 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>
-            <h4 className="font-medium">Profile Information</h4>
-            <p className="text-sm text-muted-foreground">
-              Update your name, bio, and contact details from your profile editor.
-            </p>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Appearance</CardTitle>
+          <CardDescription>
+            Customize how Reusedo looks on your device.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-muted p-4 rounded-lg">
+            <div>
+              <h4 className="font-medium">Theme</h4>
+              <p className="text-sm text-muted-foreground">
+                Select your preferred interface theme.
+              </p>
+            </div>
+            <div>
+              <ThemeToggle />
+            </div>
           </div>
-          <Button asChild variant="outline">
-            <Link to="/profile/edit">Edit Profile</Link>
-          </Button>
-        </div>
+        </CardContent>
+      </Card>
 
-        <div className="bg-muted p-4 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>
-            <h4 className="font-medium">Addresses</h4>
-            <p className="text-sm text-muted-foreground">
-              Manage your saved addresses for shipping and pickups.
-            </p>
+      <Card>
+        <CardHeader>
+          <CardTitle>Account Details</CardTitle>
+          <CardDescription>
+            Manage your personal information and addresses.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-muted p-4 rounded-lg">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-full text-primary">
+                <User size={20} />
+              </div>
+              <div>
+                <h4 className="font-medium">Profile Information</h4>
+                <p className="text-sm text-muted-foreground">
+                  Update your display name, bio, and contact details.
+                </p>
+              </div>
+            </div>
+            <Button asChild variant="outline">
+              <Link to="/profile/edit">Edit Profile</Link>
+            </Button>
           </div>
-          <Button asChild variant="outline">
-            <Link to="/profile/addresses">Manage Addresses</Link>
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-muted p-4 rounded-lg">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-full text-primary">
+                <MapPin size={20} />
+              </div>
+              <div>
+                <h4 className="font-medium">Saved Addresses</h4>
+                <p className="text-sm text-muted-foreground">
+                  Manage your addresses for shipping and pickups.
+                </p>
+              </div>
+            </div>
+            <Button asChild variant="outline">
+              <Link to="/profile/addresses">Manage Addresses</Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

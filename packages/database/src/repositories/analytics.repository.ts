@@ -3,12 +3,46 @@ import { getSupabaseClient } from "../client";
 export const AnalyticsRepository = {
   async getUserDashboardSummary(userId: string) {
     const supabase = getSupabaseClient();
-    const { data, error } = await supabase.rpc('get_user_dashboard_summary', { p_user_id: userId });
-    if (error) {
-      console.error("getUserDashboardSummary Error:", error);
-      throw error;
+    try {
+      // First try the RPC
+      const { data, error } = await supabase.rpc('get_user_dashboard_summary', { p_user_id: userId });
+      if (!error && data) return data;
+    } catch (e) {
+      console.warn("RPC get_user_dashboard_summary failed, falling back to aggregate queries");
     }
-    return data;
+
+    // Fallback: Aggregate Queries
+    const [activeExchanges, myProducts, myNeeds] = await Promise.all([
+      supabase.from("exchanges").select("*", { count: "exact", head: true }).or(`proposer_id.eq.${userId},receiver_id.eq.${userId}`).in("status", ["pending", "accepted", "in_progress"]),
+      supabase.from("products").select("*", { count: "exact", head: true }).eq("owner_id", userId).eq("status", "published"),
+      supabase.from("needs").select("*", { count: "exact", head: true }).eq("owner_id", userId).eq("status", "open")
+    ]);
+
+    // Notifications (assuming table exists, if not default to 0)
+    let unread_notifications = 0;
+    try {
+      const { count } = await supabase.from("notifications").select("*", { count: "exact", head: true }).eq("user_id", userId).eq("read", false);
+      unread_notifications = count || 0;
+    } catch {
+      // Ignore if notifications table is missing
+    }
+
+    // Trust Score
+    let trust_score = 0;
+    try {
+      const { data: profile } = await supabase.from("profiles").select("trust_score").eq("id", userId).single();
+      trust_score = profile?.trust_score || 0;
+    } catch {
+      // Ignore
+    }
+
+    return {
+      active_exchanges: activeExchanges.count || 0,
+      my_products: myProducts.count || 0,
+      my_needs: myNeeds.count || 0,
+      unread_notifications,
+      trust_score
+    };
   },
 
   async getAdminKpiSummary() {

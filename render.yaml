@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: binimoy-api
+    env: node
+    buildCommand: pnpm install && pnpm run build --filter @reusedo/api
+    startCommand: pnpm run start --filter @reusedo/api
+    envVars:
+      - key: PORT
+        value: "8080"
+      - key: NODE_ENV
+        value: production
+      # Define other necessary environment variables (Supabase, Firebase) in the Render Dashboard

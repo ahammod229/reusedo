@@ -14,12 +14,16 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { Edit, MapPin, Settings, Shield, User } from "lucide-react";
 import { Link } from "react-router";
+import { useUserDashboardSummary } from "../../hooks/useAnalytics";
 
 export function MyProfile() {
-  const { data: profile, isLoading } = useQuery({
+  const { data: profile, isLoading, error } = useQuery({
     queryKey: ["profile", "me"],
     queryFn: UserService.getMyProfile,
+    retry: false, // Don't retry if unauthorized or not found
   });
+
+  const { data: summary } = useUserDashboardSummary();
 
   if (isLoading) {
     return (
@@ -31,13 +35,13 @@ export function MyProfile() {
     );
   }
 
-  if (!profile) {
+  if (error || !profile) {
     return (
       <PageContainer>
         <EmptyState
           icon={<User />}
           title="Profile Error"
-          description="Failed to load your profile."
+          description={error instanceof Error ? error.message : "Failed to load your profile."}
         />
       </PageContainer>
     );
@@ -68,7 +72,7 @@ export function MyProfile() {
           <h1 className="text-3xl font-bold tracking-tight">My Profile</h1>
           <div className="flex gap-3">
             <Button variant="outline" asChild>
-              <Link to="/profile/settings">
+              <Link to="/settings/general">
                 <Settings className="mr-2" size={16} />
                 Settings
               </Link>
@@ -101,6 +105,43 @@ export function MyProfile() {
               </Button>
             </CardContent>
           </Card>
+        )}
+
+        {/* Dashboard Summary Section */}
+        {summary && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-6">
+                <p className="text-sm font-medium text-muted-foreground">Active Exchanges</p>
+                <p className="text-3xl font-bold mt-2">{summary.active_exchanges}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6">
+                <p className="text-sm font-medium text-muted-foreground">My Products</p>
+                <p className="text-3xl font-bold mt-2">{summary.my_products}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6">
+                <p className="text-sm font-medium text-muted-foreground">My Need Requests</p>
+                <p className="text-3xl font-bold mt-2">{summary.my_needs}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6">
+                <p className="text-sm font-medium text-muted-foreground">Trust Score</p>
+                <p className="text-3xl font-bold mt-2 text-primary">{summary.trust_score}</p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {summary && summary.my_products === 0 && (
+          <div className="bg-primary/5 border border-primary/20 text-primary-foreground p-4 rounded-lg flex items-center gap-3">
+             <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+             <p className="text-sm text-primary font-medium">Tip: Publish your first product to start exchanging!</p>
+          </div>
         )}
 
         <div className="grid md:grid-cols-3 gap-8">
@@ -140,7 +181,7 @@ export function MyProfile() {
                 </Link>
               </Button>
               <Button variant="outline" className="w-full flex-col h-20 gap-2" asChild>
-                <Link to="/profile/security">
+                <Link to="/settings/security">
                   <Shield size={20} />
                   <span className="text-xs">Security</span>
                 </Link>

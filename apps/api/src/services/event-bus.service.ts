@@ -36,5 +36,5 @@ export const EVENTS = {
   PRODUCT_ARCHIVED: "product:archived",
   OFFER_SUBMITTED: "need:offer_submitted",
   REVIEW_RECEIVED: "user:review_received",
-  SYSTEM_ANNOUNCEMENT: "system:announcement"
+  SYSTEM_ANNOUNCEMENT: "system:announcement",
 };

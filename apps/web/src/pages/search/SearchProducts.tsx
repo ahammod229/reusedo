@@ -12,8 +12,15 @@ export const SearchProducts = () => {
     q: searchParams.get("q") || undefined,
     category: searchParams.get("category") || undefined,
     district: searchParams.get("district") || undefined,
-    condition: (searchParams.get("condition") as "new" | "like_new" | "good" | "fair" | "poor") || undefined,
-    sortBy: (searchParams.get("sortBy") as "relevant" | "newest" | "oldest" | "most_viewed" | "alphabetical") || "newest",
+    condition:
+      (searchParams.get("condition") as "new" | "like_new" | "good" | "fair" | "poor") || undefined,
+    sortBy:
+      (searchParams.get("sortBy") as
+        | "relevant"
+        | "newest"
+        | "oldest"
+        | "most_viewed"
+        | "alphabetical") || "newest",
     limit: 20,
     offset: 0,
   };
@@ -58,7 +65,8 @@ export const SearchProducts = () => {
             </div>
 
             <div className="flex items-center space-x-4">
-              <button type="button"
+              <button
+                type="button"
                 onClick={handleSaveSearch}
                 className="text-sm font-medium text-primary hover:bg-primary/5 px-3 py-1.5 rounded-md transition-colors"
               >
@@ -108,7 +116,8 @@ export const SearchProducts = () => {
           ) : (
             <div className="text-center py-16 bg-gray-50 rounded-xl">
               <p className="text-gray-500 font-medium">No products match your criteria.</p>
-              <button type="button"
+              <button
+                type="button"
                 onClick={() => setFilters(initialFilters)}
                 className="mt-4 text-primary hover:underline"
               >

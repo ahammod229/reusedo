@@ -1,6 +1,6 @@
+import { UserRepository } from "@reusedo/database";
 import { Router } from "express";
 import { adminAuth } from "../config/firebase-admin";
-import { UserRepository } from "@reusedo/database";
 import { requireAuth } from "../middlewares/auth.middleware";
 
 const router = Router();
@@ -14,10 +14,10 @@ router.post("/session", async (req, res) => {
     }
 
     const token = authHeader.split(" ")[1];
-    
+
     // 1. Verify token
     const decodedToken = await adminAuth.verifyIdToken(token);
-    
+
     // 2. Load or sync user profile
     const profile = await userRepo.syncProfile({
       firebaseUid: decodedToken.uid,

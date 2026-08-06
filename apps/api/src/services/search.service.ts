@@ -1,8 +1,8 @@
 import { SearchRepository } from "@reusedo/database";
-import type { 
-  CreateSavedSearchData, 
-  SearchFilters, 
-  LogSearchAnalyticsData 
+import type {
+  CreateSavedSearchData,
+  LogSearchAnalyticsData,
+  SearchFilters,
 } from "@reusedo/validation";
 
 export const SearchService = {
@@ -32,7 +32,7 @@ export const SearchService = {
       products: products.data,
       needs: needs.data,
       users: users.data,
-      totalCount: products.count + needs.count + users.count
+      totalCount: products.count + needs.count + users.count,
     };
   },
 
@@ -72,5 +72,5 @@ export const SearchService = {
     // TODO: implement actual analytics DB logging here via repository
     // SearchRepository.logSearchAnalytics(userId, data);
     return { success: true };
-  }
+  },
 };

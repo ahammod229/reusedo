@@ -27,7 +27,7 @@ CREATE INDEX IF NOT EXISTS idx_conversations_context_id ON public.conversations(
 -- Maps users to conversations and tracks their individual state
 CREATE TABLE IF NOT EXISTS public.conversation_participants (
   conversation_id UUID REFERENCES public.conversations(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE, -- Using Supabase Auth user id or public.profiles id depending on architecture
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE, -- Using Supabase Auth user id or public.profiles id depending on architecture
   archived BOOLEAN DEFAULT false NOT NULL,
   muted BOOLEAN DEFAULT false NOT NULL,
   unread_count INTEGER DEFAULT 0 NOT NULL,
@@ -46,7 +46,7 @@ CREATE INDEX IF NOT EXISTS idx_conversation_participants_user_id ON public.conve
 CREATE TABLE IF NOT EXISTS public.messages (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   conversation_id UUID NOT NULL REFERENCES public.conversations(id) ON DELETE CASCADE,
-  sender_id UUID REFERENCES auth.users(id) ON DELETE SET NULL, -- Null if system message
+  sender_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL, -- Null if system message
   type VARCHAR(20) NOT NULL DEFAULT 'text' CHECK (type IN ('text', 'image', 'system', 'product_card', 'need_card', 'exchange_card')),
   content TEXT, -- For text messages or system message text
   metadata JSONB, -- For storing image URLs or card details
@@ -70,7 +70,7 @@ ALTER TABLE public.conversation_participants
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.reactions (
   message_id UUID REFERENCES public.messages(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
   emoji VARCHAR(10) NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   

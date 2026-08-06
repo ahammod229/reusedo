@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS public.categories (
 -- 3. Create Products table
 CREATE TABLE IF NOT EXISTS public.products (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    owner_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    owner_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     title VARCHAR(150) NOT NULL,
     description TEXT NOT NULL,
     category_id UUID NOT NULL REFERENCES public.categories(id),

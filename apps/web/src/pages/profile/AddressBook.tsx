@@ -1,3 +1,4 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import { UserService } from "@reusedo/api-client";
 import {
   Badge,
@@ -18,7 +19,6 @@ import {
   Switch,
 } from "@reusedo/ui";
 import { type AddressData, addressSchema } from "@reusedo/validation";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Edit, MapPin, Plus, Star, Trash2 } from "lucide-react";
 import { useState } from "react";

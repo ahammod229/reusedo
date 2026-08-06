@@ -1,21 +1,23 @@
-import { Router } from "express";
-import { AdminService } from "../services/admin.service";
-import { requireAuth } from "../middlewares/auth.middleware";
-import { requireAdmin } from "../middlewares/rbac.middleware";
 import {
   assignRoleSchema,
-  updateCmsPageSchema,
   cmsPageSchema,
-  platformSettingsSchema,
   featureFlagSchema,
-  updateFeatureFlagSchema
+  platformSettingsSchema,
+  updateCmsPageSchema,
+  updateFeatureFlagSchema,
 } from "@reusedo/validation";
+import { Router } from "express";
+import { requireAuth } from "../middlewares/auth.middleware";
+import { requireAdmin } from "../middlewares/rbac.middleware";
+import { AdminService } from "../services/admin.service";
 
 export const adminRouter = Router();
 
 // Require all admin routes to be authenticated and at least have 'admin' or 'super_admin' roles.
 adminRouter.use(requireAuth);
-adminRouter.use(requireAdmin(["super_admin", "admin", "moderator", "support_agent", "content_manager"]));
+adminRouter.use(
+  requireAdmin(["super_admin", "admin", "moderator", "support_agent", "content_manager"]),
+);
 
 // 1. Dashboard Analytics
 adminRouter.get("/dashboard/metrics", async (req, res) => {
@@ -28,23 +30,185 @@ adminRouter.get("/dashboard/metrics", async (req, res) => {
 });
 
 // 2. Users Management
-adminRouter.get("/users", requireAdmin(["super_admin", "admin", "moderator", "support_agent"]), async (req, res) => {
+adminRouter.get(
+  "/users",
+  requireAdmin(["super_admin", "admin", "moderator", "support_agent"]),
+  async (req, res) => {
+    try {
+      const page = Number.parseInt(req.query.page as string) || 1;
+      const limit = Number.parseInt(req.query.limit as string) || 20;
+      const search = req.query.search as string;
+
+      const result = await AdminService.getUsers(page, limit, search);
+      res.json(result);
+    } catch (error: unknown) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  },
+);
+
+adminRouter.get(
+  "/products",
+  requireAdmin(["super_admin", "admin", "moderator"]),
+  async (req, res) => {
+    try {
+      const page = Number.parseInt(req.query.page as string) || 1;
+      const limit = Number.parseInt(req.query.limit as string) || 20;
+      const search = req.query.search as string;
+
+      const result = await AdminService.getProducts(page, limit, search);
+      res.json(result);
+    } catch (error: unknown) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  },
+);
+
+adminRouter.patch(
+  "/products/:id/status",
+  requireAdmin(["super_admin", "admin", "moderator"]),
+  async (req, res) => {
+    try {
+      const { status } = req.body;
+      const updated = await AdminService.updateProductStatus(
+        (req.adminProfile as { id: string })?.id,
+        req.params.id,
+        status,
+      );
+      res.json(updated);
+    } catch (error: unknown) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  },
+);
+
+adminRouter.delete("/products/:id", requireAdmin(["super_admin", "admin"]), async (req, res) => {
+  try {
+    await AdminService.deleteProduct((req.adminProfile as { id: string })?.id, req.params.id);
+    res.status(204).end();
+  } catch (error: unknown) {
+    res.status(400).json({ error: (error as Error).message });
+  }
+});
+
+adminRouter.get("/needs", requireAdmin(["super_admin", "admin", "moderator"]), async (req, res) => {
   try {
     const page = Number.parseInt(req.query.page as string) || 1;
     const limit = Number.parseInt(req.query.limit as string) || 20;
     const search = req.query.search as string;
-    
-    const result = await AdminService.getUsers(page, limit, search);
+
+    const result = await AdminService.getNeeds(page, limit, search);
     res.json(result);
   } catch (error: unknown) {
     res.status(500).json({ error: (error as Error).message });
   }
 });
 
+adminRouter.patch(
+  "/needs/:id/status",
+  requireAdmin(["super_admin", "admin", "moderator"]),
+  async (req, res) => {
+    try {
+      const { status } = req.body;
+      const updated = await AdminService.updateNeedStatus(
+        (req.adminProfile as { id: string })?.id,
+        req.params.id,
+        status,
+      );
+      res.json(updated);
+    } catch (error: unknown) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  },
+);
+
+adminRouter.delete("/needs/:id", requireAdmin(["super_admin", "admin"]), async (req, res) => {
+  try {
+    await AdminService.deleteNeed((req.adminProfile as { id: string })?.id, req.params.id);
+    res.status(204).end();
+  } catch (error: unknown) {
+    res.status(400).json({ error: (error as Error).message });
+  }
+});
+
+adminRouter.get(
+  "/exchanges",
+  requireAdmin(["super_admin", "admin", "moderator"]),
+  async (req, res) => {
+    try {
+      const page = Number.parseInt(req.query.page as string) || 1;
+      const limit = Number.parseInt(req.query.limit as string) || 20;
+      const search = req.query.search as string;
+
+      const result = await AdminService.getExchanges(page, limit, search);
+      res.json(result);
+    } catch (error: unknown) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  },
+);
+
+adminRouter.patch(
+  "/exchanges/:id/status",
+  requireAdmin(["super_admin", "admin", "moderator"]),
+  async (req, res) => {
+    try {
+      const { status } = req.body;
+      const updated = await AdminService.updateExchangeStatus(
+        (req.adminProfile as { id: string })?.id,
+        req.params.id,
+        status,
+      );
+      res.json(updated);
+    } catch (error: unknown) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  },
+);
+
+adminRouter.get(
+  "/shipments",
+  requireAdmin(["super_admin", "admin", "moderator"]),
+  async (req, res) => {
+    try {
+      const page = Number.parseInt(req.query.page as string) || 1;
+      const limit = Number.parseInt(req.query.limit as string) || 20;
+      const search = req.query.search as string;
+
+      const result = await AdminService.getShipments(page, limit, search);
+      res.json(result);
+    } catch (error: unknown) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  },
+);
+
+adminRouter.patch(
+  "/shipments/:id/status",
+  requireAdmin(["super_admin", "admin", "moderator"]),
+  async (req, res) => {
+    try {
+      const { status } = req.body;
+      const updated = await AdminService.updateShipmentStatus(
+        (req.adminProfile as { id: string })?.id,
+        req.params.id,
+        status,
+      );
+      res.json(updated);
+    } catch (error: unknown) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  },
+);
+
 adminRouter.patch("/users/:id/role", requireAdmin(["super_admin"]), async (req, res) => {
   try {
     const { role } = assignRoleSchema.parse(req.body);
-    const updated = await AdminService.updateUserRole((req.adminProfile as { id: string })?.id, req.params.id, role);
+    const updated = await AdminService.updateUserRole(
+      (req.adminProfile as { id: string })?.id,
+      req.params.id,
+      role,
+    );
     res.json(updated);
   } catch (error: unknown) {
     res.status(400).json({ error: (error as Error).message });
@@ -61,25 +225,40 @@ adminRouter.get("/cms", async (req, res) => {
   }
 });
 
-adminRouter.post("/cms", requireAdmin(["super_admin", "admin", "content_manager"]), async (req, res) => {
-  try {
-    const data = cmsPageSchema.parse(req.body);
-    const created = await AdminService.createCMSPage((req.adminProfile as { id: string })?.id, data);
-    res.status(201).json(created);
-  } catch (error: unknown) {
-    res.status(400).json({ error: (error as Error).message });
-  }
-});
+adminRouter.post(
+  "/cms",
+  requireAdmin(["super_admin", "admin", "content_manager"]),
+  async (req, res) => {
+    try {
+      const data = cmsPageSchema.parse(req.body);
+      const created = await AdminService.createCMSPage(
+        (req.adminProfile as { id: string })?.id,
+        data,
+      );
+      res.status(201).json(created);
+    } catch (error: unknown) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  },
+);
 
-adminRouter.patch("/cms/:slug", requireAdmin(["super_admin", "admin", "content_manager"]), async (req, res) => {
-  try {
-    const data = updateCmsPageSchema.parse(req.body);
-    const updated = await AdminService.updateCMSPage((req.adminProfile as { id: string })?.id, req.params.slug, data);
-    res.json(updated);
-  } catch (error: unknown) {
-    res.status(400).json({ error: (error as Error).message });
-  }
-});
+adminRouter.patch(
+  "/cms/:slug",
+  requireAdmin(["super_admin", "admin", "content_manager"]),
+  async (req, res) => {
+    try {
+      const data = updateCmsPageSchema.parse(req.body);
+      const updated = await AdminService.updateCMSPage(
+        (req.adminProfile as { id: string })?.id,
+        req.params.slug,
+        data,
+      );
+      res.json(updated);
+    } catch (error: unknown) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  },
+);
 
 // 4. Platform Settings
 adminRouter.get("/settings", requireAdmin(["super_admin", "admin"]), async (req, res) => {
@@ -94,7 +273,11 @@ adminRouter.get("/settings", requireAdmin(["super_admin", "admin"]), async (req,
 adminRouter.patch("/settings", requireAdmin(["super_admin"]), async (req, res) => {
   try {
     const data = platformSettingsSchema.parse(req.body);
-    const updated = await AdminService.updatePlatformSetting((req.adminProfile as { id: string })?.id, data.key, data.value);
+    const updated = await AdminService.updatePlatformSetting(
+      (req.adminProfile as { id: string })?.id,
+      data.key,
+      data.value,
+    );
     res.json(updated);
   } catch (error: unknown) {
     res.status(400).json({ error: (error as Error).message });
@@ -114,7 +297,11 @@ adminRouter.get("/feature-flags", requireAdmin(["super_admin", "admin"]), async 
 adminRouter.patch("/feature-flags/:key", requireAdmin(["super_admin"]), async (req, res) => {
   try {
     const data = updateFeatureFlagSchema.parse(req.body);
-    const updated = await AdminService.updateFeatureFlag((req.adminProfile as { id: string })?.id, req.params.key, data);
+    const updated = await AdminService.updateFeatureFlag(
+      (req.adminProfile as { id: string })?.id,
+      req.params.key,
+      data,
+    );
     res.json(updated);
   } catch (error: unknown) {
     res.status(400).json({ error: (error as Error).message });

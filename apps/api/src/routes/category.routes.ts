@@ -1,5 +1,5 @@
-import { Router } from "express";
 import { CategoryRepository } from "@reusedo/database";
+import { Router } from "express";
 
 const router = Router();
 

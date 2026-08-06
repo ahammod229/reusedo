@@ -44,5 +44,16 @@ export const ProductService = {
   async publishProduct(id: string): Promise<Product> {
       const { data } = await apiClient.post<Product>(`/products/${id}/publish`);
       return data;
+  },
+
+  async uploadImage(id: string, file: File): Promise<{ url: string; product: Product }> {
+    const formData = new FormData();
+    formData.append("file", file);
+    const { data } = await apiClient.post<{ url: string; product: Product }>(`/products/${id}/images`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return data;
   }
 };

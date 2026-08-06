@@ -6,7 +6,7 @@ CREATE TYPE need_status AS ENUM ('draft', 'published', 'fulfilled', 'expired', '
 -- 2. Create Need Requests table
 CREATE TABLE IF NOT EXISTS public.need_requests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    owner_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    owner_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     title VARCHAR(150) NOT NULL,
     description TEXT NOT NULL,
     category_id UUID NOT NULL REFERENCES public.categories(id),
@@ -36,7 +36,7 @@ CREATE INDEX idx_need_requests_deadline ON public.need_requests(deadline);
 CREATE TABLE IF NOT EXISTS public.offers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     need_id UUID NOT NULL REFERENCES public.need_requests(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     product_id UUID NOT NULL REFERENCES public.products(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

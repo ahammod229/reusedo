@@ -1,7 +1,7 @@
-import { Router, type Request, type Response, type NextFunction } from "express";
 import { NotificationRepository } from "@reusedo/database";
-import { requireAuth } from "../middlewares/auth.middleware";
 import { registerFCMTokenSchema } from "@reusedo/validation";
+import { type NextFunction, type Request, type Response, Router } from "express";
+import { requireAuth } from "../middlewares/auth.middleware";
 
 const router = Router();
 const notificationRepo = new NotificationRepository();
@@ -97,7 +97,7 @@ router.post("/fcm-token", requireAuth, async (req: Request, res: Response, next:
     await notificationRepo.registerFCMToken(
       user.uid,
       parseResult.data.token,
-      parseResult.data.device_info
+      parseResult.data.device_info,
     );
 
     res.json({ success: true });

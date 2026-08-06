@@ -2,7 +2,7 @@ import { ThemeProvider } from "@reusedo/ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Suspense, lazy } from "react";
 import { HelmetProvider } from "react-helmet-async";
-import { BrowserRouter, Route, Routes } from "react-router";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router";
 import { EmptyLayout } from "./layouts/EmptyLayout";
 import { MainLayout } from "./layouts/MainLayout";
 import { SettingsLayout } from "./layouts/SettingsLayout";
@@ -76,11 +76,12 @@ const SearchUsers = lazy(() =>
 const SavedSearches = lazy(() =>
   import("./pages/search/SavedSearches").then((m) => ({ default: m.SavedSearches })),
 );
+import { ShipmentDetails } from "./pages/shipping/ShipmentDetails";
+import { ShippingDashboard } from "./pages/shipping/ShippingDashboard";
 import { AuthProvider } from "./providers/AuthProvider";
+import { SocketProvider } from "./providers/SocketProvider";
 import { GuestRoute } from "./routes/GuestRoute";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
-import { ShippingDashboard } from "./pages/shipping/ShippingDashboard";
-import { ShipmentDetails } from "./pages/shipping/ShipmentDetails";
 
 const queryClient = new QueryClient();
 
@@ -98,112 +99,115 @@ function App() {
                   </div>
                 }
               >
-                <Routes>
-                  {/* Main App Layout */}
-                  <Route element={<MainLayout />}>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/explore" element={<Explore />} />
-                    <Route path="/help" element={<Help />} />
+                <SocketProvider>
+                  <Routes>
+                    {/* Main App Layout */}
+                    <Route element={<MainLayout />}>
+                      <Route path="/" element={<Home />} />
+                      <Route path="/explore" element={<Explore />} />
+                      <Route path="/help" element={<Help />} />
 
-                    {/* Search Routes */}
-                    <Route path="/search" element={<SearchIndex />} />
-                    <Route path="/search/products" element={<SearchProducts />} />
-                    <Route path="/search/needs" element={<SearchNeeds />} />
-                    <Route path="/search/users" element={<SearchUsers />} />
+                      {/* Search Routes */}
+                      <Route path="/search" element={<SearchIndex />} />
+                      <Route path="/search/products" element={<SearchProducts />} />
+                      <Route path="/search/needs" element={<SearchNeeds />} />
+                      <Route path="/search/users" element={<SearchUsers />} />
 
-                    {/* Public Profile */}
-                    <Route path="/users/:username" element={<PublicProfile />} />
+                      {/* Public Profile */}
+                      <Route path="/users/:username" element={<PublicProfile />} />
 
-                    {/* Protected Routes */}
-                    <Route element={<ProtectedRoute />}>
-                      <Route path="/products" element={<ProductList />} />
-                      <Route path="/products/create" element={<ProductForm />} />
-                      <Route path="/products/:id" element={<ProductDetails />} />
-                      <Route path="/products/:id/edit" element={<ProductForm />} />
-                      <Route path="/my-products" element={<MyProducts />} />
-                      <Route path="/needs" element={<NeedList />} />
-                      <Route path="/needs/create" element={<NeedForm />} />
-                      <Route path="/needs/:id" element={<NeedDetails />} />
-                      <Route path="/needs/:id/edit" element={<NeedForm />} />
-                      <Route path="/my-needs" element={<MyNeeds />} />
+                      {/* Protected Routes */}
+                      <Route element={<ProtectedRoute />}>
+                        <Route path="/products" element={<ProductList />} />
+                        <Route path="/products/create" element={<ProductForm />} />
+                        <Route path="/products/:id" element={<ProductDetails />} />
+                        <Route path="/products/:id/edit" element={<ProductForm />} />
+                        <Route path="/my-products" element={<MyProducts />} />
+                        <Route path="/needs" element={<NeedList />} />
+                        <Route path="/needs/create" element={<NeedForm />} />
+                        <Route path="/needs/:id" element={<NeedDetails />} />
+                        <Route path="/needs/:id/edit" element={<NeedForm />} />
+                        <Route path="/my-needs" element={<MyNeeds />} />
 
-                      {/* Exchange Routes */}
-                      <Route path="exchanges">
-                        <Route index element={<ExchangeList />} />
-                      </Route>
+                        {/* Exchange Routes */}
+                        <Route path="exchanges">
+                          <Route index element={<ExchangeList />} />
+                        </Route>
 
-                      {/* Chat Routes */}
-                      <Route path="messages" element={<ChatLayout />}>
-                        <Route
-                          index
-                          element={
-                            <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground p-8 text-center">
-                              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  width="24"
-                                  height="24"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  role="img"
-                                  aria-label="Messages Icon"
-                                >
-                                  <title>Messages</title>
-                                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                                </svg>
+                        {/* Chat Routes */}
+                        <Route path="messages" element={<ChatLayout />}>
+                          <Route
+                            index
+                            element={
+                              <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground p-8 text-center">
+                                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="24"
+                                    height="24"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    role="img"
+                                    aria-label="Messages Icon"
+                                  >
+                                    <title>Messages</title>
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                                  </svg>
+                                </div>
+                                <h3 className="text-lg font-medium text-foreground mb-1">
+                                  Your Messages
+                                </h3>
+                                <p>Select a conversation from the sidebar to start chatting</p>
                               </div>
-                              <h3 className="text-lg font-medium text-foreground mb-1">
-                                Your Messages
-                              </h3>
-                              <p>Select a conversation from the sidebar to start chatting</p>
-                            </div>
-                          }
-                        />
-                        <Route path=":id" element={<ConversationDetails />} />
+                            }
+                          />
+                          <Route path=":id" element={<ConversationDetails />} />
+                        </Route>
+
+                        {/* Profile & Account */}
+                        <Route path="/profile" element={<MyProfile />} />
+                        <Route path="/profile/edit" element={<EditProfile />} />
+                        <Route path="/profile/addresses" element={<AddressBook />} />
+                        <Route path="/profile/reputation" element={<ReputationDashboard />} />
+                        <Route path="/profile/verification" element={<VerificationForm />} />
+                        <Route path="/notifications" element={<NotificationCenter />} />
+                        <Route path="/search/saved" element={<SavedSearches />} />
+                        <Route path="/shipping" element={<ShippingDashboard />} />
+                        <Route path="/shipping/:id" element={<ShipmentDetails />} />
+
+                        {/* Settings Layout */}
+                        <Route path="settings" element={<SettingsLayout />}>
+                          <Route index element={<Navigate to="/settings/general" replace />} />
+                          <Route path="general" element={<GeneralSettings />} />
+                          <Route path="privacy" element={<PrivacySettings />} />
+                          <Route path="security" element={<SecuritySettings />} />
+                          <Route path="notifications" element={<NotificationSettings />} />
+                        </Route>
+
+                        {/* Dashboard Routes */}
+                        <Route path="/dashboard" element={<UserDashboard />} />
+                        <Route path="/dashboard/analytics" element={<PersonalAnalytics />} />
+                        <Route path="/dashboard/activity" element={<ActivityTimeline />} />
                       </Route>
+                    </Route>
 
-                      {/* Profile & Account */}
-                      <Route path="/profile" element={<MyProfile />} />
-                      <Route path="/profile/edit" element={<EditProfile />} />
-                      <Route path="/profile/addresses" element={<AddressBook />} />
-                      <Route path="/profile/reputation" element={<ReputationDashboard />} />
-                      <Route path="/profile/verification" element={<VerificationForm />} />
-                      <Route path="/notifications" element={<NotificationCenter />} />
-                      <Route path="/search/saved" element={<SavedSearches />} />
-                      <Route path="/shipping" element={<ShippingDashboard />} />
-                      <Route path="/shipping/:id" element={<ShipmentDetails />} />
-
-                      {/* Settings Layout */}
-                      <Route element={<SettingsLayout />}>
-                        <Route path="/profile/settings" element={<GeneralSettings />} />
-                        <Route path="/profile/privacy" element={<PrivacySettings />} />
-                        <Route path="/profile/security" element={<SecuritySettings />} />
-                        <Route path="/profile/notifications" element={<NotificationSettings />} />
+                    {/* Guest Only Routes */}
+                    <Route element={<EmptyLayout />}>
+                      <Route element={<GuestRoute />}>
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/register" element={<Register />} />
+                        <Route path="/forgot-password" element={<ForgotPassword />} />
                       </Route>
-
-                      {/* Dashboard Routes */}
-                      <Route path="/dashboard" element={<UserDashboard />} />
-                      <Route path="/dashboard/analytics" element={<PersonalAnalytics />} />
-                      <Route path="/dashboard/activity" element={<ActivityTimeline />} />
+                      <Route path="/about" element={<About />} />
+                      <Route path="/contact" element={<Contact />} />
+                      <Route path="*" element={<NotFound />} />
                     </Route>
-                  </Route>
-
-                  {/* Guest Only Routes */}
-                  <Route element={<EmptyLayout />}>
-                    <Route element={<GuestRoute />}>
-                      <Route path="/login" element={<Login />} />
-                      <Route path="/register" element={<Register />} />
-                      <Route path="/forgot-password" element={<ForgotPassword />} />
-                    </Route>
-                    <Route path="/about" element={<About />} />
-                    <Route path="/contact" element={<Contact />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Route>
-                </Routes>
+                  </Routes>
+                </SocketProvider>
               </Suspense>
             </BrowserRouter>
           </AuthProvider>

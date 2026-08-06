@@ -6,22 +6,22 @@ import { NavLink, Outlet, useLocation } from "react-router";
 const SETTINGS_NAV = [
   {
     title: "General",
-    href: "/profile/settings",
+    href: "/settings/general",
     icon: User,
   },
   {
     title: "Privacy",
-    href: "/profile/privacy",
+    href: "/settings/privacy",
     icon: Shield,
   },
   {
     title: "Notifications",
-    href: "/profile/notifications",
+    href: "/settings/notifications",
     icon: Bell,
   },
   {
     title: "Security",
-    href: "/profile/security",
+    href: "/settings/security",
     icon: Lock,
   },
 ];
@@ -47,7 +47,7 @@ export function SettingsLayout() {
                 <NavLink
                   key={item.href}
                   to={item.href}
-                  end={item.href === "/profile/settings"}
+                  end={item.href === "/settings/general"}
                   className={({ isActive }) =>
                     cn(
                       "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",

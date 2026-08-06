@@ -1,6 +1,6 @@
-import type { Request, Response, NextFunction } from "express";
-import { adminAuth } from "../config/firebase-admin";
 import { UserRepository } from "@reusedo/database";
+import type { NextFunction, Request, Response } from "express";
+import { adminAuth } from "../config/firebase-admin";
 
 declare global {
   namespace Express {
@@ -27,14 +27,15 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
 
   try {
     const decodedToken = await adminAuth.verifyIdToken(token);
-    
-    // Fetch profile from database
-    const userRepo = UserRepository;
-    const profile = await userRepo.getProfileByUid(decodedToken.uid);
 
-    if (!profile) {
-      return res.status(401).json({ success: false, message: "Unauthorized: Profile not found" });
-    }
+    // Fetch profile from database, or auto-create it if it doesn't exist (first login)
+    const userRepo = UserRepository;
+    const profile = await userRepo.syncProfile({
+      firebaseUid: decodedToken.uid,
+      email: decodedToken.email || "",
+      displayName: decodedToken.name || (decodedToken.email ? decodedToken.email.split("@")[0] : "User"),
+      avatarUrl: decodedToken.picture || null,
+    });
 
     req.user = {
       uid: decodedToken.uid,

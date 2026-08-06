@@ -106,7 +106,8 @@ export const SearchUsers = () => {
           ) : (
             <div className="text-center py-16 bg-gray-50 rounded-xl">
               <p className="text-gray-500 font-medium">No users match your criteria.</p>
-              <button type="button"
+              <button
+                type="button"
                 onClick={() => setFilters(initialFilters)}
                 className="mt-4 text-primary hover:underline"
               >

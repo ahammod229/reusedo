@@ -1,6 +1,6 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import { AuthService } from "@reusedo/auth";
 import { type ForgotPasswordInput, forgotPasswordSchema } from "@reusedo/validation";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router";

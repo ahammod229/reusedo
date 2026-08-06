@@ -59,8 +59,8 @@ export const Dashboard = () => {
             <Flag className="h-4 w-4 text-red-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{0 /* pending_reports mock */}</div>
-            <p className="text-xs text-slate-500">Requires attention</p>
+            <div className="text-2xl font-bold">0</div>
+            <p className="text-xs text-slate-500">All caught up</p>
           </CardContent>
         </Card>
       </div>
@@ -71,8 +71,10 @@ export const Dashboard = () => {
             <CardTitle>Recent Activity</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[250px] flex items-center justify-center border-2 border-dashed border-slate-200 rounded-md text-slate-500">
-              Activity Chart Placeholder
+            <div className="h-[250px] flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-md text-slate-500">
+              <Box className="h-8 w-8 mb-2 text-slate-300" />
+              <p>Activity chart will be available soon.</p>
+              <p className="text-sm text-slate-400">Collect more data to generate insights.</p>
             </div>
           </CardContent>
         </Card>

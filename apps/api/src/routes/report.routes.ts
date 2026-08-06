@@ -1,7 +1,7 @@
+import { createReportSchema } from "@reusedo/validation";
 import { Router } from "express";
 import { requireAuth } from "../middlewares/auth.middleware";
 import { TrustService } from "../services/trust.service";
-import { createReportSchema } from "@reusedo/validation";
 
 const router = Router();
 const trustService = new TrustService();
@@ -9,7 +9,7 @@ const trustService = new TrustService();
 // Submit a report
 router.post("/", requireAuth, async (req, res, next) => {
   try {
-    const reporterId = req.user?.uid as string;
+    const reporterId = req.user?.profile?.id as string;
     const data = createReportSchema.parse(req.body);
 
     const report = await trustService.submitReport(reporterId, data);

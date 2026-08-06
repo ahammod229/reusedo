@@ -1,3 +1,4 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import { ProductService } from "@reusedo/api-client";
 import {
   Button,
@@ -11,7 +12,6 @@ import {
   Textarea,
 } from "@reusedo/ui";
 import { type Category, type CreateProductData, createProductSchema } from "@reusedo/validation";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Image as ImageIcon, Loader2, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -26,7 +26,8 @@ export function ProductForm() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [imageUrls, setImageUrls] = useState<string[]>([]);
-  const [newImageUrl, setNewImageUrl] = useState("");
+  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   const { data: categories } = useQuery({
     queryKey: ["categories"],
@@ -44,6 +45,8 @@ export function ProductForm() {
     handleSubmit,
     setValue,
     watch,
+    setError,
+    clearErrors,
     formState: { errors, isSubmitting },
   } = useRHForm<CreateProductData>({
     // biome-ignore lint/suspicious/noExplicitAny: Required for ZodResolver
@@ -77,48 +80,61 @@ export function ProductForm() {
   const createMutation = useMutation({
     mutationFn: (data: CreateProductData & { status: string }) =>
       ProductService.createProduct(data, data.status),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      queryClient.invalidateQueries({ queryKey: ["myProducts"] });
-      navigate("/my-products");
-    },
   });
 
   const updateMutation = useMutation({
     mutationFn: (data: CreateProductData) => ProductService.updateProduct(id as string, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["product", id] });
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      queryClient.invalidateQueries({ queryKey: ["myProducts"] });
-      navigate("/my-products");
-    },
   });
 
   const onSubmit = async (data: CreateProductData, status: "draft" | "published") => {
+    if (imageUrls.length === 0 && newFiles.length === 0) {
+      setError("images", { type: "manual", message: "At least one image is required" });
+      return;
+    }
+
     try {
+      let productId = id;
       if (isEditing) {
         await updateMutation.mutateAsync(data);
       } else {
-        await createMutation.mutateAsync({ ...data, status });
+        const createdProduct = await createMutation.mutateAsync({ ...data, status });
+        productId = createdProduct.id;
       }
+
+      if (newFiles.length > 0 && productId) {
+        setIsUploading(true);
+        for (const file of newFiles) {
+          await ProductService.uploadImage(productId, file);
+        }
+        setIsUploading(false);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["product", productId] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["myProducts"] });
+      navigate("/my-products");
     } catch (error) {
       console.error("Failed to save product", error);
+      setIsUploading(false);
     }
   };
 
-  const handleAddImage = () => {
-    if (newImageUrl && !imageUrls.includes(newImageUrl)) {
-      const newImages = [...imageUrls, newImageUrl];
-      setImageUrls(newImages);
-      setValue("images", newImages, { shouldValidate: true });
-      setNewImageUrl("");
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      setNewFiles((prev) => [...prev, ...files]);
+      clearErrors("images");
     }
   };
 
-  const handleRemoveImage = (url: string) => {
+  const handleRemoveExistingImage = (url: string) => {
     const newImages = imageUrls.filter((i) => i !== url);
     setImageUrls(newImages);
     setValue("images", newImages, { shouldValidate: true });
+  };
+
+  const handleRemoveNewFile = (index: number) => {
+    setNewFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   if (isEditing && productLoading) return <div className="p-12 text-center">Loading...</div>;
@@ -241,25 +257,26 @@ export function ProductForm() {
           <CardHeader>
             <CardTitle>Images</CardTitle>
             <CardDescription>
-              Add URL links to your product images. (Direct upload coming soon).
+              Upload images of your product to attract more exchanges. (Max 5MB per image)
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <Input
-                placeholder="https://example.com/image.jpg"
-                value={newImageUrl}
-                onChange={(e) => setNewImageUrl(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    handleAddImage();
-                  }
-                }}
+            <div className="flex flex-col gap-2">
+              <Label
+                htmlFor="image-upload"
+                className="cursor-pointer inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring border border-input bg-transparent shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 w-fit"
+              >
+                <ImageIcon className="mr-2 h-4 w-4" />
+                Select Images
+              </Label>
+              <input
+                id="image-upload"
+                type="file"
+                multiple
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
               />
-              <Button type="button" onClick={handleAddImage} variant="secondary">
-                Add
-              </Button>
             </div>
             {errors.images && <p className="text-sm text-destructive">{errors.images.message}</p>}
 
@@ -277,17 +294,46 @@ export function ProductForm() {
                   />
                   <button
                     type="button"
-                    onClick={() => handleRemoveImage(url)}
+                    onClick={() => handleRemoveExistingImage(url)}
                     className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
               ))}
-              {imageUrls.length === 0 && (
+              {newFiles.map((file, index) => (
+                <div
+                  key={`${file.name}-${index}`}
+                  className="relative aspect-square bg-muted rounded-lg border overflow-hidden group"
+                >
+                  <img
+                    loading="lazy"
+                    src={URL.createObjectURL(file)}
+                    alt="Preview"
+                    className="object-cover w-full h-full opacity-80"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <span className="bg-background/80 text-foreground text-xs font-semibold px-2 py-1 rounded">
+                      New
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveNewFile(index)}
+                    className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+              {imageUrls.length === 0 && newFiles.length === 0 && (
                 <div className="aspect-square bg-muted rounded-lg border border-dashed flex flex-col items-center justify-center text-muted-foreground col-span-2 md:col-span-1">
                   <ImageIcon className="w-8 h-8 mb-2 opacity-50" />
-                  <span className="text-xs">No images added</span>
+                  <span className="text-xs text-center">
+                    No images
+                    <br />
+                    added
+                  </span>
                 </div>
               )}
             </div>
@@ -311,10 +357,10 @@ export function ProductForm() {
           <Button
             type="button"
             onClick={handleSubmit((d) => onSubmit(d, "published"))}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isUploading}
           >
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isEditing ? "Save Changes" : "Publish Listing"}
+            {(isSubmitting || isUploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isUploading ? "Uploading..." : isEditing ? "Save Changes" : "Publish Listing"}
           </Button>
         </div>
       </form>

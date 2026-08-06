@@ -1,12 +1,12 @@
+import {
+  createSavedSearchSchema,
+  logSearchAnalyticsSchema,
+  recentlyViewedSchema,
+  searchFiltersSchema,
+} from "@reusedo/validation";
 import { Router } from "express";
 import { requireAuth } from "../middlewares/auth.middleware";
 import { SearchService } from "../services/search.service";
-import { 
-  searchFiltersSchema, 
-  createSavedSearchSchema,
-  recentlyViewedSchema,
-  logSearchAnalyticsSchema
-} from "@reusedo/validation";
 
 export const searchRouter = Router();
 
@@ -20,7 +20,7 @@ searchRouter.get("/", async (req, res) => {
       limit: req.query.limit ? Number(req.query.limit) : undefined,
       offset: req.query.offset ? Number(req.query.offset) : undefined,
     };
-    
+
     const filters = searchFiltersSchema.parse(parsedQuery);
     const results = await SearchService.getGlobalSearch(filters);
     res.json(results);
@@ -167,7 +167,7 @@ searchRouter.post("/analytics", async (req, res) => {
   try {
     const data = logSearchAnalyticsSchema.parse(req.body);
     // user uid is optional here
-    const userId = req.user?.uid || null;
+    const userId = req.user?.profile?.id || null;
     await SearchService.logSearchAnalytics(userId, data);
     res.json({ success: true });
   } catch (error) {
