@@ -1,6 +1,13 @@
-import { NeedService, OfferService, ProductService, UserService } from "@reusedo/api-client";
-import { Avatar, AvatarFallback, AvatarImage, Badge, Button, Separator } from "@reusedo/ui";
-import type { Product } from "@reusedo/validation";
+import { NeedService, OfferService, ProductService, UserService } from "@/services/api";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  Badge,
+  Button,
+  Separator,
+} from "@/shared/components/ui";
+import type { Product } from "@/shared/validation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Calendar, Eye, MapPin, Share2, Target, X } from "lucide-react";
 import { useState } from "react";

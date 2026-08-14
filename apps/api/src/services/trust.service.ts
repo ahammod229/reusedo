@@ -1,10 +1,10 @@
-import { ExchangeRepository, TrustRepository, UserRepository } from "@reusedo/database";
+import { ExchangeRepository, TrustRepository, UserRepository } from "../database";
 import type {
   CreateAppealData,
   CreateReportData,
   CreateReviewData,
   CreateVerificationData,
-} from "@reusedo/validation";
+} from "../shared/validation";
 
 export class TrustService {
   private trustRepo: typeof TrustRepository;

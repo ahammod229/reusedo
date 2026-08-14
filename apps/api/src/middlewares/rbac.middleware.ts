@@ -1,6 +1,6 @@
-import { AdminRepository } from "@reusedo/database";
-import { UserRepository } from "@reusedo/database";
-import type { AdminRole } from "@reusedo/validation";
+import { AdminRepository } from "../database";
+import { UserRepository } from "../database";
+import type { AdminRole } from "../shared/validation";
 import type { NextFunction, Request, Response } from "express";
 
 /**
@@ -16,16 +16,18 @@ export const requireAdmin = (allowedRoles: AdminRole[]) => {
         return;
       }
 
-      // Fetch user profile from database to get the admin_role
       // (Using service role internally)
       const profile = await UserRepository.getProfileByUid(user.uid);
-      if (!profile || !(profile as { admin_role?: string }).admin_role) {
+      const isLegacyAdmin = (profile as { role?: string })?.role === "ADMIN";
+      const adminRole = (profile as { admin_role?: string }).admin_role || (isLegacyAdmin ? "super_admin" : null);
+
+      if (!profile || !adminRole) {
         res.status(403).json({ error: "Forbidden: Admin access required" });
         return;
       }
 
       // Check if role is allowed
-      if (!allowedRoles.includes((profile as { admin_role?: string }).admin_role as AdminRole)) {
+      if (!allowedRoles.includes(adminRole as AdminRole)) {
         res.status(403).json({ error: "Forbidden: Insufficient permissions" });
         return;
       }

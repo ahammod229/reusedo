@@ -1,4 +1,4 @@
-import type { Notification } from "@reusedo/validation";
+import type { Notification } from "@/shared/validation";
 import { formatDistanceToNow } from "date-fns";
 import {
   AlertTriangle,

@@ -1,5 +1,5 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@reusedo/ui";
-import type { Message, Reaction } from "@reusedo/validation";
+import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/ui";
+import type { Message, Reaction } from "@/shared/validation";
 import { format } from "date-fns";
 import { Check, CheckCheck } from "lucide-react";
 

@@ -1,6 +1,6 @@
-import { ChatRepository } from "@reusedo/database";
-import { getSupabaseClient } from "@reusedo/database/src/client";
-import { CreateConversationSchema, SendMessageSchema } from "@reusedo/validation";
+import { ChatRepository } from "../database";
+import { getSupabaseClient } from "../database/client";
+import { CreateConversationSchema, SendMessageSchema } from "../shared/validation";
 import { Router } from "express";
 import multer from "multer";
 import { v4 as uuidv4 } from "uuid";

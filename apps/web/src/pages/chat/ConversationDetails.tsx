@@ -1,6 +1,6 @@
-import { ChatService } from "@reusedo/api-client";
-import { useAuthStore } from "@reusedo/auth";
-import { Avatar, AvatarFallback } from "@reusedo/ui";
+import { useAuthStore } from "@/features/auth";
+import { ChatService, UserService } from "@/services/api";
+import { Avatar, AvatarFallback } from "@/shared/components/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Info } from "lucide-react";
 import { useEffect, useRef } from "react";
@@ -15,19 +15,25 @@ export const ConversationDetails = () => {
   const queryClient = useQueryClient();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const { data: profile } = useQuery({
+    queryKey: ["myProfile"],
+    queryFn: UserService.getMyProfile,
+    enabled: !!user,
+  });
+
   // Hook up realtime messages
-  useChatRealtime({ conversationId: id, userId: user?.uid });
+  useChatRealtime({ conversationId: id, userId: profile?.id });
 
   const { data: conversation, isLoading: isLoadingConv } = useQuery({
     queryKey: ["chat", "conversation", id],
     queryFn: () => ChatService.getConversation(id as string),
-    enabled: !!id && !!user,
+    enabled: !!id && !!profile?.id,
   });
 
   const { data: messages = [], isLoading: isLoadingMsgs } = useQuery({
     queryKey: ["chat", "messages", id],
     queryFn: () => ChatService.getMessages(id as string, 100),
-    enabled: !!id && !!user,
+    enabled: !!id && !!profile?.id,
   });
 
   // Mark as read mutation
@@ -44,15 +50,15 @@ export const ConversationDetails = () => {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
 
       // Find last unread message from others
-      const lastOtherMsg = [...messages].reverse().find((m) => m.sender_id !== user?.uid);
+      const lastOtherMsg = [...messages].reverse().find((m) => m.sender_id !== profile?.id);
       if (lastOtherMsg && lastOtherMsg.status !== "read") {
         markReadMutation.mutate(lastOtherMsg.id);
       }
     }
-  }, [messages, user?.uid, markReadMutation.mutate]);
+  }, [messages, profile?.id, markReadMutation.mutate]);
 
   const handleSendMessage = async (content: string) => {
-    if (!id || !user) return;
+    if (!id || !profile) return;
 
     // Optimistic update omitted for brevity, handled via Realtime broadcast slightly after
     await ChatService.sendMessage(id, {
@@ -62,7 +68,7 @@ export const ConversationDetails = () => {
   };
 
   const handleSendImage = async (file: File) => {
-    if (!id || !user) return;
+    if (!id || !profile) return;
     await ChatService.uploadAttachment(id, file);
   };
 
@@ -89,7 +95,7 @@ export const ConversationDetails = () => {
   // biome-ignore lint/suspicious/noExplicitAny: Temporary mapping
   const otherParticipant = (conversation as any)?.participants?.find(
     // biome-ignore lint/suspicious/noExplicitAny: Temporary mapping
-    (p: any) => p.user_id !== user?.uid,
+    (p: any) => p.user_id !== profile?.id,
   );
 
   return (
@@ -124,7 +130,7 @@ export const ConversationDetails = () => {
           <MessageBubble
             key={msg.id}
             message={msg}
-            isCurrentUser={msg.sender_id === user?.uid}
+            isCurrentUser={msg.sender_id === profile?.id}
             onAddReaction={(emoji) => handleReaction(msg.id, emoji)}
           />
         ))}

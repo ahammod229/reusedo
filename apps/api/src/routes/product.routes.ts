@@ -1,6 +1,6 @@
-import { ProductRepository } from "@reusedo/database";
-import { getSupabaseClient } from "@reusedo/database/src/client";
-import { createProductSchema, updateProductSchema } from "@reusedo/validation";
+import { ProductRepository } from "../database";
+import { getSupabaseClient } from "../database/client";
+import { createProductSchema, updateProductSchema } from "../shared/validation";
 import { Router } from "express";
 import multer from "multer";
 import { v4 as uuidv4 } from "uuid";
@@ -138,7 +138,7 @@ router.post("/:id/images", upload.single("file"), async (req, res, next) => {
     const fileName = `${req.params.id}/${uuidv4()}.${fileExt}`;
 
     const { error: uploadError } = await supabase.storage
-      .from("product_images")
+      .from("products")
       .upload(fileName, file.buffer, {
         contentType: file.mimetype,
         upsert: false,
@@ -146,7 +146,7 @@ router.post("/:id/images", upload.single("file"), async (req, res, next) => {
 
     if (uploadError) throw uploadError;
 
-    const { data: urlData } = supabase.storage.from("product_images").getPublicUrl(fileName);
+    const { data: urlData } = supabase.storage.from("products").getPublicUrl(fileName);
 
     const imageUrl = urlData.publicUrl;
     const currentImages = product.images || [];

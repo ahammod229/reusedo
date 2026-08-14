@@ -1,4 +1,4 @@
-import { Button } from "@reusedo/ui";
+import { Button } from "@/shared/components/ui";
 import { AlertCircle } from "lucide-react";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 

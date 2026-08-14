@@ -1,4 +1,4 @@
-import { ExchangeService } from "@reusedo/api-client";
+import { ExchangeService } from "@/services/api";
 import {
   Dialog,
   DialogContent,
@@ -6,10 +6,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@reusedo/ui";
-import { Button } from "@reusedo/ui";
-import { useToast } from "@reusedo/ui";
-import type { CounterOfferData, Exchange } from "@reusedo/validation";
+} from "@/shared/components/ui";
+import { Button } from "@/shared/components/ui";
+import { useToast } from "@/shared/components/ui";
+import type { CounterOfferData, Exchange } from "@/shared/validation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 

@@ -1,4 +1,4 @@
-import { useAuthStore } from "@reusedo/auth";
+import { useAuthStore } from "@/features/auth";
 import { MessageSquare, Star } from "lucide-react";
 import type React from "react";
 import { TrustBadge } from "../../components/TrustBadge";

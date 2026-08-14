@@ -1,5 +1,5 @@
-import { NeedRepository, OfferRepository } from "@reusedo/database";
-import { createNeedSchema, submitOfferSchema, updateNeedSchema } from "@reusedo/validation";
+import { NeedRepository, OfferRepository } from "../database";
+import { createNeedSchema, submitOfferSchema, updateNeedSchema } from "../shared/validation";
 import { Router } from "express";
 import { requireAuth } from "../middlewares/auth.middleware";
 

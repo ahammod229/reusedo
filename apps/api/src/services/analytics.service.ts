@@ -1,4 +1,4 @@
-import { AnalyticsRepository } from "@reusedo/database";
+import { AnalyticsRepository } from "../database";
 
 export const AnalyticsService = {
   async getUserDashboardSummary(userId: string) {

@@ -1,4 +1,4 @@
-import { useAuthStore } from "@reusedo/auth";
+import { useAuthStore } from "@/features/auth";
 import { Bell } from "lucide-react";
 import { Link } from "react-router";
 import { useNotificationRealtime } from "../hooks/useNotificationRealtime";

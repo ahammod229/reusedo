@@ -5,7 +5,23 @@ export const PersonalAnalytics = () => {
   const { data: analytics, isLoading, isError } = usePersonalAnalytics();
 
   if (isLoading) {
-    return <div className="p-6 text-center">Loading analytics...</div>;
+    return (
+      <div className="p-6 max-w-7xl mx-auto space-y-8 animate-pulse">
+        <div>
+          <div className="h-8 bg-gray-200 rounded w-1/4 mb-2" />
+          <div className="h-4 bg-gray-200 rounded w-1/3" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-28 bg-gray-200 rounded-lg" />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="h-64 bg-gray-200 rounded-lg" />
+          <div className="h-64 bg-gray-200 rounded-lg" />
+        </div>
+      </div>
+    );
   }
 
   if (isError || !analytics) {

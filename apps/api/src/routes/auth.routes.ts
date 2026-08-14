@@ -1,4 +1,4 @@
-import { UserRepository } from "@reusedo/database";
+import { UserRepository } from "../database";
 import { Router } from "express";
 import { adminAuth } from "../config/firebase-admin";
 import { requireAuth } from "../middlewares/auth.middleware";

@@ -1,5 +1,12 @@
-import { ProductService, UserService } from "@reusedo/api-client";
-import { Avatar, AvatarFallback, AvatarImage, Badge, Button, Separator } from "@reusedo/ui";
+import { ProductService, UserService } from "@/services/api";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  Badge,
+  Button,
+  Separator,
+} from "@/shared/components/ui";
 import { useQuery } from "@tanstack/react-query";
 import { AlertCircle, Calendar, Eye, MapPin, RefreshCcw, Share2, Tag } from "lucide-react";
 import { Helmet } from "react-helmet-async";

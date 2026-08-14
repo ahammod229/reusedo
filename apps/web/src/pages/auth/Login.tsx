@@ -1,6 +1,6 @@
+import { AuthService } from "@/features/auth";
+import { type LoginInput, loginSchema } from "@/shared/validation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AuthService } from "@reusedo/auth";
-import { type LoginInput, loginSchema } from "@reusedo/validation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router";

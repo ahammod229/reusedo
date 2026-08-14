@@ -1,5 +1,5 @@
-import { PageContainer } from "@reusedo/ui";
-import { cn } from "@reusedo/ui/src/lib/utils";
+import { PageContainer } from "@/shared/components/ui";
+import { cn } from "@/shared/components/ui/lib/utils";
 import { Bell, Lock, Shield, User } from "lucide-react";
 import { NavLink, Outlet, useLocation } from "react-router";
 

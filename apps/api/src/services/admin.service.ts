@@ -1,5 +1,5 @@
-import { AdminRepository } from "@reusedo/database";
-import type { AdminRole, CMSPageData, FeatureFlagData } from "@reusedo/validation";
+import { AdminRepository } from "../database";
+import type { AdminRole, CMSPageData, FeatureFlagData } from "../shared/validation";
 
 export const AdminService = {
   // Users

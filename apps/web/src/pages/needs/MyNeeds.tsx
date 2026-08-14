@@ -1,6 +1,14 @@
-import { NeedService } from "@reusedo/api-client";
-import { Badge, Button, Card, CardContent, CardFooter, CardHeader, CardTitle } from "@reusedo/ui";
-import type { NeedRequest } from "@reusedo/validation";
+import { NeedService } from "@/services/api";
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/shared/components/ui";
+import type { NeedRequest } from "@/shared/validation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Edit2, Eye, Target, Trash2 } from "lucide-react";
 import { useState } from "react";

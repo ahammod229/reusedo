@@ -1,5 +1,5 @@
 {
-  "name": "@reusedo/api",
+  "name": "api",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -10,8 +10,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@reusedo/database": "workspace:^",
-    "@reusedo/validation": "workspace:*",
     "@supabase/supabase-js": "^2.112.0",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",

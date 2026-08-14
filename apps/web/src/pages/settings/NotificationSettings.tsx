@@ -1,4 +1,3 @@
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Button,
   Card,
@@ -14,11 +13,12 @@ import {
   FormLabel,
   Skeleton,
   Switch,
-} from "@reusedo/ui";
+} from "@/shared/components/ui";
 import {
   type UpdateNotificationPreferencesData,
   updateNotificationPreferencesSchema,
-} from "@reusedo/validation";
+} from "@/shared/validation";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useFCM } from "../../hooks/useFCM";

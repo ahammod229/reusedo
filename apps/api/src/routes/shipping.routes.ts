@@ -1,5 +1,5 @@
-import { ShippingRepository } from "@reusedo/database";
-import { createShipmentSchema, updateShipmentSchema } from "@reusedo/validation";
+import { ShippingRepository } from "../database";
+import { createShipmentSchema, updateShipmentSchema } from "../shared/validation";
 import { Router } from "express";
 import { requireAuth } from "../middlewares/auth.middleware";
 

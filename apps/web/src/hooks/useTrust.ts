@@ -1,10 +1,10 @@
-import { TrustService } from "@reusedo/api-client";
+import { TrustService } from "@/services/api";
 import type {
   CreateAppealData,
   CreateReportData,
   CreateReviewData,
   CreateVerificationData,
-} from "@reusedo/validation";
+} from "@/shared/validation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 // --- Reviews ---

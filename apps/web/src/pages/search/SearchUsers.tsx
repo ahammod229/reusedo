@@ -1,4 +1,4 @@
-import type { SearchFilters } from "@reusedo/validation";
+import type { SearchFilters } from "@/shared/validation";
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { AdvancedFilters } from "../../components/search/AdvancedFilters";

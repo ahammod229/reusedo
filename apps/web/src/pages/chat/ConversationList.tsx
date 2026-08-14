@@ -1,6 +1,6 @@
-import { ChatService } from "@reusedo/api-client";
-import { useAuthStore } from "@reusedo/auth";
-import { Avatar, AvatarFallback, Input } from "@reusedo/ui";
+import { useAuthStore } from "@/features/auth";
+import { ChatService, UserService } from "@/services/api";
+import { Avatar, AvatarFallback, Input } from "@/shared/components/ui";
 import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { ArrowRightLeft, Gift, Info, Package, Search } from "lucide-react";
@@ -11,13 +11,19 @@ export const ConversationList = () => {
   const { id: activeId } = useParams<{ id: string }>();
   const { user } = useAuthStore();
 
+  const { data: profile } = useQuery({
+    queryKey: ["myProfile"],
+    queryFn: UserService.getMyProfile,
+    enabled: !!user,
+  });
+
   // Realtime hook for updating conversation unread counts and sorting
-  useChatRealtime({ userId: user?.uid });
+  useChatRealtime({ userId: profile?.id });
 
   const { data: conversations = [], isLoading } = useQuery({
     queryKey: ["chat", "conversations"],
     queryFn: () => ChatService.getConversations(),
-    enabled: !!user,
+    enabled: !!profile?.id,
   });
 
   const getContextIcon = (type: string) => {
@@ -35,7 +41,7 @@ export const ConversationList = () => {
 
   // biome-ignore lint/suspicious/noExplicitAny: Temporary mapping
   const getOtherParticipant = (participants: any[]) => {
-    return participants.find((p) => p.user_id !== user?.uid);
+    return participants.find((p) => p.user_id !== profile?.id);
   };
 
   if (isLoading) {

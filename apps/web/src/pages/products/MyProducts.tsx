@@ -1,6 +1,14 @@
-import { ProductService } from "@reusedo/api-client";
-import { Badge, Button, Card, CardContent, CardFooter, CardHeader, CardTitle } from "@reusedo/ui";
-import type { Product } from "@reusedo/validation";
+import { ProductService } from "@/services/api";
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/shared/components/ui";
+import type { Product } from "@/shared/validation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Archive, CheckCircle, Edit, Eye, Loader2, Tag, Trash2 } from "lucide-react";
 import { Link } from "react-router";

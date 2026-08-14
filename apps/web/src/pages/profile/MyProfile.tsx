@@ -1,4 +1,4 @@
-import { UserService } from "@reusedo/api-client";
+import { UserService } from "@/services/api";
 import {
   Badge,
   Button,
@@ -10,14 +10,18 @@ import {
   PageContainer,
   Progress,
   Skeleton,
-} from "@reusedo/ui";
+} from "@/shared/components/ui";
 import { useQuery } from "@tanstack/react-query";
 import { Edit, MapPin, Settings, Shield, User } from "lucide-react";
 import { Link } from "react-router";
 import { useUserDashboardSummary } from "../../hooks/useAnalytics";
 
 export function MyProfile() {
-  const { data: profile, isLoading, error } = useQuery({
+  const {
+    data: profile,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["profile", "me"],
     queryFn: UserService.getMyProfile,
     retry: false, // Don't retry if unauthorized or not found
@@ -139,8 +143,10 @@ export function MyProfile() {
 
         {summary && summary.my_products === 0 && (
           <div className="bg-primary/5 border border-primary/20 text-primary-foreground p-4 rounded-lg flex items-center gap-3">
-             <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-             <p className="text-sm text-primary font-medium">Tip: Publish your first product to start exchanging!</p>
+            <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+            <p className="text-sm text-primary font-medium">
+              Tip: Publish your first product to start exchanging!
+            </p>
           </div>
         )}
 

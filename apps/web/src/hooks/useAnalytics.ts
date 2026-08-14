@@ -1,4 +1,4 @@
-import { AnalyticsService } from "@reusedo/api-client";
+import { AnalyticsService } from "@/services/api";
 import { useQuery } from "@tanstack/react-query";
 
 export const useUserDashboardSummary = () => {

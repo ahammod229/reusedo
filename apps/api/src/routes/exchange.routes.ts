@@ -1,5 +1,5 @@
-import { ExchangeRepository } from "@reusedo/database";
-import { counterOfferSchema, createExchangeSchema } from "@reusedo/validation";
+import { ExchangeRepository } from "../database";
+import { counterOfferSchema, createExchangeSchema } from "../shared/validation";
 import { type Request, type Response, Router } from "express";
 import { ZodError } from "zod";
 import { requireAuth } from "../middlewares/auth.middleware";

@@ -1,5 +1,5 @@
-import { ShippingService } from "@reusedo/api-client";
-import { Button, Card, CardContent, CardHeader, CardTitle, Input } from "@reusedo/ui";
+import { ShippingService } from "@/services/api";
+import { Button, Card, CardContent, CardHeader, CardTitle, Input } from "@/shared/components/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, CheckCircle, Package, Truck } from "lucide-react";
 import { useState } from "react";

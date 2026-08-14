@@ -1,4 +1,4 @@
-import { useAuthStore } from "@reusedo/auth";
+import { useAuthStore } from "@/features/auth";
 import { Navigate, Outlet } from "react-router";
 import { useAuthReady } from "../providers/AuthProvider";
 

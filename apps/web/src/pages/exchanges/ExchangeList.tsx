@@ -1,8 +1,8 @@
-import { ExchangeService } from "@reusedo/api-client";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@reusedo/ui";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@reusedo/ui";
-import { Badge } from "@reusedo/ui";
-import type { Exchange } from "@reusedo/validation";
+import { ExchangeService } from "@/services/api";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui";
+import { Badge } from "@/shared/components/ui";
+import type { Exchange } from "@/shared/validation";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router";

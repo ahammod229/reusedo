@@ -1,9 +1,9 @@
-import { SearchService } from "@reusedo/api-client";
+import { SearchService } from "@/services/api";
 import type {
   CreateSavedSearchData,
   LogSearchAnalyticsData,
   SearchFilters,
-} from "@reusedo/validation";
+} from "@/shared/validation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export const useGlobalSearch = (filters: SearchFilters) => {

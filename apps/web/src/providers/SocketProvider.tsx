@@ -1,7 +1,7 @@
-import { useAuthStore } from "@reusedo/auth";
+import { useAuthStore } from "@/features/auth";
 import type React from "react";
 import { createContext, useContext, useEffect, useState } from "react";
-import { io, type Socket } from "socket.io-client";
+import { type Socket, io } from "socket.io-client";
 
 type SocketContextType = {
   socket: Socket | null;

@@ -1,4 +1,4 @@
-import type { SearchFilters } from "@reusedo/validation";
+import type { SearchFilters } from "@/shared/validation";
 import type React from "react";
 
 interface SortDropdownProps {

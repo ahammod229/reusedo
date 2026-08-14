@@ -1,4 +1,4 @@
-import { Footer, Header, MobileBottomNav, Sidebar } from "@reusedo/ui";
+import { Footer, Header, MobileBottomNav, Sidebar } from "@/shared/components/ui";
 import {
   Compass,
   HelpCircle,
@@ -13,7 +13,7 @@ import * as React from "react";
 import { Outlet } from "react-router";
 import { NotificationBadge } from "../components/NotificationBadge";
 
-import { useAuthStore } from "@reusedo/auth";
+import { useAuthStore } from "@/features/auth";
 
 const SIDEBAR_ITEMS = [
   { title: "Home", href: "/", icon: <Home className="h-4 w-4" /> },

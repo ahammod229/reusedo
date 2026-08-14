@@ -1,5 +1,4 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { UserService } from "@reusedo/api-client";
+import { UserService } from "@/services/api";
 import {
   Button,
   Card,
@@ -17,8 +16,9 @@ import {
   PageContainer,
   Skeleton,
   Textarea,
-} from "@reusedo/ui";
-import { type UpdateProfileData, updateProfileSchema } from "@reusedo/validation";
+} from "@/shared/components/ui";
+import { type UpdateProfileData, updateProfileSchema } from "@/shared/validation";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -157,7 +157,12 @@ export function EditProfile() {
                       <FormItem>
                         <FormLabel>Avatar URL</FormLabel>
                         <FormControl>
-                          <Input placeholder="https://..." type="url" {...field} value={field.value || ""} />
+                          <Input
+                            placeholder="https://..."
+                            type="url"
+                            {...field}
+                            value={field.value || ""}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -170,7 +175,12 @@ export function EditProfile() {
                       <FormItem>
                         <FormLabel>Cover URL</FormLabel>
                         <FormControl>
-                          <Input placeholder="https://..." type="url" {...field} value={field.value || ""} />
+                          <Input
+                            placeholder="https://..."
+                            type="url"
+                            {...field}
+                            value={field.value || ""}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

@@ -1,5 +1,5 @@
-import { NotificationService } from "@reusedo/api-client";
-import { app } from "@reusedo/auth";
+import { app } from "@/features/auth";
+import { NotificationService } from "@/services/api";
 import { getMessaging, getToken, isSupported, onMessage } from "firebase/messaging";
 import { useEffect, useState } from "react";
 

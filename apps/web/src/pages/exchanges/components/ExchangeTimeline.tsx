@@ -1,4 +1,4 @@
-import type { ExchangeEvent } from "@reusedo/validation";
+import type { ExchangeEvent } from "@/shared/validation";
 
 interface TimelineProps {
   events: ExchangeEvent[];

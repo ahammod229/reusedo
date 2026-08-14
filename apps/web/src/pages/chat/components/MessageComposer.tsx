@@ -1,4 +1,4 @@
-import { Button } from "@reusedo/ui";
+import { Button } from "@/shared/components/ui";
 import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
 import { Image as ImageIcon, Send, Smile, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";

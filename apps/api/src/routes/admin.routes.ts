@@ -5,7 +5,7 @@ import {
   platformSettingsSchema,
   updateCmsPageSchema,
   updateFeatureFlagSchema,
-} from "@reusedo/validation";
+} from "../shared/validation";
 import { Router } from "express";
 import { requireAuth } from "../middlewares/auth.middleware";
 import { requireAdmin } from "../middlewares/rbac.middleware";

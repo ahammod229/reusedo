@@ -1,4 +1,4 @@
-import { NeedService, ProductService } from "@reusedo/api-client";
+import { NeedService, ProductService } from "@/services/api";
 import {
   Badge,
   Button,
@@ -9,8 +9,8 @@ import {
   CardTitle,
   Input,
   Label,
-} from "@reusedo/ui";
-import type { Category, NeedRequest } from "@reusedo/validation";
+} from "@/shared/components/ui";
+import type { Category, NeedRequest } from "@/shared/validation";
 import { useQuery } from "@tanstack/react-query";
 import { MapPin, Search, Target } from "lucide-react";
 import { useState } from "react";

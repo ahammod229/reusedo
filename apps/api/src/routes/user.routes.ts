@@ -1,11 +1,11 @@
-import { AddressRepository, SettingsRepository, UserRepository } from "@reusedo/database";
+import { AddressRepository, SettingsRepository, UserRepository } from "../database";
 import {
   addressSchema,
   updateAddressSchema,
   updateNotificationPreferencesSchema,
   updateProfileSchema,
   updateUserSettingsSchema,
-} from "@reusedo/validation";
+} from "../shared/validation";
 import { type NextFunction, type Request, type Response, Router } from "express";
 import { requireAuth } from "../middlewares/auth.middleware";
 

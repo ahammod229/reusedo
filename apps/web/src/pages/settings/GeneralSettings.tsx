@@ -1,4 +1,4 @@
-import { ThemeToggle } from "@reusedo/ui";
+import { ThemeToggle } from "@/shared/components/ui";
 import {
   Button,
   Card,
@@ -6,9 +6,9 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@reusedo/ui";
+} from "@/shared/components/ui";
+import { MapPin, User } from "lucide-react";
 import { Link } from "react-router";
-import { User, MapPin } from "lucide-react";
 
 export function GeneralSettings() {
   return (
@@ -16,9 +16,7 @@ export function GeneralSettings() {
       <Card>
         <CardHeader>
           <CardTitle>Appearance</CardTitle>
-          <CardDescription>
-            Customize how Reusedo looks on your device.
-          </CardDescription>
+          <CardDescription>Customize how Reusedo looks on your device.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-muted p-4 rounded-lg">
@@ -38,9 +36,7 @@ export function GeneralSettings() {
       <Card>
         <CardHeader>
           <CardTitle>Account Details</CardTitle>
-          <CardDescription>
-            Manage your personal information and addresses.
-          </CardDescription>
+          <CardDescription>Manage your personal information and addresses.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-muted p-4 rounded-lg">

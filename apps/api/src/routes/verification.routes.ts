@@ -1,4 +1,4 @@
-import { createVerificationSchema } from "@reusedo/validation";
+import { createVerificationSchema } from "../shared/validation";
 import { Router } from "express";
 import { requireAuth } from "../middlewares/auth.middleware";
 import { TrustService } from "../services/trust.service";

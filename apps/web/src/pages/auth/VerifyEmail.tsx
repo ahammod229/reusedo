@@ -1,4 +1,4 @@
-import { AuthService } from "@reusedo/auth";
+import { AuthService } from "@/features/auth";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 

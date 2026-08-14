@@ -1,4 +1,4 @@
-import { Footer, Header } from "@reusedo/ui";
+import { Footer, Header } from "@/shared/components/ui";
 import { Outlet } from "react-router";
 
 const DUMMY_USER = null; // Logged out by default

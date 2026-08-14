@@ -1,12 +1,12 @@
-import { ExchangeService } from "@reusedo/api-client";
-import { useAuthStore } from "@reusedo/auth";
+import { useAuthStore } from "@/features/auth";
+import { ExchangeService } from "@/services/api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router";
 
-import { Button } from "@reusedo/ui";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@reusedo/ui";
-import { Badge } from "@reusedo/ui";
-import { useToast } from "@reusedo/ui";
+import { Button } from "@/shared/components/ui";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui";
+import { Badge } from "@/shared/components/ui";
+import { useToast } from "@/shared/components/ui";
 import { useState } from "react";
 import { CounterOfferModal } from "./components/CounterOfferModal";
 import { ExchangeTimeline } from "./components/ExchangeTimeline";

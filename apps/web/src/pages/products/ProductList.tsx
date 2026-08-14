@@ -1,4 +1,4 @@
-import { ProductService } from "@reusedo/api-client";
+import { ProductService } from "@/services/api";
 import {
   Badge,
   Button,
@@ -9,8 +9,8 @@ import {
   CardTitle,
   Input,
   Label,
-} from "@reusedo/ui";
-import type { Category, Product } from "@reusedo/validation";
+} from "@/shared/components/ui";
+import type { Category, Product } from "@/shared/validation";
 import { useQuery } from "@tanstack/react-query";
 import { MapPin, Search, Tag } from "lucide-react";
 import { useState } from "react";

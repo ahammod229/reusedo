@@ -1,4 +1,4 @@
-import type { NeedRequest as Need, Product, UserProfile } from "@reusedo/validation";
+import type { NeedRequest as Need, Product, UserProfile } from "@/shared/validation";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";

@@ -1,4 +1,4 @@
-import { createReportSchema } from "@reusedo/validation";
+import { createReportSchema } from "../shared/validation";
 import { Router } from "express";
 import { requireAuth } from "../middlewares/auth.middleware";
 import { TrustService } from "../services/trust.service";

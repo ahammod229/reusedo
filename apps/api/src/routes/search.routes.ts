@@ -3,7 +3,7 @@ import {
   logSearchAnalyticsSchema,
   recentlyViewedSchema,
   searchFiltersSchema,
-} from "@reusedo/validation";
+} from "../shared/validation";
 import { Router } from "express";
 import { requireAuth } from "../middlewares/auth.middleware";
 import { SearchService } from "../services/search.service";
@@ -81,12 +81,12 @@ searchRouter.get("/users", async (req, res) => {
 // Saved Searches
 searchRouter.post("/saved", requireAuth, async (req, res) => {
   try {
-    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    if (!req.user || !req.user.profile) return res.status(401).json({ error: "Unauthorized" });
     const parseResult = createSavedSearchSchema.safeParse(req.body);
     if (!parseResult.success) {
       return res.status(400).json({ error: "Invalid data", details: parseResult.error.format() });
     }
-    const saved = await SearchService.saveSearch(req.user.uid, parseResult.data);
+    const saved = await SearchService.saveSearch(req.user.profile.id, parseResult.data);
     res.status(201).json(saved);
   } catch (error) {
     console.error("Save Search Error:", error);
@@ -96,8 +96,8 @@ searchRouter.post("/saved", requireAuth, async (req, res) => {
 
 searchRouter.get("/saved", requireAuth, async (req, res) => {
   try {
-    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
-    const searches = await SearchService.getSavedSearches(req.user.uid);
+    if (!req.user || !req.user.profile) return res.status(401).json({ error: "Unauthorized" });
+    const searches = await SearchService.getSavedSearches(req.user.profile.id);
     res.json(searches);
   } catch (error) {
     console.error("Get Saved Searches Error:", error);
@@ -107,8 +107,8 @@ searchRouter.get("/saved", requireAuth, async (req, res) => {
 
 searchRouter.delete("/saved/:id", requireAuth, async (req, res) => {
   try {
-    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
-    await SearchService.deleteSavedSearch(req.params.id, req.user.uid);
+    if (!req.user || !req.user.profile) return res.status(401).json({ error: "Unauthorized" });
+    await SearchService.deleteSavedSearch(req.params.id, req.user.profile.id);
     res.json({ success: true });
   } catch (error) {
     console.error("Delete Saved Search Error:", error);
@@ -119,8 +119,8 @@ searchRouter.delete("/saved/:id", requireAuth, async (req, res) => {
 // Recently Viewed API
 searchRouter.get("/recently-viewed", requireAuth, async (req, res) => {
   try {
-    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
-    const viewed = await SearchService.getRecentlyViewed(req.user.uid);
+    if (!req.user || !req.user.profile) return res.status(401).json({ error: "Unauthorized" });
+    const viewed = await SearchService.getRecentlyViewed(req.user.profile.id);
     res.json(viewed);
   } catch (error) {
     console.error("Get Recently Viewed Error:", error);
@@ -130,9 +130,9 @@ searchRouter.get("/recently-viewed", requireAuth, async (req, res) => {
 
 searchRouter.post("/recently-viewed", requireAuth, async (req, res) => {
   try {
-    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    if (!req.user || !req.user.profile) return res.status(401).json({ error: "Unauthorized" });
     const { item_type, item_id } = req.body;
-    await SearchService.logRecentlyViewed(req.user.uid, item_type, item_id);
+    await SearchService.logRecentlyViewed(req.user.profile.id, item_type, item_id);
     res.json({ success: true });
   } catch (error) {
     console.error("Log Recently Viewed Error:", error);
@@ -143,8 +143,8 @@ searchRouter.post("/recently-viewed", requireAuth, async (req, res) => {
 // Recommendations API
 searchRouter.get("/recommendations", requireAuth, async (req, res) => {
   try {
-    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
-    const recommendations = await SearchService.getRecommendations(req.user.uid);
+    if (!req.user || !req.user.profile) return res.status(401).json({ error: "Unauthorized" });
+    const recommendations = await SearchService.getRecommendations(req.user.profile.id);
     res.json(recommendations);
   } catch (error) {
     res.status(400).json({ success: false, message: "Failed to fetch recommendations" });

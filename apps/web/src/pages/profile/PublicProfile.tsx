@@ -1,4 +1,4 @@
-import { UserService } from "@reusedo/api-client";
+import { UserService } from "@/services/api";
 import {
   Badge,
   Card,
@@ -8,7 +8,7 @@ import {
   EmptyState,
   PageContainer,
   Skeleton,
-} from "@reusedo/ui";
+} from "@/shared/components/ui";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar, CheckCircle, Mail, MapPin, Phone, User } from "lucide-react";
 import { Helmet } from "react-helmet-async";

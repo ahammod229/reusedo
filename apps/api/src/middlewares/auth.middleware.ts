@@ -1,4 +1,4 @@
-import { UserRepository } from "@reusedo/database";
+import { UserRepository } from "../database";
 import type { NextFunction, Request, Response } from "express";
 import { adminAuth } from "../config/firebase-admin";
 

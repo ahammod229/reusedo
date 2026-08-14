@@ -1,4 +1,4 @@
-import type { Message } from "@reusedo/validation";
+import type { Message } from "@/shared/validation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useSocket } from "../providers/SocketProvider";

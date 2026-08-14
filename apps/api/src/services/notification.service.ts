@@ -1,9 +1,9 @@
-import { NotificationRepository, SettingsRepository } from "@reusedo/database";
+import { NotificationRepository, SettingsRepository } from "../database";
 import type {
   NotificationPreferencesData,
   NotificationPriority,
   NotificationType,
-} from "@reusedo/validation";
+} from "../shared/validation";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getMessaging } from "firebase-admin/messaging";
 import { EVENTS, eventBus } from "./event-bus.service";

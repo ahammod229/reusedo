@@ -1,9 +1,9 @@
-import { apiClient } from "@reusedo/api-client";
+import { apiClient } from "@/services/api";
 import type {
   Notification,
   NotificationPreferencesData,
   UpdateNotificationPreferencesData,
-} from "@reusedo/validation";
+} from "@/shared/validation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export function useNotifications(options?: {

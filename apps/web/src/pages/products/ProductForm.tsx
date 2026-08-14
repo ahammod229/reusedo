@@ -1,5 +1,4 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { ProductService } from "@reusedo/api-client";
+import { ProductService } from "@/services/api";
 import {
   Button,
   Card,
@@ -10,8 +9,10 @@ import {
   Input,
   Label,
   Textarea,
-} from "@reusedo/ui";
-import { type Category, type CreateProductData, createProductSchema } from "@reusedo/validation";
+} from "@/shared/components/ui";
+import { useToast } from "@/shared/components/ui/hooks/use-toast";
+import { type Category, type CreateProductData, createProductSchema } from "@/shared/validation";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Image as ImageIcon, Loader2, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -21,6 +22,7 @@ import { useForm as useRHForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router";
 
 export function ProductForm() {
+  const { toast } = useToast();
   const { id } = useParams<{ id: string }>();
   const isEditing = !!id;
   const navigate = useNavigate();
@@ -116,6 +118,11 @@ export function ProductForm() {
     } catch (error) {
       console.error("Failed to save product", error);
       setIsUploading(false);
+      toast({
+        title: "Error",
+        description: "Failed to save product or upload images. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 

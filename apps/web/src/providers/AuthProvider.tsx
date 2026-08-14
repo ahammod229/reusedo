@@ -1,5 +1,5 @@
-import { apiClient, setupAuthInterceptor } from "@reusedo/api-client";
-import { AuthService, auth, useAuthStore } from "@reusedo/auth";
+import { AuthService, auth, useAuthStore } from "@/features/auth";
+import { apiClient, setupAuthInterceptor } from "@/services/api";
 import { useQuery } from "@tanstack/react-query";
 import { type User, onAuthStateChanged } from "firebase/auth";
 import type React from "react";

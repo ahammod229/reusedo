@@ -1,9 +1,9 @@
-import { SearchRepository } from "@reusedo/database";
+import { SearchRepository } from "../database";
 import type {
   CreateSavedSearchData,
   LogSearchAnalyticsData,
   SearchFilters,
-} from "@reusedo/validation";
+} from "../shared/validation";
 
 export const SearchService = {
   async searchProducts(filters: SearchFilters) {

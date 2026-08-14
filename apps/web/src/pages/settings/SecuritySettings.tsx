@@ -1,7 +1,15 @@
-import { useAuthStore } from "@reusedo/auth";
-import { app } from "@reusedo/auth";
+import { useAuthStore } from "@/features/auth";
+import { app } from "@/features/auth";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  useToast,
+} from "@/shared/components/ui";
 import { getAuth, sendEmailVerification, sendPasswordResetEmail } from "firebase/auth";
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, useToast } from "@reusedo/ui";
 import { AlertTriangle, Key, Shield } from "lucide-react";
 import { useState } from "react";
 
@@ -89,7 +97,12 @@ export function SecuritySettings() {
               )}
             </div>
             {!user?.emailVerified && (
-              <Button variant="outline" size="sm" onClick={handleVerifyEmail} disabled={isVerifying}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleVerifyEmail}
+                disabled={isVerifying}
+              >
                 {isVerifying ? "Sending..." : "Verify Email"}
               </Button>
             )}
@@ -102,7 +115,13 @@ export function SecuritySettings() {
                 Change your password or request a reset link.
               </p>
             </div>
-            <Button variant="outline" size="sm" className="gap-2" onClick={handleResetPassword} disabled={isResetting}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={handleResetPassword}
+              disabled={isResetting}
+            >
               <Key size={16} />
               {isResetting ? "Sending..." : "Reset Password"}
             </Button>

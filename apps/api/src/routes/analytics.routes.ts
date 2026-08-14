@@ -8,8 +8,8 @@ export const analyticsRouter = Router();
 // User Dashboard Summary
 analyticsRouter.get("/dashboard", requireAuth, async (req, res) => {
   try {
-    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
-    const summary = await AnalyticsService.getUserDashboardSummary(req.user.uid);
+    if (!req.user || !req.user.profile) return res.status(401).json({ error: "Unauthorized" });
+    const summary = await AnalyticsService.getUserDashboardSummary(req.user.profile.id);
     res.json(summary);
   } catch (error) {
     console.error("Dashboard Summary Error:", error);
@@ -20,8 +20,8 @@ analyticsRouter.get("/dashboard", requireAuth, async (req, res) => {
 // Personal Analytics
 analyticsRouter.get("/personal", requireAuth, async (req, res) => {
   try {
-    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
-    const analytics = await AnalyticsService.getPersonalAnalytics(req.user.uid);
+    if (!req.user || !req.user.profile) return res.status(401).json({ error: "Unauthorized" });
+    const analytics = await AnalyticsService.getPersonalAnalytics(req.user.profile.id);
     res.json(analytics);
   } catch (error) {
     console.error("Personal Analytics Error:", error);

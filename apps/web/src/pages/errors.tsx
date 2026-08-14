@@ -1,4 +1,4 @@
-import { ErrorPageLayout } from "@reusedo/ui";
+import { ErrorPageLayout } from "@/shared/components/ui";
 
 export function NotFound() {
   return (
