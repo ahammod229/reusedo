@@ -52,6 +52,13 @@ const ActivityTimeline = lazy(() =>
   import("./pages").then((m) => ({ default: m.ActivityTimeline })),
 );
 
+const FeedPage = lazy(() => import("./pages").then((m) => ({ default: m.FeedPage })));
+const QuickPost = lazy(() => import("./pages").then((m) => ({ default: m.QuickPost })));
+const CourierRequest = lazy(() => import("./pages").then((m) => ({ default: m.CourierRequest })));
+const CourierQueue = lazy(() =>
+  import("./features/admin/pages").then((m) => ({ default: m.CourierQueue })),
+);
+
 const ChatLayout = lazy(() =>
   import("./pages/chat/ChatLayout").then((m) => ({ default: m.ChatLayout })),
 );
@@ -155,6 +162,7 @@ function App() {
                     <Route element={<MainLayout />}>
                       <Route path="/" element={<Home />} />
                       <Route path="/explore" element={<Explore />} />
+                      <Route path="/feed" element={<FeedPage />} />
                       <Route path="/help" element={<Help />} />
 
                       {/* Search Routes */}
@@ -168,6 +176,8 @@ function App() {
 
                       {/* Protected Routes */}
                       <Route element={<ProtectedRoute />}>
+                        <Route path="/post/new" element={<QuickPost />} />
+                        <Route path="/courier" element={<CourierRequest />} />
                         <Route path="/products" element={<ProductList />} />
                         <Route path="/products/create" element={<ProductForm />} />
                         <Route path="/products/:id" element={<ProductDetails />} />
@@ -254,6 +264,7 @@ function App() {
                         <Route path="products" element={<AdminProducts />} />
                         <Route path="needs" element={<AdminNeeds />} />
                         <Route path="exchanges" element={<AdminExchanges />} />
+                        <Route path="courier" element={<CourierQueue />} />
                         <Route path="shipping" element={<AdminShipping />} />
                         <Route path="reviews" element={<AdminReviews />} />
                         <Route path="reports" element={<AdminReports />} />

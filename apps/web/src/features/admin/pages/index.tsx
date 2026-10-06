@@ -14,5 +14,6 @@ export * from "./cms/CMSManagement";
 export * from "./settings/PlatformSettings";
 export * from "./settings/FeatureFlags";
 export * from "./audit/AuditLogs";
+export * from "./courier/CourierQueue";
 
 export const NotFound = () => <div>404 - Not Found</div>;

@@ -3,6 +3,9 @@ import {
   Compass,
   HelpCircle,
   Home,
+  Newspaper,
+  PlusCircle,
+  Truck,
   MessageCircle,
   Repeat,
   Search,
@@ -17,6 +20,9 @@ import { useAuthStore } from "@/features/auth";
 
 const SIDEBAR_ITEMS = [
   { title: "Home", href: "/", icon: <Home className="h-4 w-4" /> },
+  { title: "Feed", href: "/feed", icon: <Newspaper className="h-4 w-4" /> },
+  { title: "Quick Post", href: "/post/new", icon: <PlusCircle className="h-4 w-4" /> },
+  { title: "Courier", href: "/courier", icon: <Truck className="h-4 w-4" /> },
   { title: "Explore", href: "/explore", icon: <Compass className="h-4 w-4" /> },
   { title: "Products", href: "/products", icon: <Search className="h-4 w-4" /> },
   { title: "Needs", href: "/needs", icon: <Search className="h-4 w-4" /> },
@@ -28,7 +34,8 @@ const SIDEBAR_ITEMS = [
 ];
 
 const MOBILE_NAV_ITEMS = [
-  { title: "Home", href: "/", icon: <Home className="h-5 w-5" /> },
+  { title: "Feed", href: "/feed", icon: <Newspaper className="h-5 w-5" /> },
+  { title: "Post", href: "/post/new", icon: <PlusCircle className="h-5 w-5" /> },
   { title: "Search", href: "/explore", icon: <Search className="h-5 w-5" /> },
   { title: "Exchange", href: "/exchanges", icon: <Repeat className="h-5 w-5" /> },
   { title: "Messages", href: "/messages", icon: <MessageCircle className="h-5 w-5" /> },

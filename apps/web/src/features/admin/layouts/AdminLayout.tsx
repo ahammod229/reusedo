@@ -25,6 +25,7 @@ const ADMIN_SIDEBAR_ITEMS = [
   { title: "Products", href: "/admin/products", icon: <Box className="h-4 w-4" /> },
   { title: "Need Requests", href: "/admin/needs", icon: <Heart className="h-4 w-4" /> },
   { title: "Exchanges", href: "/admin/exchanges", icon: <ShoppingCart className="h-4 w-4" /> },
+  { title: "Courier Requests", href: "/admin/courier", icon: <Truck className="h-4 w-4" /> },
   { title: "Shipping", href: "/admin/shipping", icon: <Truck className="h-4 w-4" /> },
   { title: "Reviews", href: "/admin/reviews", icon: <FileText className="h-4 w-4" /> },
   { title: "Reports", href: "/admin/reports", icon: <Flag className="h-4 w-4" /> },
