@@ -2,6 +2,7 @@ export { ForgotPassword } from "./auth/ForgotPassword";
 export { Login } from "./auth/Login";
 export { Register } from "./auth/Register";
 export { VerifyEmail } from "./auth/VerifyEmail";
+export { Onboarding } from "./auth/Onboarding";
 export * from "./exchanges/ExchangeList";
 export * from "./exchanges/ExchangeDetails";
 export { Explore } from "./explore";

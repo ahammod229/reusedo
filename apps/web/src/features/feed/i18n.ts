@@ -1,8 +1,9 @@
 import { create } from "zustand";
+import { authBn, authEn } from "./i18n.auth";
 
 export type Lang = "bn" | "en";
 
-const dict = {
+const base = {
   bn: {
     appTagline: "কিছুই ফেলবেন না — কারও না কারও কাজে লাগবে",
     feed: "ফিড",
@@ -66,6 +67,31 @@ const dict = {
     step2d: "কাছের মানুষ রিকোয়েস্ট করবে, চ্যাটে কথা বলুন।",
     step3: "হস্তান্তর",
     step3d: "নিজে দেখা করে অথবা কুরিয়ারে — গ্রহীতা শুধু কুরিয়ার চার্জ দেবেন।",
+    // shell
+    navHome: "হোম",
+    navFeed: "ফিড",
+    navPost: "পোস্ট",
+    navCourier: "কুরিয়ার",
+    navExchanges: "আদান-প্রদান",
+    navMessages: "মেসেজ",
+    navProfile: "প্রোফাইল",
+    navSettings: "সেটিংস",
+    navHelp: "সাহায্য",
+    navMyPosts: "আমার পোস্ট",
+    navSaved: "সেভ করা",
+    searchPlaceholder: "বই, টেবিল, কাপড় খুঁজুন…",
+    postCta: "পোস্ট করুন",
+    login: "লগইন",
+    logout: "লগআউট",
+    register: "অ্যাকাউন্ট খুলুন",
+    menu: "মেনু",
+    notifications: "নোটিফিকেশন",
+    footerRights: "সর্বস্বত্ব সংরক্ষিত",
+    footerAbout: "আমাদের কথা",
+    footerTerms: "শর্তাবলী",
+    footerPrivacy: "প্রাইভেসি",
+    footerContact: "যোগাযোগ",
+    footerNote: "ফেলবেন না, দিয়ে দিন — পুরোটাই বিনামূল্যে।",
   },
   en: {
     appTagline: "Don't throw it away — someone needs it",
@@ -131,8 +157,38 @@ const dict = {
     step2d: "Someone nearby requests it — talk in chat.",
     step3: "Hand over",
     step3d: "Meet in person or use courier — the receiver pays only the courier fee.",
+    // shell
+    navHome: "Home",
+    navFeed: "Feed",
+    navPost: "Post",
+    navCourier: "Courier",
+    navExchanges: "Exchanges",
+    navMessages: "Messages",
+    navProfile: "Profile",
+    navSettings: "Settings",
+    navHelp: "Help",
+    navMyPosts: "My posts",
+    navSaved: "Saved",
+    searchPlaceholder: "Search books, tables, clothes…",
+    postCta: "Post",
+    login: "Log in",
+    logout: "Log out",
+    register: "Create account",
+    menu: "Menu",
+    notifications: "Notifications",
+    footerRights: "All rights reserved",
+    footerAbout: "About",
+    footerTerms: "Terms",
+    footerPrivacy: "Privacy",
+    footerContact: "Contact",
+    footerNote: "Don't throw it away, give it — completely free.",
   },
 } as const;
+
+const dict = {
+  bn: { ...base.bn, ...authBn },
+  en: { ...base.en, ...authEn },
+};
 
 export type TKey = keyof (typeof dict)["bn"];
 
@@ -160,6 +216,15 @@ export const useLang = create<LangState>((set) => ({
     set({ lang });
   },
 }));
+
+const BN_DIGITS = "০১২৩৪৫৬৭৮৯";
+
+/** Renders digits as Bengali numerals when the UI language is Bengali. */
+export function useNum() {
+  const lang = useLang((s) => s.lang);
+  return (n: number | string): string =>
+    lang === "bn" ? String(n).replace(/\d/g, (d) => BN_DIGITS[Number(d)]) : String(n);
+}
 
 export function useT() {
   const lang = useLang((s) => s.lang);

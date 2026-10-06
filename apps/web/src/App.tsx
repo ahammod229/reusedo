@@ -13,6 +13,7 @@ const EditProfile = lazy(() => import("./pages").then((m) => ({ default: m.EditP
 const Explore = lazy(() => import("./pages").then((m) => ({ default: m.Explore })));
 const ForgotPassword = lazy(() => import("./pages").then((m) => ({ default: m.ForgotPassword })));
 const GeneralSettings = lazy(() => import("./pages").then((m) => ({ default: m.GeneralSettings })));
+const VerifyEmail = lazy(() => import("./pages").then((m) => ({ default: m.VerifyEmail })));
 const Help = lazy(() => import("./pages").then((m) => ({ default: m.Help })));
 const Home = lazy(() => import("./pages").then((m) => ({ default: m.Home })));
 const Login = lazy(() => import("./pages").then((m) => ({ default: m.Login })));
@@ -52,6 +53,7 @@ const ActivityTimeline = lazy(() =>
   import("./pages").then((m) => ({ default: m.ActivityTimeline })),
 );
 
+const Onboarding = lazy(() => import("./pages").then((m) => ({ default: m.Onboarding })));
 const FeedPage = lazy(() => import("./pages").then((m) => ({ default: m.FeedPage })));
 const QuickPost = lazy(() => import("./pages").then((m) => ({ default: m.QuickPost })));
 const CourierRequest = lazy(() => import("./pages").then((m) => ({ default: m.CourierRequest })));
@@ -283,6 +285,8 @@ function App() {
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
                         <Route path="/forgot-password" element={<ForgotPassword />} />
+                        <Route path="/verify-email" element={<VerifyEmail />} />
+                        <Route path="/onboarding" element={<Onboarding />} />
                       </Route>
                       <Route path="/about" element={<About />} />
                       <Route path="/contact" element={<Contact />} />

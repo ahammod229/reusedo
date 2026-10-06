@@ -1,4 +1,4 @@
-import { Bell, Menu, Search } from "lucide-react";
+import { Menu, Search } from "lucide-react";
 import { Link } from "react-router";
 
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
@@ -11,8 +11,26 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { Input } from "../ui/input";
+import { Logo } from "./logo";
 import { ThemeToggle } from "./theme-toggle";
+
+export interface HeaderLabels {
+  menu: string;
+  search: string;
+  profile: string;
+  settings: string;
+  login: string;
+  logout: string;
+}
+
+const DEFAULT_LABELS: HeaderLabels = {
+  menu: "Menu",
+  search: "Search…",
+  profile: "Profile",
+  settings: "Settings",
+  login: "Log in",
+  logout: "Log out",
+};
 
 export interface HeaderProps {
   onMenuClick?: () => void;
@@ -23,81 +41,96 @@ export interface HeaderProps {
   } | null;
   onLogout?: () => void;
   notificationAction?: React.ReactNode;
+  /** Extra controls on the right (language toggle, primary CTA). */
+  actions?: React.ReactNode;
+  labels?: Partial<HeaderLabels>;
 }
 
-export function Header({ onMenuClick, user, onLogout, notificationAction }: HeaderProps) {
+export function Header({
+  onMenuClick,
+  user,
+  onLogout,
+  notificationAction,
+  actions,
+  labels,
+}: HeaderProps) {
+  const l = { ...DEFAULT_LABELS, ...labels };
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-16 items-center px-4 md:px-8">
-        <Button variant="ghost" size="icon" className="mr-2 md:hidden" onClick={onMenuClick}>
+    <header className="sticky top-0 z-40 w-full border-b bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+      <div className="mx-auto flex h-14 max-w-[88rem] items-center gap-2 px-3 sm:h-16 sm:gap-3 md:px-6">
+        <Button variant="ghost" size="icon" className="md:hidden" onClick={onMenuClick}>
           <Menu className="h-5 w-5" />
-          <span className="sr-only">Toggle menu</span>
+          <span className="sr-only">{l.menu}</span>
         </Button>
-        <div className="mr-4 hidden md:flex">
-          <Link to="/" className="flex items-center space-x-2">
-            <span className="hidden font-bold sm:inline-block text-xl">REUSEDO</span>
-          </Link>
-        </div>
-        <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-          <div className="w-full flex-1 md:w-auto md:flex-none">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search products..."
-                className="h-9 w-full rounded-md border border-input bg-background pl-8 md:w-[300px] lg:w-[400px]"
-              />
-              <kbd className="pointer-events-none absolute right-1.5 top-2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
-                <span className="text-xs">⌘</span>K
-              </kbd>
-            </div>
-          </div>
-          <nav className="flex items-center space-x-2">
-            <ThemeToggle />
-            {notificationAction || (
-              <Button variant="ghost" size="icon">
-                <Bell className="h-5 w-5" />
-                <span className="sr-only">Notifications</span>
-              </Button>
-            )}
 
-            {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.avatar} alt={user.name || "User"} />
-                      <AvatarFallback>
-                        {user.name ? user.name.charAt(0).toUpperCase() : "U"}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{user.name}</p>
-                      <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to="/profile">Profile</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/settings">Settings</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={onLogout}>Log out</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <Button asChild variant="default">
-                <Link to="/login">Sign In</Link>
-              </Button>
-            )}
-          </nav>
-        </div>
+        <Link to="/" className="shrink-0" aria-label="ReuseDo">
+          <Logo />
+        </Link>
+
+        <form
+          // biome-ignore lint/a11y/useSemanticElements: a search landmark needs the form, not just the input
+          role="search"
+          action="/search"
+          className="relative mx-auto hidden w-full max-w-md flex-1 sm:block"
+        >
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            name="q"
+            type="search"
+            placeholder={l.search}
+            aria-label={l.search}
+            className="h-10 w-full rounded-full border border-input bg-muted/60 pl-10 pr-4 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:ring-2 focus:ring-primary/20"
+          />
+        </form>
+
+        <nav className="ml-auto flex items-center gap-1 sm:gap-2">
+          <Button asChild variant="ghost" size="icon" className="sm:hidden">
+            <Link to="/search" aria-label={l.search}>
+              <Search className="h-5 w-5" />
+            </Link>
+          </Button>
+          {actions}
+          <span className="hidden sm:inline-flex">
+            <ThemeToggle />
+          </span>
+          {notificationAction}
+
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-9 w-9 rounded-full p-0">
+                  <Avatar className="h-9 w-9">
+                    <AvatarImage src={user.avatar} alt={user.name || "User"} />
+                    <AvatarFallback className="bg-primary/15 font-semibold text-primary">
+                      {user.name ? user.name.charAt(0).toUpperCase() : "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-60" align="end">
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-semibold leading-none">{user.name}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/profile">{l.profile}</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/settings">{l.settings}</Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={onLogout}>{l.logout}</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button asChild size="sm" className="h-9 rounded-full px-4">
+              <Link to="/login">{l.login}</Link>
+            </Button>
+          )}
+        </nav>
       </div>
     </header>
   );

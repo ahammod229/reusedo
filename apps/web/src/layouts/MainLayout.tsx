@@ -1,75 +1,107 @@
-import { Footer, Header, MobileBottomNav, Sidebar } from "@/shared/components/ui";
+import { useAuthStore } from "@/features/auth";
+import { LangToggle } from "@/features/feed/LangToggle";
+import { useT } from "@/features/feed/i18n";
+import { Button, Footer, Header, MobileBottomNav, Sidebar } from "@/shared/components/ui";
 import {
-  Compass,
+  Bookmark,
   HelpCircle,
   Home,
-  Newspaper,
-  PlusCircle,
-  Truck,
   MessageCircle,
+  Newspaper,
+  PackageOpen,
+  Plus,
   Repeat,
-  Search,
   Settings,
+  Truck,
   User as UserIcon,
 } from "lucide-react";
-import * as React from "react";
-import { Outlet } from "react-router";
+import { useState } from "react";
+import { Link, Outlet } from "react-router";
 import { NotificationBadge } from "../components/NotificationBadge";
-
-import { useAuthStore } from "@/features/auth";
-
-const SIDEBAR_ITEMS = [
-  { title: "Home", href: "/", icon: <Home className="h-4 w-4" /> },
-  { title: "Feed", href: "/feed", icon: <Newspaper className="h-4 w-4" /> },
-  { title: "Quick Post", href: "/post/new", icon: <PlusCircle className="h-4 w-4" /> },
-  { title: "Courier", href: "/courier", icon: <Truck className="h-4 w-4" /> },
-  { title: "Explore", href: "/explore", icon: <Compass className="h-4 w-4" /> },
-  { title: "Products", href: "/products", icon: <Search className="h-4 w-4" /> },
-  { title: "Needs", href: "/needs", icon: <Search className="h-4 w-4" /> },
-  { title: "Exchanges", href: "/exchanges", icon: <Repeat className="h-4 w-4" /> },
-  { title: "Messages", href: "/messages", icon: <MessageCircle className="h-4 w-4" /> },
-  { title: "Profile", href: "/profile", icon: <UserIcon className="h-4 w-4" /> },
-  { title: "Settings", href: "/settings", icon: <Settings className="h-4 w-4" /> },
-  { title: "Help", href: "/help", icon: <HelpCircle className="h-4 w-4" /> },
-];
-
-const MOBILE_NAV_ITEMS = [
-  { title: "Feed", href: "/feed", icon: <Newspaper className="h-5 w-5" /> },
-  { title: "Post", href: "/post/new", icon: <PlusCircle className="h-5 w-5" /> },
-  { title: "Search", href: "/explore", icon: <Search className="h-5 w-5" /> },
-  { title: "Exchange", href: "/exchanges", icon: <Repeat className="h-5 w-5" /> },
-  { title: "Messages", href: "/messages", icon: <MessageCircle className="h-5 w-5" /> },
-  { title: "Profile", href: "/profile", icon: <UserIcon className="h-5 w-5" /> },
-];
+import { MobileMenu } from "./MobileMenu";
 
 export function MainLayout() {
-  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const t = useT();
   const user = useAuthStore((state) => state.user);
+  const ic = "h-5 w-5";
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const sidebarItems = [
+    { title: t("navHome"), href: "/", icon: <Home className={ic} /> },
+    { title: t("navFeed"), href: "/feed", icon: <Newspaper className={ic} /> },
+    { title: t("navMyPosts"), href: "/my-products", icon: <PackageOpen className={ic} /> },
+    { title: t("navExchanges"), href: "/exchanges", icon: <Repeat className={ic} /> },
+    { title: t("navCourier"), href: "/courier", icon: <Truck className={ic} /> },
+    { title: t("navMessages"), href: "/messages", icon: <MessageCircle className={ic} /> },
+    { title: t("navSaved"), href: "/search/saved", icon: <Bookmark className={ic} /> },
+    { title: t("navProfile"), href: "/profile", icon: <UserIcon className={ic} /> },
+    { title: t("navSettings"), href: "/settings", icon: <Settings className={ic} /> },
+    { title: t("navHelp"), href: "/help", icon: <HelpCircle className={ic} /> },
+  ];
+
+  const mobileItems = [
+    { title: t("navFeed"), href: "/feed", icon: <Newspaper className={ic} /> },
+    { title: t("navExchanges"), href: "/exchanges", icon: <Repeat className={ic} /> },
+    { title: t("navPost"), href: "/post/new", icon: <Plus className="h-7 w-7" />, primary: true },
+    { title: t("navMessages"), href: "/messages", icon: <MessageCircle className={ic} /> },
+    { title: t("navProfile"), href: "/profile", icon: <UserIcon className={ic} /> },
+  ];
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <Header
-        user={{
-          // biome-ignore lint/suspicious/noExplicitAny: user type from auth store
-          name: (user as any)?.display_name || (user as any)?.displayName || "User",
-          email: user?.email || "",
-          // biome-ignore lint/suspicious/noExplicitAny: user type from auth store
-          avatar: (user as any)?.avatar_url,
+        user={
+          user
+            ? {
+                // biome-ignore lint/suspicious/noExplicitAny: user type from auth store
+                name: (user as any).display_name || (user as any).displayName || "User",
+                email: user.email || "",
+                // biome-ignore lint/suspicious/noExplicitAny: user type from auth store
+                avatar: (user as any).avatar_url,
+              }
+            : null
+        }
+        labels={{
+          menu: t("menu"),
+          search: t("searchPlaceholder"),
+          profile: t("navProfile"),
+          settings: t("navSettings"),
+          login: t("login"),
+          logout: t("logout"),
         }}
-        onMenuClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        notificationAction={<NotificationBadge />}
+        onMenuClick={() => setMenuOpen(true)}
+        notificationAction={user ? <NotificationBadge /> : null}
+        actions={
+          <>
+            <Button asChild size="sm" className="hidden rounded-full sm:inline-flex">
+              <Link to="/post/new">
+                <Plus className="mr-1 h-4 w-4" /> {t("postCta")}
+              </Link>
+            </Button>
+            <LangToggle />
+          </>
+        }
       />
 
-      <div className="flex flex-1">
-        <Sidebar items={SIDEBAR_ITEMS} />
-
-        <main className="flex-1 overflow-y-auto">
+      <div className="mx-auto flex w-full max-w-[88rem] flex-1">
+        <Sidebar items={sidebarItems} title={t("menu")} />
+        <main className="min-w-0 flex-1 pb-24 md:pb-0">
           <Outlet />
         </main>
       </div>
 
-      <Footer />
-      <MobileBottomNav items={MOBILE_NAV_ITEMS} />
+      <Footer
+        labels={{
+          rights: t("footerRights"),
+          about: t("footerAbout"),
+          terms: t("footerTerms"),
+          privacy: t("footerPrivacy"),
+          contact: t("footerContact"),
+          note: t("footerNote"),
+        }}
+      />
+      <MobileBottomNav items={mobileItems} />
+      <MobileMenu open={menuOpen} onOpenChange={setMenuOpen} items={sidebarItems} />
     </div>
   );
 }

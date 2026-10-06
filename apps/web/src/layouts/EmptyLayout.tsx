@@ -1,16 +1,30 @@
+import { LangToggle } from "@/features/feed/LangToggle";
+import { useT } from "@/features/feed/i18n";
 import { Footer, Header } from "@/shared/components/ui";
 import { Outlet } from "react-router";
 
-const DUMMY_USER = null; // Logged out by default
-
 export function EmptyLayout() {
+  const t = useT();
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
-      <Header user={DUMMY_USER} />
+      <Header
+        user={null}
+        actions={<LangToggle />}
+        labels={{ search: t("searchPlaceholder"), login: t("login"), menu: t("menu") }}
+      />
       <main className="flex-1">
         <Outlet />
       </main>
-      <Footer />
+      <Footer
+        labels={{
+          rights: t("footerRights"),
+          about: t("footerAbout"),
+          terms: t("footerTerms"),
+          privacy: t("footerPrivacy"),
+          contact: t("footerContact"),
+          note: t("footerNote"),
+        }}
+      />
     </div>
   );
 }

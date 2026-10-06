@@ -1,28 +1,50 @@
 import { Link } from "react-router";
+import { Logo } from "./logo";
 
-export function Footer() {
+export interface FooterLabels {
+  rights: string;
+  about: string;
+  terms: string;
+  privacy: string;
+  contact: string;
+  note: string;
+}
+
+const DEFAULTS: FooterLabels = {
+  rights: "All rights reserved",
+  about: "About",
+  terms: "Terms",
+  privacy: "Privacy",
+  contact: "Contact",
+  note: "",
+};
+
+export function Footer({ labels }: { labels?: Partial<FooterLabels> }) {
+  const l = { ...DEFAULTS, ...labels };
   return (
-    <footer className="w-full border-t bg-background px-4 py-6 md:px-8">
-      <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
-        <div className="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
-          <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-            &copy; {new Date().getFullYear()} Reusedo. All rights reserved.
-          </p>
+    <footer className="w-full border-t bg-card px-4 pb-24 pt-8 md:px-8 md:pb-8">
+      <div className="mx-auto flex max-w-[88rem] flex-col items-center justify-between gap-4 md:flex-row">
+        <div className="flex flex-col items-center gap-2 md:items-start">
+          <Logo />
+          {l.note && <p className="text-sm text-muted-foreground">{l.note}</p>}
         </div>
-        <div className="flex gap-4 text-sm text-muted-foreground">
-          <Link to="/about" className="hover:underline hover:text-foreground">
-            About
+        <nav className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+          <Link to="/about" className="hover:text-foreground">
+            {l.about}
           </Link>
-          <Link to="/terms" className="hover:underline hover:text-foreground">
-            Terms
+          <Link to="/terms" className="hover:text-foreground">
+            {l.terms}
           </Link>
-          <Link to="/privacy" className="hover:underline hover:text-foreground">
-            Privacy
+          <Link to="/privacy" className="hover:text-foreground">
+            {l.privacy}
           </Link>
-          <Link to="/contact" className="hover:underline hover:text-foreground">
-            Contact
+          <Link to="/contact" className="hover:text-foreground">
+            {l.contact}
           </Link>
-        </div>
+        </nav>
+        <p className="text-xs text-muted-foreground">
+          &copy; {new Date().getFullYear()} ReuseDo · {l.rights}
+        </p>
       </div>
     </footer>
   );

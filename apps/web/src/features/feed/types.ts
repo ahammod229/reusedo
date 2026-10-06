@@ -27,31 +27,55 @@ export type CategoryId =
 
 export const CATEGORIES: { id: CategoryId; bn: string; en: string; emoji: string; tone: string }[] =
   [
-    { id: "books", bn: "বই", en: "Books", emoji: "📚", tone: "from-amber-100 to-amber-200" },
+    {
+      id: "books",
+      bn: "বই",
+      en: "Books",
+      emoji: "📚",
+      tone: "from-amber-100 to-amber-200 dark:from-white/10 dark:to-white/5",
+    },
     {
       id: "stationery",
       bn: "খাতা-কলম",
       en: "Stationery",
       emoji: "📓",
-      tone: "from-sky-100 to-sky-200",
+      tone: "from-sky-100 to-sky-200 dark:from-white/10 dark:to-white/5",
     },
     {
       id: "furniture",
       bn: "আসবাব",
       en: "Furniture",
       emoji: "🪑",
-      tone: "from-orange-100 to-orange-200",
+      tone: "from-orange-100 to-orange-200 dark:from-white/10 dark:to-white/5",
     },
-    { id: "clothes", bn: "কাপড়", en: "Clothes", emoji: "👕", tone: "from-rose-100 to-rose-200" },
+    {
+      id: "clothes",
+      bn: "কাপড়",
+      en: "Clothes",
+      emoji: "👕",
+      tone: "from-rose-100 to-rose-200 dark:from-white/10 dark:to-white/5",
+    },
     {
       id: "electronics",
       bn: "ইলেকট্রনিক্স",
       en: "Electronics",
       emoji: "🔌",
-      tone: "from-indigo-100 to-indigo-200",
+      tone: "from-indigo-100 to-indigo-200 dark:from-white/10 dark:to-white/5",
     },
-    { id: "kids", bn: "শিশুদের", en: "Kids", emoji: "🧸", tone: "from-pink-100 to-pink-200" },
-    { id: "other", bn: "অন্যান্য", en: "Other", emoji: "🎁", tone: "from-emerald-100 to-emerald-200" },
+    {
+      id: "kids",
+      bn: "শিশুদের",
+      en: "Kids",
+      emoji: "🧸",
+      tone: "from-pink-100 to-pink-200 dark:from-white/10 dark:to-white/5",
+    },
+    {
+      id: "other",
+      bn: "অন্যান্য",
+      en: "Other",
+      emoji: "🎁",
+      tone: "from-emerald-100 to-emerald-200 dark:from-white/10 dark:to-white/5",
+    },
   ];
 
 export const categoryOf = (id: CategoryId) => CATEGORIES.find((c) => c.id === id) ?? CATEGORIES[6];
