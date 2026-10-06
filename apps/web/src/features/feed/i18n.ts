@@ -226,6 +226,12 @@ export function useNum() {
     lang === "bn" ? String(n).replace(/\d/g, (d) => BN_DIGITS[Number(d)]) : String(n);
 }
 
+/** Inline bilingual text: tr("বাংলা", "English"). Keeps one-off page copy next to the markup. */
+export function useTr() {
+  const lang = useLang((s) => s.lang);
+  return (bn: string, en: string): string => (lang === "bn" ? bn : en);
+}
+
 export function useT() {
   const lang = useLang((s) => s.lang);
   return (key: TKey): string => dict[lang][key];

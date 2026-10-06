@@ -1,4 +1,4 @@
-import { useLang, useT } from "@/features/feed/i18n";
+import { useLang, useNum, useT } from "@/features/feed/i18n";
 import { MOCK_COURIER } from "@/features/feed/mock";
 import { type CourierRequestItem, categoryOf } from "@/features/feed/types";
 import {
@@ -16,6 +16,7 @@ const TRACKING = () => `SF${Math.floor(10000000 + Math.random() * 89999999)}`;
 
 export function CourierQueue() {
   const t = useT();
+  const num = useNum();
   const lang = useLang((s) => s.lang);
   const [items, setItems] = useState<(CourierRequestItem & { tracking?: string })[]>(MOCK_COURIER);
   const [open, setOpen] = useState<string | null>(null);
@@ -43,7 +44,7 @@ export function CourierQueue() {
             <div className="min-w-0 flex-1">
               <div className="font-semibold">{i.item}</div>
               <div className="text-sm text-muted-foreground">
-                {i.giver.address} → {i.receiver.address} · {i.weightKg} কেজি · ৳{i.charge}
+                {i.giver.address} → {i.receiver.address} · {num(i.weightKg)} কেজি · ৳{num(i.charge)}
               </div>
               <div className="text-xs text-muted-foreground">{i.createdAt}</div>
             </div>
@@ -89,9 +90,9 @@ export function CourierQueue() {
               <Party title={t("dropoff")} p={sel.receiver} />
               <div className="flex justify-between rounded-lg bg-muted p-3">
                 <span>
-                  {t("weightApprox")}: {sel.weightKg} কেজি
+                  {t("weightApprox")}: {num(sel.weightKg)} কেজি
                 </span>
-                <span className="font-bold">COD ৳{sel.charge}</span>
+                <span className="font-bold">COD ৳{num(sel.charge)}</span>
               </div>
               <div className="flex gap-2">
                 <Button

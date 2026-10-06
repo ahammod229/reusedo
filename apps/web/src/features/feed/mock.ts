@@ -178,3 +178,229 @@ export const MOCK_ADS = [
     cta: "ট্রাই করুন",
   },
 ];
+
+export interface MockUser {
+  username: string;
+  name: string;
+  verified: boolean;
+  trust: number;
+  area: string;
+  district: string;
+  joined: string;
+  given: number;
+  received: number;
+  bio: string;
+  badges: string[];
+  reviews: { by: string; stars: number; text: string; when: string }[];
+}
+
+export const MOCK_USERS: Record<string, MockUser> = {
+  rakib: {
+    username: "rakib",
+    name: "রাকিব হাসান",
+    verified: true,
+    trust: 92,
+    area: "মিরপুর ১০",
+    district: "ঢাকা",
+    joined: "জানুয়ারি ২০২৬",
+    given: 14,
+    received: 3,
+    bio: "পড়ার বই আর খাতা দিয়ে দিতে ভালো লাগে। শিক্ষার্থীদের কাজে লাগলেই খুশি।",
+    badges: ["ইমেইল যাচাই", "ঠিকানা যাচাই", "১০+ দান"],
+    reviews: [
+      { by: "সুমাইয়া আক্তার", stars: 5, text: "খুব ভালো মানুষ, সময়মতো বই পেয়েছি।", when: "২ সপ্তাহ আগে" },
+      { by: "ফাহিম রহমান", stars: 5, text: "কুরিয়ারে ঠিকমতো প্যাক করে পাঠিয়েছেন।", when: "১ মাস আগে" },
+      {
+        by: "তানভীর আহমেদ",
+        stars: 4,
+        text: "একটু দেরিতে উত্তর দেন, তবে জিনিস ভালো ছিল।",
+        when: "২ মাস আগে",
+      },
+    ],
+  },
+};
+
+export interface MockConversation {
+  id: string;
+  with: string;
+  verified: boolean;
+  postTitle: string;
+  postKind: "offer" | "need";
+  last: string;
+  when: string;
+  unread: number;
+  messages: { from: "me" | "them" | "system"; text: string; time: string }[];
+}
+
+export const MOCK_CHATS: MockConversation[] = [
+  {
+    id: "c1",
+    with: "রাকিব হাসান",
+    verified: true,
+    postTitle: "ক্লাস ৮-এর সব বই (সেট)",
+    postKind: "offer",
+    last: "ঠিক আছে, কুরিয়ারেই পাঠাব।",
+    when: "১০:২৪",
+    unread: 2,
+    messages: [
+      { from: "system", text: "আপনি এই পোস্টে রিকোয়েস্ট পাঠিয়েছেন।", time: "০৯:৫০" },
+      { from: "them", text: "আসসালামু আলাইকুম, বইগুলো এখনও আছে। আপনি কোথায় থাকেন?", time: "১০:০২" },
+      { from: "me", text: "ওয়ালাইকুম আসসালাম। আমি সিলেটে থাকি, জিন্দাবাজারে।", time: "১০:১১" },
+      {
+        from: "them",
+        text: "ঢাকা থেকে সিলেট দূরে, কুরিয়ারে পাঠানো যায়। চার্জ আপনাকে দিতে হবে।",
+        time: "১০:১৮",
+      },
+      { from: "me", text: "ঠিক আছে, আমি চার্জ দেব।", time: "১০:২১" },
+      { from: "them", text: "ঠিক আছে, কুরিয়ারেই পাঠাব।", time: "১০:২৪" },
+    ],
+  },
+  {
+    id: "c2",
+    with: "সুমাইয়া আক্তার",
+    verified: true,
+    postTitle: "পড়ার টেবিল দরকার",
+    postKind: "need",
+    last: "আমার কাছে একটা ছোট টেবিল আছে।",
+    when: "গতকাল",
+    unread: 0,
+    messages: [{ from: "me", text: "আমার কাছে একটা ছোট টেবিল আছে।", time: "গতকাল" }],
+  },
+  {
+    id: "c3",
+    with: "আলোর পথে ফাউন্ডেশন",
+    verified: true,
+    postTitle: "গল্পের বই — শিশুদের জন্য",
+    postKind: "need",
+    last: "অনেক ধন্যবাদ! আমরা নিয়ে যাব।",
+    when: "সোমবার",
+    unread: 0,
+    messages: [{ from: "them", text: "অনেক ধন্যবাদ! আমরা নিয়ে যাব।", time: "সোমবার" }],
+  },
+];
+
+export type ExchangeStatus = "requested" | "accepted" | "scheduled" | "completed" | "cancelled";
+
+export interface MockExchange {
+  id: string;
+  title: string;
+  category: import("./types").CategoryId;
+  role: "giver" | "receiver";
+  other: string;
+  status: ExchangeStatus;
+  via: "pickup" | "courier";
+  updated: string;
+}
+
+export const MOCK_EXCHANGES: MockExchange[] = [
+  {
+    id: "e1",
+    title: "ক্লাস ৮-এর সব বই (সেট)",
+    category: "books",
+    role: "receiver",
+    other: "রাকিব হাসান",
+    status: "accepted",
+    via: "courier",
+    updated: "আজ ১০:২৪",
+  },
+  {
+    id: "e2",
+    title: "কাঠের বুকশেলফ",
+    category: "furniture",
+    role: "giver",
+    other: "তানভীর আহমেদ",
+    status: "scheduled",
+    via: "pickup",
+    updated: "গতকাল",
+  },
+  {
+    id: "e3",
+    title: "নতুন খাতা ১২টি",
+    category: "stationery",
+    role: "giver",
+    other: "মিতা দাস",
+    status: "requested",
+    via: "pickup",
+    updated: "২ দিন আগে",
+  },
+  {
+    id: "e4",
+    title: "শিশুর শীতের জামা",
+    category: "clothes",
+    role: "receiver",
+    other: "নাজমা বেগম",
+    status: "completed",
+    via: "courier",
+    updated: "গত সপ্তাহ",
+  },
+  {
+    id: "e5",
+    title: "পুরনো ল্যাপটপ",
+    category: "electronics",
+    role: "giver",
+    other: "ফাহিম রহমান",
+    status: "cancelled",
+    via: "pickup",
+    updated: "গত মাস",
+  },
+];
+
+export interface MockNotification {
+  id: string;
+  kind: "request" | "accepted" | "message" | "courier" | "match" | "review";
+  text: string;
+  when: string;
+  unread: boolean;
+  href: string;
+}
+
+export const MOCK_NOTIFICATIONS: MockNotification[] = [
+  {
+    id: "n1",
+    kind: "message",
+    text: "রাকিব হাসান আপনাকে মেসেজ পাঠিয়েছেন",
+    when: "১০ মিনিট আগে",
+    unread: true,
+    href: "/messages/c1",
+  },
+  {
+    id: "n2",
+    kind: "courier",
+    text: "আপনার কুরিয়ার রিকোয়েস্ট অনুমোদিত হয়েছে। ট্র্যাকিং: SF48201937",
+    when: "১ ঘণ্টা আগে",
+    unread: true,
+    href: "/courier",
+  },
+  {
+    id: "n3",
+    kind: "request",
+    text: "তানভীর আহমেদ আপনার ‘কাঠের বুকশেলফ’ চেয়েছেন",
+    when: "৩ ঘণ্টা আগে",
+    unread: true,
+    href: "/exchanges",
+  },
+  {
+    id: "n4",
+    kind: "match",
+    text: "আপনার খোঁজা ‘পড়ার টেবিল’ মিলতে পারে এমন নতুন পোস্ট এসেছে",
+    when: "গতকাল",
+    unread: false,
+    href: "/feed",
+  },
+  {
+    id: "n5",
+    kind: "accepted",
+    text: "নাজমা বেগম আপনার রিকোয়েস্ট গ্রহণ করেছেন",
+    when: "গতকাল",
+    unread: false,
+    href: "/exchanges",
+  },
+  {
+    id: "n6",
+    kind: "review",
+    text: "সুমাইয়া আক্তার আপনাকে ৫ তারা রিভিউ দিয়েছেন",
+    when: "গত সপ্তাহ",
+    unread: false,
+    href: "/profile",
+  },
+];

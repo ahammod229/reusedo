@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import { cn } from "../../lib/utils";
 import { Logo } from "./logo";
 import { ThemeToggle } from "./theme-toggle";
 
@@ -43,6 +44,8 @@ export interface HeaderProps {
   notificationAction?: React.ReactNode;
   /** Extra controls on the right (language toggle, primary CTA). */
   actions?: React.ReactNode;
+  /** Hide the logo from md up (e.g. when a sidebar already shows it). */
+  hideLogoOnDesktop?: boolean;
   labels?: Partial<HeaderLabels>;
 }
 
@@ -53,6 +56,7 @@ export function Header({
   notificationAction,
   actions,
   labels,
+  hideLogoOnDesktop,
 }: HeaderProps) {
   const l = { ...DEFAULT_LABELS, ...labels };
   return (
@@ -63,7 +67,11 @@ export function Header({
           <span className="sr-only">{l.menu}</span>
         </Button>
 
-        <Link to="/" className="shrink-0" aria-label="ReuseDo">
+        <Link
+          to="/"
+          className={cn("shrink-0", hideLogoOnDesktop && "md:hidden")}
+          aria-label="ReuseDo"
+        >
           <Logo />
         </Link>
 

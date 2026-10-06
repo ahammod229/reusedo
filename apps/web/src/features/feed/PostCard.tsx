@@ -1,5 +1,6 @@
 import { Badge, Button, Card, cn } from "@/shared/components/ui";
 import { Bookmark, BadgeCheck, MapPin, MessageCircle, Share2, Flag } from "lucide-react";
+import { Link } from "react-router";
 import { useLang, useNum, useT } from "./i18n";
 import { type FeedPost, categoryOf } from "./types";
 
@@ -41,7 +42,11 @@ export function PostCard({ post }: { post: FeedPost }) {
       </div>
 
       <div className="px-4">
-        <h3 className="text-base font-semibold leading-snug">{post.title}</h3>
+        <h3 className="text-base font-semibold leading-snug">
+          <Link to={`/post/${post.id}`} className="hover:underline">
+            {post.title}
+          </Link>
+        </h3>
         <p className="mt-1 text-sm text-muted-foreground">{post.description}</p>
       </div>
 

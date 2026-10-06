@@ -61,7 +61,7 @@ export function CourierRequest() {
             <div className="text-muted-foreground">{t("dropoff")}</div>জিন্দাবাজার, সিলেট
           </div>
         </div>
-        <div className="flex items-center justify-between rounded-lg bg-amber-50 p-3 text-sm dark:bg-amber-950/30">
+        <div className="flex items-center justify-between rounded-lg bg-warning-soft p-3 text-sm text-warning">
           <span>{t("charge")}</span>
           <span className="text-lg font-bold">৳১৩০</span>
         </div>
