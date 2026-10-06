@@ -1,12 +1,9 @@
-import { Link } from "react-router";
 import { AdCard } from "./AdCard";
-import { useLang, useTr } from "./i18n";
-import { CATEGORIES } from "./types";
+import { useTr } from "./i18n";
 
-/** Right-hand column for wide screens (xl+): safety tips, quick categories and one ad slot. */
+/** Right-hand column for wide screens (xl+): safety tips and one ad slot. */
 export function FeedRail() {
   const tr = useTr();
-  const lang = useLang((s) => s.lang);
   const tips = [
     tr("পাবলিক জায়গায় দেখা করুন", "Meet in a public place"),
     tr("ফোন নম্বর চ্যাটে দেবেন না", "Don't share your number in chat"),
@@ -25,21 +22,6 @@ export function FeedRail() {
             <li key={t} className="flex gap-2">
               <span className="text-primary">✓</span>
               {t}
-            </li>
-          ))}
-        </ul>
-      </section>
-      <section className="rounded-2xl border bg-card p-4">
-        <h2 className="mb-3 font-bold">{tr("ক্যাটাগরি", "Categories")}</h2>
-        <ul className="flex flex-wrap gap-2">
-          {CATEGORIES.map((c) => (
-            <li key={c.id}>
-              <Link
-                to={`/search?q=${encodeURIComponent(lang === "bn" ? c.bn : c.en)}`}
-                className="inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-sm hover:bg-accent"
-              >
-                {c.emoji} {lang === "bn" ? c.bn : c.en}
-              </Link>
             </li>
           ))}
         </ul>

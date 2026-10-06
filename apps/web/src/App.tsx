@@ -56,71 +56,65 @@ const LegalPage = lazy(() =>
 const NotFoundPage = lazy(() =>
   import("./pages/static/StaticPages").then((m) => ({ default: m.NotFoundPage })),
 );
-const AdSettings = lazy(() =>
-  import("./features/admin/pages").then((m) => ({ default: m.AdSettings })),
-);
 const Onboarding = lazy(() => import("./pages").then((m) => ({ default: m.Onboarding })));
 const FeedPage = lazy(() => import("./pages").then((m) => ({ default: m.FeedPage })));
 const QuickPost = lazy(() => import("./pages").then((m) => ({ default: m.QuickPost })));
 const CourierRequest = lazy(() => import("./pages").then((m) => ({ default: m.CourierRequest })));
-const CourierQueue = lazy(() =>
-  import("./features/admin/pages").then((m) => ({ default: m.CourierQueue })),
-);
 
 import { AuthProvider } from "./providers/AuthProvider";
 import { SocketProvider } from "./providers/SocketProvider";
 import { AdminRoute } from "./routes/AdminRoute";
 import { GuestRoute } from "./routes/GuestRoute";
+import { RequireArea } from "./features/admin/RequireArea";
 import { ToPost } from "./routes/Redirects";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
 
 const AdminLayout = lazy(() =>
   import("./features/admin/layouts/AdminLayout").then((m) => ({ default: m.AdminLayout })),
 );
+
 const AdminDashboard = lazy(() =>
-  import("./features/admin/pages").then((m) => ({ default: m.Dashboard })),
+  import("./features/admin/screens").then((m) => ({ default: m.Dashboard })),
 );
-const AdminAnalyticsDashboard = lazy(() =>
-  import("./features/admin/pages").then((m) => ({ default: m.AnalyticsDashboard })),
+const AdminAnalytics = lazy(() =>
+  import("./features/admin/screens").then((m) => ({ default: m.Analytics })),
 );
-const AdminUserManagement = lazy(() =>
-  import("./features/admin/pages").then((m) => ({ default: m.UserManagement })),
-);
-const AdminProducts = lazy(() =>
-  import("./features/admin/pages").then((m) => ({ default: m.AdminProducts })),
-);
-const AdminNeeds = lazy(() =>
-  import("./features/admin/pages").then((m) => ({ default: m.AdminNeeds })),
-);
-const AdminExchanges = lazy(() =>
-  import("./features/admin/pages").then((m) => ({ default: m.AdminExchanges })),
-);
-const AdminShipping = lazy(() =>
-  import("./features/admin/pages").then((m) => ({ default: m.AdminShipping })),
-);
-const AdminReviews = lazy(() =>
-  import("./features/admin/pages").then((m) => ({ default: m.AdminReviews })),
+const AdminPosts = lazy(() =>
+  import("./features/admin/screens").then((m) => ({ default: m.Posts })),
 );
 const AdminReports = lazy(() =>
-  import("./features/admin/pages").then((m) => ({ default: m.AdminReports })),
+  import("./features/admin/screens").then((m) => ({ default: m.Reports })),
 );
 const AdminVerification = lazy(() =>
-  import("./features/admin/pages").then((m) => ({ default: m.AdminVerification })),
+  import("./features/admin/screens").then((m) => ({ default: m.Verification })),
+);
+const AdminReviews = lazy(() =>
+  import("./features/admin/screens").then((m) => ({ default: m.Reviews })),
+);
+const AdminUsers = lazy(() =>
+  import("./features/admin/screens").then((m) => ({ default: m.Users })),
+);
+const AdminExchanges = lazy(() =>
+  import("./features/admin/screens").then((m) => ({ default: m.Exchanges })),
+);
+const AdminCourier = lazy(() =>
+  import("./features/admin/screens").then((m) => ({ default: m.CourierQueue })),
 );
 const AdminCategories = lazy(() =>
-  import("./features/admin/pages").then((m) => ({ default: m.AdminCategories })),
+  import("./features/admin/screens").then((m) => ({ default: m.Categories })),
 );
-const AdminCMSManagement = lazy(() =>
-  import("./features/admin/pages").then((m) => ({ default: m.CMSManagement })),
+const AdminCms = lazy(() => import("./features/admin/screens").then((m) => ({ default: m.Cms })));
+const AdminAds = lazy(() =>
+  import("./features/admin/screens").then((m) => ({ default: m.AdSettings })),
 );
-const AdminPlatformSettings = lazy(() =>
-  import("./features/admin/pages").then((m) => ({ default: m.PlatformSettings })),
+const AdminFlags = lazy(() =>
+  import("./features/admin/screens").then((m) => ({ default: m.Flags })),
 );
-const AdminFeatureFlags = lazy(() =>
-  import("./features/admin/pages").then((m) => ({ default: m.FeatureFlags })),
+const AdminSettings = lazy(() =>
+  import("./features/admin/screens").then((m) => ({ default: m.Settings })),
 );
-const AdminAuditLogs = lazy(() =>
-  import("./features/admin/pages").then((m) => ({ default: m.AuditLogs })),
+const AdminAudit = lazy(() =>
+  import("./features/admin/screens").then((m) => ({ default: m.Audit })),
 );
 
 const queryClient = new QueryClient();
@@ -214,23 +208,130 @@ function App() {
                     {/* Admin Routes */}
                     <Route element={<AdminRoute />}>
                       <Route path="/admin" element={<AdminLayout />}>
-                        <Route index element={<AdminDashboard />} />
-                        <Route path="analytics" element={<AdminAnalyticsDashboard />} />
-                        <Route path="users" element={<AdminUserManagement />} />
-                        <Route path="products" element={<AdminProducts />} />
-                        <Route path="needs" element={<AdminNeeds />} />
-                        <Route path="exchanges" element={<AdminExchanges />} />
-                        <Route path="courier" element={<CourierQueue />} />
-                        <Route path="ads" element={<AdSettings />} />
-                        <Route path="shipping" element={<AdminShipping />} />
-                        <Route path="reviews" element={<AdminReviews />} />
-                        <Route path="reports" element={<AdminReports />} />
-                        <Route path="verification" element={<AdminVerification />} />
-                        <Route path="categories" element={<AdminCategories />} />
-                        <Route path="cms" element={<AdminCMSManagement />} />
-                        <Route path="settings" element={<AdminPlatformSettings />} />
-                        <Route path="features" element={<AdminFeatureFlags />} />
-                        <Route path="audit" element={<AdminAuditLogs />} />
+                        <Route
+                          index
+                          element={
+                            <RequireArea area="dashboard">
+                              <AdminDashboard />
+                            </RequireArea>
+                          }
+                        />
+                        <Route
+                          path="analytics"
+                          element={
+                            <RequireArea area="analytics">
+                              <AdminAnalytics />
+                            </RequireArea>
+                          }
+                        />
+                        <Route
+                          path="posts"
+                          element={
+                            <RequireArea area="posts">
+                              <AdminPosts />
+                            </RequireArea>
+                          }
+                        />
+                        <Route
+                          path="reports"
+                          element={
+                            <RequireArea area="reports">
+                              <AdminReports />
+                            </RequireArea>
+                          }
+                        />
+                        <Route
+                          path="verification"
+                          element={
+                            <RequireArea area="verification">
+                              <AdminVerification />
+                            </RequireArea>
+                          }
+                        />
+                        <Route
+                          path="reviews"
+                          element={
+                            <RequireArea area="reviews">
+                              <AdminReviews />
+                            </RequireArea>
+                          }
+                        />
+                        <Route
+                          path="users"
+                          element={
+                            <RequireArea area="users">
+                              <AdminUsers />
+                            </RequireArea>
+                          }
+                        />
+                        <Route
+                          path="exchanges"
+                          element={
+                            <RequireArea area="exchanges">
+                              <AdminExchanges />
+                            </RequireArea>
+                          }
+                        />
+                        <Route
+                          path="courier"
+                          element={
+                            <RequireArea area="courier">
+                              <AdminCourier />
+                            </RequireArea>
+                          }
+                        />
+                        <Route
+                          path="categories"
+                          element={
+                            <RequireArea area="categories">
+                              <AdminCategories />
+                            </RequireArea>
+                          }
+                        />
+                        <Route
+                          path="cms"
+                          element={
+                            <RequireArea area="cms">
+                              <AdminCms />
+                            </RequireArea>
+                          }
+                        />
+                        <Route
+                          path="ads"
+                          element={
+                            <RequireArea area="ads">
+                              <AdminAds />
+                            </RequireArea>
+                          }
+                        />
+                        <Route
+                          path="features"
+                          element={
+                            <RequireArea area="features">
+                              <AdminFlags />
+                            </RequireArea>
+                          }
+                        />
+                        <Route
+                          path="settings"
+                          element={
+                            <RequireArea area="settings">
+                              <AdminSettings />
+                            </RequireArea>
+                          }
+                        />
+                        <Route
+                          path="audit"
+                          element={
+                            <RequireArea area="audit">
+                              <AdminAudit />
+                            </RequireArea>
+                          }
+                        />
+                        <Route path="products" element={<Navigate to="/admin/posts" replace />} />
+                        <Route path="needs" element={<Navigate to="/admin/posts" replace />} />
+                        <Route path="shipping" element={<Navigate to="/admin/courier" replace />} />
+                        <Route path="*" element={<Navigate to="/admin" replace />} />
                       </Route>
                     </Route>
 

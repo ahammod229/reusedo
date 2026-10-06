@@ -16,6 +16,9 @@ const exchanges = structuredClone(MOCK_EXCHANGES);
 const notifications = structuredClone(MOCK_NOTIFICATIONS);
 const courier = structuredClone(MOCK_COURIER);
 
+/** Lets the admin mock derive its "pending courier" counter from the same in-memory list. */
+export const pendingCourierCount = () => courier.filter((c) => c.status === "pending").length;
+
 const wait = <T>(v: T, ms = 250) =>
   new Promise<T>((r) => setTimeout(() => r(structuredClone(v)), ms));
 const STEPS: ExchangeStatus[] = ["requested", "accepted", "scheduled", "completed"];

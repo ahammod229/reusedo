@@ -1,24 +1,23 @@
 import { AdCard } from "@/features/feed/AdCard";
 import { PostCard } from "@/features/feed/PostCard";
-import { useLang, useT } from "@/features/feed/i18n";
+import { useT } from "@/features/feed/i18n";
 import { QueryState } from "@/features/data/QueryState";
 import { useFeed } from "@/features/data/hooks";
-import { CATEGORIES, type CategoryId, type PostKind } from "@/features/feed/types";
-import { Button, cn } from "@/shared/components/ui";
+import type { CategoryId, PostKind } from "@/features/feed/types";
+import { Button } from "@/shared/components/ui";
 import { Camera } from "lucide-react";
 import { Fragment, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link, useSearchParams } from "react-router";
+import { CategoryStrip, FeedToolbar, type Scope } from "@/features/feed/FeedFilters";
 import { FeedRail } from "@/features/feed/FeedRail";
 
 // An ad is injected after every N posts; keep in sync with the
 // `ads_frequency` platform setting once it is wired to the API.
 const AD_EVERY = 6;
-type Scope = "area" | "district" | "country";
 
 export function FeedPage() {
   const t = useT();
-  const lang = useLang((s) => s.lang);
   const [params] = useSearchParams();
   const initialKind = params.get("kind");
   const [kind, setKind] = useState<PostKind | "all">(
@@ -28,14 +27,6 @@ export function FeedPage() {
   const [scope, setScope] = useState<Scope>("country");
 
   const { data: posts = [], isLoading, error, refetch } = useFeed({ kind, category: cat, scope });
-
-  const chip = (active: boolean) =>
-    cn(
-      "shrink-0 rounded-full border px-3 py-1.5 text-sm transition-colors",
-      active
-        ? "border-primary bg-primary text-primary-foreground"
-        : "bg-background hover:bg-accent",
-    );
 
   return (
     <div className="mx-auto flex w-full max-w-[64rem] justify-center gap-6 px-4 py-4">
@@ -57,41 +48,8 @@ export function FeedPage() {
           </span>
         </Link>
 
-        <div className="sticky top-14 z-10 -mx-4 space-y-2 border-b bg-background/95 px-4 py-2 backdrop-blur sm:top-16">
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {(["all", "offer", "need"] as const).map((k) => (
-              <button type="button" key={k} className={chip(kind === k)} onClick={() => setKind(k)}>
-                {k === "all" ? t("all") : k === "offer" ? `🎁 ${t("give")}` : `🙏 ${t("need")}`}
-              </button>
-            ))}
-            <span className="mx-1 w-px shrink-0 bg-border" />
-            {(["area", "district", "country"] as const).map((s) => (
-              <button
-                type="button"
-                key={s}
-                className={chip(scope === s)}
-                onClick={() => setScope(s)}
-              >
-                {s === "area" ? t("nearMe") : s === "district" ? t("district") : t("country")}
-              </button>
-            ))}
-          </div>
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            <button type="button" className={chip(cat === "all")} onClick={() => setCat("all")}>
-              {t("all")}
-            </button>
-            {CATEGORIES.map((c) => (
-              <button
-                type="button"
-                key={c.id}
-                className={chip(cat === c.id)}
-                onClick={() => setCat(c.id)}
-              >
-                {c.emoji} {lang === "bn" ? c.bn : c.en}
-              </button>
-            ))}
-          </div>
-        </div>
+        <CategoryStrip value={cat} onChange={setCat} />
+        <FeedToolbar kind={kind} onKind={setKind} scope={scope} onScope={setScope} />
 
         <QueryState isLoading={isLoading} error={error} onRetry={refetch}>
           {posts.length === 0 ? (
