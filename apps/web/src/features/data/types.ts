@@ -1,4 +1,3 @@
-import type { CourierRequestItem, FeedPost, PostKind } from "@/features/feed/types";
 import type {
   ExchangeStatus,
   MockConversation,
@@ -6,6 +5,8 @@ import type {
   MockNotification,
   MockUser,
 } from "@/features/feed/mock";
+import type { CourierRequestItem, FeedPost, PostKind } from "@/features/feed/types";
+import type { AdPlacement, Payment, PaymentMethod } from "./platformStore";
 
 export type { ExchangeStatus };
 export type Chat = MockConversation;
@@ -14,6 +15,44 @@ export type Exchange = MockExchange;
 export type AppNotification = MockNotification;
 export type UserProfile = MockUser;
 export type CourierRequest = CourierRequestItem;
+
+/** What a visitor's browser gets for one ad slot — no stats or targeting rules. */
+export interface PublicAd {
+  id: string;
+  advertiser: string;
+  headline: string;
+  body: string;
+  cta: string;
+  url: string;
+  image?: string;
+}
+
+export interface AdConfig {
+  enabled: boolean;
+  every: number;
+  sessionCap: number;
+  /** Set when Google Ad Manager should fill slots. */
+  adx: { networkCode: string; unit: string } | null;
+  priority: "direct_first" | "adx_first" | "mix";
+  ads: PublicAd[];
+}
+
+export interface CheckoutConfig {
+  methods: Record<PaymentMethod, boolean>;
+  bkashNumber: string;
+  nagadNumber: string;
+}
+
+export interface CourierPaymentInput {
+  courierId: string;
+  item: string;
+  payer: string;
+  phone: string;
+  amount: number;
+  method: PaymentMethod;
+  trxId?: string;
+  senderNumber?: string;
+}
 
 export interface FeedFilters {
   kind: PostKind | "all";
@@ -60,4 +99,14 @@ export interface DataSource {
 
   listCourierRequests(): Promise<CourierRequest[]>;
   decideCourierRequest(id: string, decision: "confirmed" | "rejected"): Promise<CourierRequest>;
+
+  /** Eligible direct ads for a slot, already filtered by schedule and targeting. */
+  getAdConfig(
+    placement: AdPlacement,
+    ctx?: { district?: string; category?: string },
+  ): Promise<AdConfig>;
+  trackAd(id: string, event: "impression" | "click"): Promise<void>;
+
+  getCheckoutConfig(): Promise<CheckoutConfig>;
+  submitCourierPayment(input: CourierPaymentInput): Promise<Payment>;
 }

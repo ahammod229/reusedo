@@ -61,13 +61,13 @@ const FeedPage = lazy(() => import("./pages").then((m) => ({ default: m.FeedPage
 const QuickPost = lazy(() => import("./pages").then((m) => ({ default: m.QuickPost })));
 const CourierRequest = lazy(() => import("./pages").then((m) => ({ default: m.CourierRequest })));
 
+import { RequireArea } from "./features/admin/RequireArea";
 import { AuthProvider } from "./providers/AuthProvider";
 import { SocketProvider } from "./providers/SocketProvider";
 import { AdminRoute } from "./routes/AdminRoute";
 import { GuestRoute } from "./routes/GuestRoute";
-import { RequireArea } from "./features/admin/RequireArea";
-import { ToPost } from "./routes/Redirects";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
+import { ToPost } from "./routes/Redirects";
 
 const AdminLayout = lazy(() =>
   import("./features/admin/layouts/AdminLayout").then((m) => ({ default: m.AdminLayout })),
@@ -104,8 +104,13 @@ const AdminCategories = lazy(() =>
   import("./features/admin/screens").then((m) => ({ default: m.Categories })),
 );
 const AdminCms = lazy(() => import("./features/admin/screens").then((m) => ({ default: m.Cms })));
-const AdminAds = lazy(() =>
-  import("./features/admin/screens").then((m) => ({ default: m.AdSettings })),
+const AdminAds = lazy(() => import("./features/admin/screens").then((m) => ({ default: m.Ads })));
+const AdminPayments = lazy(() =>
+  import("./features/admin/screens").then((m) => ({ default: m.Payments })),
+);
+const AdminRisk = lazy(() => import("./features/admin/screens").then((m) => ({ default: m.Risk })));
+const AdminIntegrations = lazy(() =>
+  import("./features/admin/screens").then((m) => ({ default: m.Integrations })),
 );
 const AdminFlags = lazy(() =>
   import("./features/admin/screens").then((m) => ({ default: m.Flags })),
@@ -305,6 +310,30 @@ function App() {
                           }
                         />
                         <Route
+                          path="payments"
+                          element={
+                            <RequireArea area="payments">
+                              <AdminPayments />
+                            </RequireArea>
+                          }
+                        />
+                        <Route
+                          path="risk"
+                          element={
+                            <RequireArea area="risk">
+                              <AdminRisk />
+                            </RequireArea>
+                          }
+                        />
+                        <Route
+                          path="integrations"
+                          element={
+                            <RequireArea area="integrations">
+                              <AdminIntegrations />
+                            </RequireArea>
+                          }
+                        />
+                        <Route
                           path="features"
                           element={
                             <RequireArea area="features">
@@ -331,6 +360,8 @@ function App() {
                         <Route path="products" element={<Navigate to="/admin/posts" replace />} />
                         <Route path="needs" element={<Navigate to="/admin/posts" replace />} />
                         <Route path="shipping" element={<Navigate to="/admin/courier" replace />} />
+                        <Route path="fraud" element={<Navigate to="/admin/risk" replace />} />
+                        <Route path="api" element={<Navigate to="/admin/integrations" replace />} />
                         <Route path="*" element={<Navigate to="/admin" replace />} />
                       </Route>
                     </Route>

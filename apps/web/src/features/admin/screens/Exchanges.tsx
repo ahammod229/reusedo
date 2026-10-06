@@ -2,7 +2,7 @@ import { QueryState } from "@/features/data/QueryState";
 import { useTr } from "@/features/feed/i18n";
 import { Pill } from "@/features/feed/parts";
 import { Button } from "@/shared/components/ui";
-import { Truck, PackageCheck } from "lucide-react";
+import { PackageCheck, Truck } from "lucide-react";
 import { useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { useAdminExchanges, useCancelExchange } from "../data/hooks";

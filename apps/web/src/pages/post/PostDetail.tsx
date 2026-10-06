@@ -1,12 +1,13 @@
-import { PostCard } from "@/features/feed/PostCard";
-import { useSaved } from "@/features/feed/saved";
-import type { FeedPost } from "@/features/feed/types";
 import { QueryState } from "@/features/data/QueryState";
 import { useFeed, usePost } from "@/features/data/hooks";
+import { AdCard } from "@/features/feed/AdCard";
 import { Photo } from "@/features/feed/Photo";
-import { Initial, Pill, TrustRing } from "@/features/feed/parts";
-import { categoryOf } from "@/features/feed/types";
+import { PostCard } from "@/features/feed/PostCard";
 import { useLang, useNum, useTr } from "@/features/feed/i18n";
+import { Initial, Pill, TrustRing } from "@/features/feed/parts";
+import { useSaved } from "@/features/feed/saved";
+import type { FeedPost } from "@/features/feed/types";
+import { categoryOf } from "@/features/feed/types";
 import {
   Button,
   Dialog,
@@ -27,8 +28,8 @@ import {
   MessageCircle,
   PackageCheck,
   Share2,
-  Truck,
   ShieldCheck,
+  Truck,
 } from "lucide-react";
 import { useState } from "react";
 import { Helmet } from "react-helmet-async";
@@ -222,6 +223,14 @@ function PostDetailView({ post, all }: { post: FeedPost; all: FeedPost[] }) {
           </div>
         </section>
       )}
+
+      <div className="mt-8 max-w-2xl">
+        <AdCard
+          placement="post_detail"
+          slot={0}
+          ctx={{ district: post.district, category: post.category }}
+        />
+      </div>
 
       {/* Sticky action bar (above the mobile tab bar) */}
       <div className="fixed inset-x-0 bottom-16 z-30 border-t bg-background/95 p-3 backdrop-blur sm:static sm:mt-6 sm:border-0 sm:bg-transparent sm:p-0 md:bottom-0">

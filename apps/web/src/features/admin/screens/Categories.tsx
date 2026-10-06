@@ -1,6 +1,7 @@
 import { QueryState } from "@/features/data/QueryState";
 import { useNum, useTr } from "@/features/feed/i18n";
 import { Pill } from "@/features/feed/parts";
+import { Field } from "@/pages/auth/components/Field";
 import {
   Button,
   Dialog,
@@ -13,7 +14,6 @@ import {
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { Field } from "@/pages/auth/components/Field";
 import { useAdminCategories, useSaveCategory } from "../data/hooks";
 import type { AdminCategory } from "../data/types";
 import { AdminPage, DataTable } from "../kit";

@@ -1,4 +1,6 @@
 import { pendingCourierCount } from "@/features/data/mockSource";
+import { store } from "@/features/data/platformStore";
+import { extraMock, openRiskCount } from "./mockOps";
 import type {
   AdminCategory,
   AdminContentPage,
@@ -48,6 +50,8 @@ const stats: AdminStats = {
   pendingCourier: 2,
   openReports: 4,
   pendingVerifications: 3,
+  pendingPayments: 0,
+  openRisk: 0,
   series: days.map((day, i) => ({
     day,
     posts: posts14[i],
@@ -522,6 +526,13 @@ export const adminMock: AdminSource = {
       pendingCourier: pendingCourierCount(),
       openReports: reports.filter((r) => r.status === "open").length,
       pendingVerifications: verifications.filter((v) => v.status === "pending").length,
+      pendingPayments: store.payments.filter((p) => p.status === "pending").length,
+      openRisk: openRiskCount(),
+      ads: {
+        ...stats.ads,
+        impressions: store.campaigns.reduce((n, a) => n + a.impressions, 0),
+        clicks: store.campaigns.reduce((n, a) => n + a.clicks, 0),
+      },
     }),
   listUsers: () => wait(users),
   async setUserStatus(id, status) {
@@ -605,4 +616,5 @@ export const adminMock: AdminSource = {
     return wait(undefined, 100);
   },
   listAudit: () => wait(audit),
+  ...extraMock(log, wait),
 };

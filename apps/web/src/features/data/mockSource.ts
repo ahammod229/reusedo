@@ -7,7 +7,8 @@ import {
   MOCK_USERS,
 } from "@/features/feed/mock";
 import type { FeedPost } from "@/features/feed/types";
-import type { DataSource, ExchangeStatus } from "./types";
+import { adState, safeAdUrl, store } from "./platformStore";
+import type { DataSource, ExchangeStatus, PublicAd } from "./types";
 
 // In-memory copies so mutations behave like a real backend during UI review.
 const posts = structuredClone(MOCK_POSTS);
@@ -116,5 +117,72 @@ export const mockSource: DataSource = {
     r.tracking =
       decision === "confirmed" ? `SF${Math.floor(10000000 + Math.random() * 89999999)}` : undefined;
     return wait(r, 150);
+  },
+
+  async getAdConfig(placement, ctx = {}) {
+    const st = store.adSettings;
+    const ads: PublicAd[] = store.campaigns
+      .filter((a) => adState(a) === "active" && a.placements.includes(placement))
+      .filter(
+        (a) => !ctx.district || a.districts.length === 0 || a.districts.includes(ctx.district),
+      )
+      .filter(
+        (a) =>
+          !ctx.category ||
+          a.categories.length === 0 ||
+          a.categories.includes(ctx.category as (typeof a.categories)[number]),
+      )
+      .filter((a) => safeAdUrl(a.url))
+      // Weighted order: each ad repeated by its weight, so rotation favours heavier ads.
+      .flatMap((a) => Array.from({ length: a.weight }, () => a))
+      .sort(() => Math.random() - 0.5)
+      .filter((a, i, arr) => arr.findIndex((x) => x.id === a.id) === i)
+      .map(({ id, advertiser, headline, body, cta, url, image }) => ({
+        id,
+        advertiser,
+        headline,
+        body,
+        cta,
+        url,
+        image,
+      }));
+    return wait(
+      {
+        enabled: st.adsEnabled,
+        every: st.every,
+        sessionCap: st.sessionCap,
+        adx:
+          st.adxEnabled && st.networkCode
+            ? { networkCode: st.networkCode, unit: st.units[placement] }
+            : null,
+        priority: st.priority,
+        ads,
+      },
+      120,
+    );
+  },
+  async trackAd(id, event) {
+    const a = store.campaigns.find((x) => x.id === id);
+    if (a) a[event === "click" ? "clicks" : "impressions"] += 1;
+  },
+
+  async getCheckoutConfig() {
+    const p = store.paymentSettings;
+    return wait(
+      { methods: p.methods, bkashNumber: p.bkashNumber, nagadNumber: p.nagadNumber },
+      120,
+    );
+  },
+  async submitCourierPayment(input) {
+    const used = input.trxId && store.payments.some((p) => p.trxId === input.trxId);
+    const payment = {
+      id: `pay${Date.now()}`,
+      ...input,
+      status: input.method === "cod" ? ("cod_due" as const) : ("pending" as const),
+      flags: used ? ["এই TrxID আরেকটি পেমেন্টে আগেই দেওয়া হয়েছে"] : [],
+      created: "এইমাত্র",
+    };
+    store.payments.unshift(payment);
+    return wait(payment, 200);
   },
 };

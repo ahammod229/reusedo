@@ -31,4 +31,30 @@ export const adminApi: AdminSource = {
   listFlags: todo("GET /api/admin/feature-flags"),
   setFlag: todo("PATCH /api/admin/feature-flags/:key (super_admin)"),
   listAudit: todo("GET /api/admin/audit-logs"),
+
+  // Integrations: secrets stored AES-256-GCM encrypted (key from SETTINGS_ENCRYPTION_KEY env),
+  // never returned — responses carry only { set, last4 }. super_admin only.
+  listIntegrations: todo("NEW GET /api/admin/integrations"),
+  saveIntegration: todo("NEW PATCH /api/admin/integrations/:id (super_admin, re-auth)"),
+  testIntegration: todo("NEW POST /api/admin/integrations/:id/test (server calls the provider)"),
+
+  listPayments: todo("NEW GET /api/admin/payments"),
+  decidePayment: todo(
+    "NEW PATCH /api/admin/payments/:id (verified|rejected|refunded|cod_collected)",
+  ),
+  getPaymentSettings: todo("NEW GET /api/admin/payment-settings"),
+  savePaymentSettings: todo("NEW PATCH /api/admin/payment-settings"),
+
+  listRiskCases: todo("NEW GET /api/admin/risk (score computed server-side on request create)"),
+  decideRisk: todo("NEW PATCH /api/admin/risk/:id (approved|held|rejected, blockPhone)"),
+  lookupPhone: todo("NEW GET /api/admin/risk/phone/:phone (own history + courier history)"),
+  listBlocklist: todo("NEW GET /api/admin/blocklist"),
+  addBlock: todo("NEW POST /api/admin/blocklist"),
+  removeBlock: todo("NEW DELETE /api/admin/blocklist/:id"),
+
+  listAds: todo("NEW GET /api/admin/ads"),
+  saveAd: todo("NEW POST|PATCH /api/admin/ads (image via signed upload)"),
+  deleteAd: todo("NEW DELETE /api/admin/ads/:id"),
+  getAdNetwork: todo("NEW GET /api/admin/ad-network"),
+  saveAdNetwork: todo("NEW PATCH /api/admin/ad-network"),
 };

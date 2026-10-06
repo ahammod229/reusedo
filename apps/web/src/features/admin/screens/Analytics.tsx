@@ -1,11 +1,11 @@
 import { QueryState } from "@/features/data/QueryState";
 import { useLang, useNum, useTr } from "@/features/feed/i18n";
 import { categoryOf } from "@/features/feed/types";
+import { Eye, MousePointerClick, Wallet } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import { useAdminStats } from "../data/hooks";
 import { AdminPage, Panel, StatCard } from "../kit";
 import { ActivityChart } from "./Dashboard";
-import { Eye, MousePointerClick, Wallet } from "lucide-react";
 
 export function Analytics() {
   const tr = useTr();

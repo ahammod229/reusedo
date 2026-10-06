@@ -22,13 +22,16 @@ import {
   Activity,
   BarChart3,
   Boxes,
-  Flag,
+  ExternalLink,
   FileText,
+  Flag,
   Folders,
   LayoutDashboard,
   Megaphone,
   Menu,
+  PlugZap,
   Repeat,
+  ScanSearch,
   Settings as SettingsIcon,
   ShieldAlert,
   ShieldCheck,
@@ -36,7 +39,7 @@ import {
   ToggleRight,
   Truck,
   Users,
-  ExternalLink,
+  Wallet,
 } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { Link, NavLink, Outlet } from "react-router";
@@ -51,7 +54,12 @@ interface Item {
   icon: ReactNode;
   bn: string;
   en: string;
-  badge?: "pendingCourier" | "openReports" | "pendingVerifications";
+  badge?:
+    | "pendingCourier"
+    | "openReports"
+    | "pendingVerifications"
+    | "pendingPayments"
+    | "openRisk";
 }
 const ic = "h-[18px] w-[18px]";
 
@@ -139,6 +147,35 @@ const GROUPS: { bn: string; en: string; items: Item[] }[] = [
         en: "Courier",
         badge: "pendingCourier",
       },
+      {
+        area: "risk",
+        to: "/admin/risk",
+        icon: <ScanSearch className={ic} />,
+        bn: "ফ্রড ও ঠিকানা চেক",
+        en: "Fraud check",
+        badge: "openRisk",
+      },
+    ],
+  },
+  {
+    bn: "পেমেন্ট ও বিজ্ঞাপন",
+    en: "Payments & ads",
+    items: [
+      {
+        area: "payments",
+        to: "/admin/payments",
+        icon: <Wallet className={ic} />,
+        bn: "পেমেন্ট",
+        en: "Payments",
+        badge: "pendingPayments",
+      },
+      {
+        area: "ads",
+        to: "/admin/ads",
+        icon: <Megaphone className={ic} />,
+        bn: "বিজ্ঞাপন ম্যানেজার",
+        en: "Ads manager",
+      },
     ],
   },
   {
@@ -166,11 +203,11 @@ const GROUPS: { bn: string; en: string; items: Item[] }[] = [
     en: "Platform",
     items: [
       {
-        area: "ads",
-        to: "/admin/ads",
-        icon: <Megaphone className={ic} />,
-        bn: "বিজ্ঞাপন",
-        en: "Ads",
+        area: "integrations",
+        to: "/admin/integrations",
+        icon: <PlugZap className={ic} />,
+        bn: "API ও ইন্টিগ্রেশন",
+        en: "APIs & integrations",
       },
       {
         area: "features",

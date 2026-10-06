@@ -1,5 +1,6 @@
 import { QueryState } from "@/features/data/QueryState";
 import { useCourierRequests, useDecideCourier } from "@/features/data/hooks";
+import { METHOD_LABEL } from "@/features/data/platformStore";
 import { useNum, useTr } from "@/features/feed/i18n";
 import { Pill } from "@/features/feed/parts";
 import { categoryOf } from "@/features/feed/types";
@@ -12,10 +13,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/ui";
-import { ArrowRight } from "lucide-react";
+import { AlertTriangle, ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { Helmet } from "react-helmet-async";
+import { Link } from "react-router";
+import { useAdminPayments, useRiskCases } from "../../data/hooks";
+import type { AdminRiskCase, Payment } from "../../data/types";
 import { AdminPage, FilterTabs } from "../../kit";
+import { riskLevel, riskScore } from "../../risk";
+import { PaymentStatusPill } from "../../screens/Payments";
+import { RiskLevelPill, RiskStatusPill } from "../../screens/Risk";
 
 type F = "pending" | "confirmed" | "rejected" | "all";
 
@@ -24,6 +31,14 @@ export function CourierQueue() {
   const num = useNum();
   const { data = [], isLoading, error, refetch } = useCourierRequests();
   const decide = useDecideCourier();
+  const { data: risks = [] } = useRiskCases();
+  const { data: payments = [] } = useAdminPayments();
+  const riskOf = (id: string) => risks.find((k) => k.courierId === id);
+  // A request can have several attempts (e.g. a rejected TrxID, then a new one); a settled one wins.
+  const payOf = (id: string) => {
+    const mine = payments.filter((p) => p.courierId === id);
+    return mine.find((p) => ["verified", "cod_due", "cod_collected"].includes(p.status)) ?? mine[0];
+  };
   const [f, setF] = useState<F>("pending");
   const [sel, setSel] = useState<CourierRequestItem | null>(null);
   const rows = data.filter((r) => f === "all" || r.status === f);
@@ -92,6 +107,7 @@ export function CourierQueue() {
                         : tr("প্রত্যাখ্যাত", "Rejected")}
                   </Pill>
                 </div>
+                <Checks risk={riskOf(r.id)} pay={payOf(r.id)} />
                 {r.tracking && (
                   <p className="mt-3 rounded-lg bg-muted px-3 py-2 font-mono text-xs">
                     {tr("ট্র্যাকিং", "Tracking")}: <b>{r.tracking}</b>
@@ -121,6 +137,7 @@ export function CourierQueue() {
               </DialogHeader>
               <Party title={tr("পিকআপ (দাতা)", "Pickup (giver)")} p={sel.giver} />
               <Party title={tr("ডেলিভারি (গ্রহীতা)", "Delivery (receiver)")} p={sel.receiver} />
+              <Blockers risk={riskOf(sel.id)} pay={payOf(sel.id)} />
               <div className="flex gap-2">
                 <Button
                   variant="outline"
@@ -129,7 +146,11 @@ export function CourierQueue() {
                 >
                   {tr("বাতিল", "Reject")}
                 </Button>
-                <Button className="flex-1" onClick={() => act("confirmed")}>
+                <Button
+                  className="flex-1"
+                  disabled={blockers(riskOf(sel.id), payOf(sel.id)).length > 0}
+                  onClick={() => act("confirmed")}
+                >
                   {tr("কনফার্ম", "Confirm")}
                 </Button>
               </div>
@@ -153,5 +174,77 @@ function Party({
       </p>
       <p>{p.address}</p>
     </div>
+  );
+}
+
+/** Why a courier request can't be confirmed yet. Mirrors the server-side rule. */
+function blockers(risk?: AdminRiskCase, pay?: Payment) {
+  const out: { bn: string; en: string; href: string }[] = [];
+  if (risk && risk.status !== "approved")
+    out.push({
+      bn: risk.status === "rejected" ? "ফ্রড চেকে বাতিল হয়েছে" : "ফ্রড ও ঠিকানা চেক এখনো অনুমোদন হয়নি",
+      en:
+        risk.status === "rejected"
+          ? "Rejected in fraud check"
+          : "Fraud & address check not approved yet",
+      href: "/admin/risk",
+    });
+  if (pay && (pay.status === "pending" || pay.status === "rejected"))
+    out.push({
+      bn: pay.status === "pending" ? "আগাম পেমেন্ট যাচাই বাকি" : "পেমেন্ট প্রত্যাখ্যাত",
+      en: pay.status === "pending" ? "Advance payment not verified" : "Payment rejected",
+      href: "/admin/payments",
+    });
+  return out;
+}
+
+function Checks({ risk, pay }: { risk?: AdminRiskCase; pay?: Payment }) {
+  const tr = useTr();
+  const num = useNum();
+  if (!risk && !pay) return null;
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t pt-3 text-xs">
+      {risk && (
+        <>
+          <RiskLevelPill level={riskLevel(riskScore(risk.signals))} />
+          <RiskStatusPill s={risk.status} />
+        </>
+      )}
+      {pay && (
+        <>
+          <span className="ml-1 text-muted-foreground">
+            {METHOD_LABEL[pay.method]} ৳{num(pay.amount)}
+          </span>
+          <PaymentStatusPill s={pay.status} />
+        </>
+      )}
+      {!risk && (
+        <span className="text-muted-foreground">{tr("ফ্রড চেক নেই", "No fraud check")}</span>
+      )}
+    </div>
+  );
+}
+
+function Blockers({ risk, pay }: { risk?: AdminRiskCase; pay?: Payment }) {
+  const tr = useTr();
+  const list = blockers(risk, pay);
+  if (!list.length)
+    return (
+      <p className="rounded-xl bg-offer-soft px-3 py-2 text-sm font-medium text-success">
+        ✓ {tr("ফ্রড চেক ও পেমেন্ট ঠিক আছে — কনফার্ম করা যাবে", "Fraud check and payment are clear")}
+      </p>
+    );
+  return (
+    <ul className="space-y-1.5 rounded-xl border border-warning/40 bg-warning-soft p-3 text-sm">
+      {list.map((b) => (
+        <li key={b.href} className="flex items-center gap-2 text-warning">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span className="flex-1 font-medium">{tr(b.bn, b.en)}</span>
+          <Link to={b.href} className="shrink-0 font-bold underline">
+            {tr("দেখুন", "Open")}
+          </Link>
+        </li>
+      ))}
+    </ul>
   );
 }

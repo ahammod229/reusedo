@@ -31,4 +31,12 @@ export const apiSource: DataSource = {
   decideCourierRequest: todo(
     "POST /api/admin/courier-requests/:id/confirm|reject (NEW — creates Steadfast parcel)",
   ),
+
+  getAdConfig: todo("GET /api/ads?placement=&district=&category= (NEW — server filters + rotates)"),
+  trackAd: todo("POST /api/ads/:id/events (NEW — batch, dedupe per session, bot filter)"),
+
+  getCheckoutConfig: todo("GET /api/payments/config (NEW — enabled methods + merchant numbers)"),
+  submitCourierPayment: todo(
+    "POST /api/payments (NEW — COD, or bKash/Nagad TrxID for admin verification / gateway callback)",
+  ),
 };

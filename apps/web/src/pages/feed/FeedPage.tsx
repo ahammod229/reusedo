@@ -1,20 +1,16 @@
+import { QueryState } from "@/features/data/QueryState";
+import { useAdConfig, useFeed } from "@/features/data/hooks";
 import { AdCard } from "@/features/feed/AdCard";
+import { CategoryStrip, FeedToolbar, type Scope } from "@/features/feed/FeedFilters";
+import { FeedRail } from "@/features/feed/FeedRail";
 import { PostCard } from "@/features/feed/PostCard";
 import { useT } from "@/features/feed/i18n";
-import { QueryState } from "@/features/data/QueryState";
-import { useFeed } from "@/features/data/hooks";
 import type { CategoryId, PostKind } from "@/features/feed/types";
 import { Button } from "@/shared/components/ui";
 import { Camera } from "lucide-react";
 import { Fragment, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link, useSearchParams } from "react-router";
-import { CategoryStrip, FeedToolbar, type Scope } from "@/features/feed/FeedFilters";
-import { FeedRail } from "@/features/feed/FeedRail";
-
-// An ad is injected after every N posts; keep in sync with the
-// `ads_frequency` platform setting once it is wired to the API.
-const AD_EVERY = 6;
 
 export function FeedPage() {
   const t = useT();
@@ -27,6 +23,14 @@ export function FeedPage() {
   const [scope, setScope] = useState<Scope>("country");
 
   const { data: posts = [], isLoading, error, refetch } = useFeed({ kind, category: cat, scope });
+  // Frequency and per-page cap come from the admin Ads manager.
+  const { data: ads } = useAdConfig("feed");
+  const every = ads?.enabled ? Math.max(3, ads.every) : 0;
+  const adAfter = (i: number) =>
+    every > 0 &&
+    (i + 1) % every === 0 &&
+    i + 1 < posts.length &&
+    (i + 1) / every <= (ads?.sessionCap ?? 0);
 
   return (
     <div className="mx-auto flex w-full max-w-[64rem] justify-center gap-6 px-4 py-4">
@@ -73,9 +77,7 @@ export function FeedPage() {
             posts.map((p, i) => (
               <Fragment key={p.id}>
                 <PostCard post={p} />
-                {(i + 1) % AD_EVERY === 0 && i + 1 < posts.length && (
-                  <AdCard index={(i + 1) / AD_EVERY} />
-                )}
+                {adAfter(i) && <AdCard placement="feed" slot={(i + 1) / every - 1} />}
               </Fragment>
             ))
           )}

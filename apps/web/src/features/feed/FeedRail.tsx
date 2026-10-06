@@ -26,7 +26,7 @@ export function FeedRail() {
           ))}
         </ul>
       </section>
-      <AdCard index={0} />
+      <AdCard placement="sidebar" slot={0} />
     </aside>
   );
 }

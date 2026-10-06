@@ -1,4 +1,8 @@
-import { useT } from "@/features/feed/i18n";
+import { useCheckoutConfig, useSubmitCourierPayment } from "@/features/data/hooks";
+import type { PaymentMethod } from "@/features/data/platformStore";
+import { useT, useTr } from "@/features/feed/i18n";
+import { isBdMobile } from "@/features/geo/bd";
+import { Field } from "@/pages/auth/components/Field";
 import { Badge, Button, Card, cn } from "@/shared/components/ui";
 import { CheckCircle2, Circle, Truck } from "lucide-react";
 import { useState } from "react";
@@ -18,9 +22,35 @@ const STEPS: { id: Step; bn: string }[] = [
 // the step comes from the shipment status written by the admin confirm action.
 export function CourierRequest() {
   const t = useT();
+  const tr = useTr();
   const giver = true; // demo: giver has already agreed
   const [receiver, setReceiver] = useState(false);
   const [sent, setSent] = useState(false);
+  const { data: checkout } = useCheckoutConfig();
+  const pay = useSubmitCourierPayment();
+  const [method, setMethod] = useState<PaymentMethod | null>(null);
+  const [trx, setTrx] = useState("");
+  const [sender, setSender] = useState("");
+  const methods = (["cod", "bkash", "nagad"] as const).filter((m) => checkout?.methods[m]);
+  const chosen = method ?? methods[0] ?? null;
+  const wallet = chosen === "bkash" || chosen === "nagad";
+  const trxOk = /^[A-Z0-9]{8,12}$/.test(trx);
+  const payOk = !!chosen && (!wallet || (trxOk && isBdMobile(sender)));
+  const send = () => {
+    if (!chosen) return;
+    pay.mutate(
+      {
+        courierId: "c1",
+        item: "ক্লাস ৮-এর সব বই (সেট)",
+        payer: "ফাহিম রহমান",
+        phone: "01811-000002",
+        amount: 130,
+        method: chosen,
+        ...(wallet ? { trxId: trx, senderNumber: sender } : {}),
+      },
+      { onSuccess: () => setSent(true) },
+    );
+  };
   const both = giver && receiver;
   const current: Step = sent ? "requested" : "agree";
   const idx = STEPS.findIndex((s) => s.id === current);
@@ -65,7 +95,73 @@ export function CourierRequest() {
           <span>{t("charge")}</span>
           <span className="text-lg font-bold">৳১৩০</span>
         </div>
-        <Button className="w-full" disabled={!both || sent} onClick={() => setSent(true)}>
+        {both && !sent && chosen && (
+          <fieldset className="space-y-2 border-t pt-3">
+            <legend className="text-sm font-semibold">
+              {tr("কীভাবে চার্জ দেবেন", "How you'll pay")}
+            </legend>
+            <div className="grid grid-cols-3 gap-2">
+              {methods.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  aria-pressed={chosen === m}
+                  onClick={() => setMethod(m)}
+                  className={cn(
+                    "rounded-xl border p-2.5 text-sm font-semibold",
+                    chosen === m ? "border-primary bg-primary/10 text-primary" : "hover:bg-accent",
+                  )}
+                >
+                  {m === "cod" ? tr("ডেলিভারিতে", "On delivery") : m === "bkash" ? "bKash" : "Nagad"}
+                </button>
+              ))}
+            </div>
+            {wallet && (
+              <div className="space-y-3 rounded-xl bg-muted p-3 text-sm">
+                <p>
+                  {tr("এই নম্বরে ৳১৩০ পাঠান", "Send ৳130 to")}{" "}
+                  <b className="font-mono">
+                    {chosen === "bkash" ? checkout?.bkashNumber : checkout?.nagadNumber}
+                  </b>
+                  {tr(
+                    ", তারপর নিচে তথ্য দিন। অ্যাডমিন মিলিয়ে দেখে গ্রহণ করবেন।",
+                    ", then fill in below. An admin verifies it.",
+                  )}
+                </p>
+                <Field
+                  label={tr("যে নম্বর থেকে পাঠিয়েছেন", "Number you sent from")}
+                  inputMode="tel"
+                  value={sender}
+                  onChange={(e) => setSender(e.target.value)}
+                  error={
+                    sender.length > 5 && !isBdMobile(sender)
+                      ? tr("সঠিক নম্বর দিন", "Enter a valid number")
+                      : undefined
+                  }
+                />
+                <Field
+                  label="TrxID"
+                  value={trx}
+                  maxLength={12}
+                  spellCheck={false}
+                  autoCapitalize="characters"
+                  onChange={(e) => setTrx(e.target.value.toUpperCase().replace(/\s/g, ""))}
+                  hint={tr("SMS-এ পাওয়া ৮–১২ অক্ষরের কোড", "The 8–12 character code from the SMS")}
+                  error={
+                    trx.length >= 8 && !trxOk
+                      ? tr("শুধু ইংরেজি অক্ষর ও সংখ্যা", "Letters and digits only")
+                      : undefined
+                  }
+                />
+              </div>
+            )}
+          </fieldset>
+        )}
+        <Button
+          className="w-full"
+          disabled={!both || sent || !payOk || pay.isPending}
+          onClick={send}
+        >
           {sent ? "রিকোয়েস্ট পাঠানো হয়েছে ✓" : both ? t("sendToAdmin") : t("waitingBoth")}
         </Button>
       </Card>

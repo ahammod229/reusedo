@@ -1,7 +1,7 @@
 import { QueryState } from "@/features/data/QueryState";
 import { useTr } from "@/features/feed/i18n";
-import { Button, Switch } from "@/shared/components/ui";
 import { Field } from "@/pages/auth/components/Field";
+import { Button, Switch } from "@/shared/components/ui";
 import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { useAdminSettings, useSaveSettings } from "../data/hooks";

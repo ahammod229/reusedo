@@ -122,7 +122,8 @@ Page ──► hooks.ts (TanStack Query) ──► source ──┬─► mockSo
 | সেটিংস | `/settings` | `pages/me/SettingsPage` | (যোগ হবে) | `/api/users/me/settings` | অ্যাকাউন্ট মুছা |
 | সাইন-আপ যাত্রা | `/register` `/verify-email` `/onboarding` | `pages/auth/*` | `otp.api.ts` | `/api/auth/session` | **NEW** ইমেইল OTP, প্রোফাইল-যাচাই সেভ |
 | অ্যাডমিন: কুরিয়ার কিউ | `/admin/courier` | `features/admin/pages/courier` | `listCourierRequests`, `decideCourierRequest` | `/api/admin`, `/api/shipping` | **NEW** Steadfast পার্সেল তৈরি |
-| অ্যাডমিন: বিজ্ঞাপন সেটিংস | `/admin/ads` | `features/admin/pages/ads` | (যোগ হবে) | `platform_settings`, `feature_flags` | কী: `ads_enabled/frequency/session_cap` |
+| বিজ্ঞাপন স্লট (ফিড/সাইডবার/পোস্ট) | — | `features/feed/AdCard` | `getAdConfig`, `trackAd` | **NEW** `GET /api/ads`, `POST /api/ads/:id/events` | §৫.ঘ |
+| কুরিয়ার চার্জ পেমেন্ট | `/courier` | `pages/courier/CourierRequest` | `getCheckoutConfig`, `submitCourierPayment` | **NEW** `/api/payments` | §৫.ঙ |
 
 ### ৪.১ অ্যাডমিন প্যানেল
 
@@ -141,12 +142,15 @@ Page ──► hooks.ts (TanStack Query) ──► source ──┬─► mockSo
 | কুরিয়ার | `/admin/courier` | কিউ, যাচাই, কনফার্ম → ট্র্যাকিং | **NEW** (§৫.গ) |
 | ক্যাটাগরি | `/admin/categories` | যোগ/সম্পাদনা/চালু-বন্ধ | `GET /api/categories` ✅, লেখার রুট **NEW** |
 | পেজ কনটেন্ট | `/admin/cms` | শর্তাবলী/প্রাইভেসি/আমাদের কথা/সাহায্য সম্পাদনা, খসড়া/প্রকাশ | `cms` ✅ — **পাবলিক `/terms`, `/privacy` পেজকে এখান থেকে পড়াতে হবে** (এখন হার্ডকোডেড খসড়া) |
-| বিজ্ঞাপন | `/admin/ads` | ফ্রিকোয়েন্সি, সেশন-সীমা | `settings`/`feature-flags` ✅ |
+| ফ্রড ও ঠিকানা চেক | `/admin/risk` | রিকোয়েস্টের ঝুঁকি স্কোর, ঠিকানা যাচাই, কুরিয়ার ইতিহাস; অনুমোদন/হোল্ড/বাতিল(+ব্লক); নম্বর যাচাই; ব্লকলিস্ট | **NEW** (§৫.চ) |
+| পেমেন্ট | `/admin/payments` | কুরিয়ার চার্জ: bKash/Nagad TrxID যাচাই → গ্রহণ/প্রত্যাখ্যান(কারণসহ)/রিফান্ড, COD; পদ্ধতি, নম্বর, চার্জ-রেট, কখন আগাম বাধ্যতামূলক | **NEW** (§৫.ঙ) |
+| বিজ্ঞাপন ম্যানেজার | `/admin/ads` | নিজের বিজ্ঞাপন যোগ/সম্পাদনা/থামানো/মুছা (ছবি, লিংক, জায়গা, জেলা/ক্যাটাগরি টার্গেট, সময়সূচি, অগ্রাধিকার, ফলাফল); AdX নেটওয়ার্ক কোড, ad unit, ফ্রিকোয়েন্সি | **NEW** (§৫.ঘ) |
+| API ও ইন্টিগ্রেশন | `/admin/integrations` | Gemini, Steadfast, ইমেইল, Firebase, ম্যাপ, bKash, Nagad, SMS, Ad Manager — কী সেট, চালু/বন্ধ, sandbox/live, টেস্ট, webhook URL, লঞ্চ-প্রস্তুতি | **NEW** (§৫.ছ), শুধু `super_admin` |
 | ফিচার ফ্ল্যাগ | `/admin/features` | চালু/বন্ধ; ঝুঁকিপূর্ণ বন্ধে নিশ্চিতকরণ | `feature-flags` ✅ |
 | সেটিংস | `/admin/settings` | AI সীমা, ছবি সংখ্যা, মেয়াদ, মেইনটেন্যান্স | `settings` ✅ |
 | অডিট লগ | `/admin/audit` | খোঁজা, CSV এক্সপোর্ট | `audit-logs` ✅ |
 
-**ভূমিকা (role):** `super_admin | admin | moderator` — `features/admin/permissions.ts` (`ACCESS` ম্যাপ) মেনু লুকায় ও `RequireArea` পেজ আটকায়। মডারেটর শুধু পোস্ট/রিপোর্ট/যাচাই/রিভিউ/লেনদেন দেখে; ইউজার-সাসপেন্ড, কুরিয়ার, ক্যাটাগরি, CMS, অ্যানালিটিক্স, বিজ্ঞাপন, অডিট `admin+`; সেটিংস ও ফিচার ফ্ল্যাগ শুধু `super_admin`। **এটি শুধু UI সুবিধা — আসল সুরক্ষা সার্ভারের `requireAdmin([...])`; কখনো UI-র ওপর ভরসা করবেন না।** `adminRole` কোথা থেকে আসবে (Firebase custom claim নাকি `users` টেবিল) তা ঠিক করে `useAdminRole()`-এ জুড়ুন; অজানা হলে সবচেয়ে কম অধিকার (moderator) ধরা হয়।
+**ভূমিকা (role):** `super_admin | admin | moderator` — `features/admin/permissions.ts` (`ACCESS` ম্যাপ) মেনু লুকায় ও `RequireArea` পেজ আটকায়। মডারেটর শুধু পোস্ট/রিপোর্ট/যাচাই/রিভিউ/লেনদেন দেখে; ইউজার-সাসপেন্ড, কুরিয়ার, ক্যাটাগরি, CMS, অ্যানালিটিক্স, বিজ্ঞাপন, অডিট `admin+`; সেটিংস, ফিচার ফ্ল্যাগ ও **API ও ইন্টিগ্রেশন** শুধু `super_admin`; পেমেন্ট `admin+`; ফ্রড চেক মডারেটরও পারে। **এটি শুধু UI সুবিধা — আসল সুরক্ষা সার্ভারের `requireAdmin([...])`; কখনো UI-র ওপর ভরসা করবেন না।** `adminRole` কোথা থেকে আসবে (Firebase custom claim নাকি `users` টেবিল) তা ঠিক করে `useAdminRole()`-এ জুড়ুন; অজানা হলে সবচেয়ে কম অধিকার (moderator) ধরা হয়।
 
 **UI-র বাকি:** অ্যাডমিন পেজগুলোতে রিয়েলটাইম নেই (প্রতি পেজ খুললে লোড); বড় তালিকায় পেজিনেশন নেই (শুরুতে হাজারের নিচে ঠিক আছে, §১২-এ আছে)।
 
@@ -201,16 +205,44 @@ Firebase Auth ডিফল্টে **লিংক** পাঠায়, কো�
 
 ### ৫.গ কুরিয়ার (Steadfast) — অ্যাডমিন-অনুমোদিত
 1. দুজনেই সম্মতি দিলে `POST /api/shipping/courier-requests` (সম্মতির দুই টাইমস্ট্যাম্প, পিকআপ/ডেলিভারি ঠিকানা **স্ন্যাপশট**, আনুমানিক ওজন, চার্জ)।
-2. অ্যাডমিন কিউ → `POST /api/admin/courier-requests/:id/confirm` → সার্ভার Steadfast API দিয়ে পার্সেল তৈরি (COD = চার্জ, গ্রহীতা দেবেন) → `tracking_code` সেভ → দুজনকে ইমেইল + FCM → exchange `ready_for_shipping`।
-3. Steadfast ওয়েবহুক/পোলিং দিয়ে স্ট্যাটাস সিঙ্ক (`picked_up → in_transit → delivered | returned`)।
-4. `STEADFAST_API_KEY/SECRET` শুধু সার্ভারে। ঠিকানা কেবল কনফার্ম হওয়ার পরই কুরিয়ারকে যায়।
-5. ফেরত/প্রত্যাখ্যান নীতি: গ্রহীতা না নিলে ট্রাস্ট স্কোর কমবে (UI-তে সম্মতির সময় বলা আছে)।
+2. **কনফার্মের শর্ত (সার্ভারেও একই নিয়ম):** রিকোয়েস্টের ফ্রড চেক `approved` (§৫.চ) এবং পেমেন্ট `pending`/`rejected` নয় (§৫.ঙ)। UI কনফার্ম বোতাম বন্ধ রেখে কারণ ও লিংক দেখায় (`CourierQueue.tsx` → `blockers()`)।
+3. অ্যাডমিন কিউ → `POST /api/admin/courier-requests/:id/confirm` → সার্ভার Steadfast API দিয়ে পার্সেল তৈরি (COD = চার্জ, গ্রহীতা দেবেন) → `tracking_code` সেভ → দুজনকে ইমেইল + FCM → exchange `ready_for_shipping`।
+4. Steadfast ওয়েবহুক/পোলিং দিয়ে স্ট্যাটাস সিঙ্ক (`picked_up → in_transit → delivered | returned`)।
+5. Steadfast কী শুধু সার্ভারে (§৫.ছ)। ঠিকানা কেবল কনফার্ম হওয়ার পরই কুরিয়ারকে যায়।
+6. ফেরত/প্রত্যাখ্যান নীতি: গ্রহীতা না নিলে ট্রাস্ট স্কোর কমবে (UI-তে সম্মতির সময় বলা আছে)।
 
 ### ৫.ঘ বিজ্ঞাপন (Google Ad Manager / AdX)
-- `AdCard.tsx` এখন প্লেসহোল্ডার। নেটওয়ার্ক কোড পেলে GPT স্ক্রিপ্ট (`securepubads.g.doubleclick.net/tag/js/gpt.js`) লোড করে `defineSlot('/<network>/feed-native', ...)` দিয়ে `data-ad-slot` কন্টেইনারে রেন্ডার করুন; **ফাঁকা ফিরলে কার্ড লুকান**।
-- ফ্রিকোয়েন্সি: `FeedPage`-এর `AD_EVERY` ধ্রুবক এখন ৬ — `platform_settings.ads_frequency` থেকে পড়ুন (অ্যাডমিন পেজ আগে থেকে তৈরি)।
+দুই ধরনের বিজ্ঞাপন, দুটোই অ্যাডমিনের **বিজ্ঞাপন ম্যানেজার** থেকে:
+- **নিজের (direct) বিজ্ঞাপন** — টেবিল `ad_campaigns` (advertiser, headline, body, cta, url, image_url, placements[], districts[], categories[], start, end, weight, paused) + `ad_events` (ad_id, type, session_id, created_at)। `GET /api/ads?placement=&district=&category=` সার্ভারে সময়সূচি/টার্গেট ফিল্টার করে ও `weight` অনুযায়ী ঘোরায়; ব্রাউজারে শুধু `PublicAd` (পরিসংখ্যান বা টার্গেট নিয়ম যায় না)। ইমপ্রেশন = কার্ডের ৫০% স্ক্রিনে এলে একবার; ক্লিক = লিংকে। সার্ভারে সেশন-প্রতি ডুপ্লিকেট ও বট বাদ দিন। লিংক শুধু `http(s)` (`safeAdUrl`), `rel="sponsored noopener noreferrer"`। ছবি সাইনড আপলোডে স্টোরেজে।
+- **AdX (Google Ad Manager)** — নেটওয়ার্ক কোড ও ad unit অ্যাডমিনে বসে। `AdxSlot` কন্টেইনারে `data-ad-unit` আছে; GPT স্ক্রিপ্ট (`securepubads.g.doubleclick.net/tag/js/gpt.js`) লোড করে `defineSlot('/<network><unit>', 'fluid', id)` দিয়ে রেন্ডার করুন; **ফাঁকা ফিরলে কার্ড লুকান**। `priority`: নিজের আগে / সবসময় AdX / পালা করে।
+- ফ্রিকোয়েন্সি ও পেজ-প্রতি সীমা `ad_network_settings` থেকে (`FeedPage` এখন `useAdConfig` থেকেই পড়ে)।
 - `public/ads.txt` লাগবে (AdX থেকে লাইন কপি করুন)। কুকি সম্মতি ব্যানার (GDPR-স্টাইল) বানান — বাংলাদেশে বাধ্যতামূলক না হলেও Google-এর পলিসি ও EU ভিজিটরের জন্য নিরাপদ।
-- নিষিদ্ধ: চ্যাট, ভেরিফিকেশন, ঠিকানা, কুরিয়ার পেজে বিজ্ঞাপন (বর্তমান লেআউটে নেই — যোগ করবেন না)।
+- নিষিদ্ধ: চ্যাট, ভেরিফিকেশন, ঠিকানা, কুরিয়ার ও পেমেন্ট পেজে বিজ্ঞাপন (বর্তমান লেআউটে নেই — যোগ করবেন না)।
+
+### ৫.ঙ পেমেন্ট (কুরিয়ার চার্জ — গ্রহীতা দেন)
+প্ল্যাটফর্ম বিনামূল্যে; টাকা লাগে শুধু কুরিয়ার চার্জে।
+- **COD (ডিফল্ট):** Steadfast পার্সেলে `cod_amount = চার্জ`; ডেলিভারি ওয়েবহুকে `cod_collected`। কোনো গেটওয়ে লাগে না।
+- **আগাম bKash/Nagad (হাতে যাচাই):** গ্রহীতা অ্যাডমিনের সেট করা নম্বরে পাঠিয়ে TrxID + প্রেরক নম্বর দেন → `payments` সারি `pending` → অ্যাডমিন মার্চেন্ট অ্যাপে মিলিয়ে `verified` বা কারণসহ `rejected` (ইমেইলে জানানো)। সার্ভার স্বয়ংক্রিয় ফ্ল্যাগ দেয়: **একই TrxID আগে ব্যবহৃত** (UNIQUE ইনডেক্স + ফ্ল্যাগ), প্রেরক নম্বর ইউজারের নম্বরের সাথে না মেলা, টাকার পরিমাণ না মেলা।
+- **গেটওয়ে (ঐচ্ছিক, পরে):** bKash Tokenized Checkout / Nagad — ইন্টিগ্রেশনে কী দিলে callback (`/api/payments/bkash/callback`) নিজেই `verified` করবে; রিফান্ডও API দিয়ে। মার্চেন্ট অ্যাকাউন্ট লাগবে।
+- চার্জ-রেট (ঢাকা/আশেপাশে/বাইরে, মূল ওজন, বাড়তি কেজি) অ্যাডমিনে; চার্জ **সার্ভারে** হিসাব হবে (`courierCharge()` একই সূত্র), ক্লায়েন্টের পাঠানো টাকা বিশ্বাস করবেন না।
+- `advanceFrom`: এই ঝুঁকি-স্তর থেকে COD বন্ধ, আগাম বাধ্যতামূলক — ফেরত পার্সেলের খরচ বাঁচায়।
+- টেবিল: `payments` (id, courier_request_id, payer_id, amount, method, trx_id UNIQUE NULLS, sender_number, status, flags[], note, decided_by, timestamps), `payment_settings` (এক সারি)।
+
+### ৫.চ ফ্রড ও ঠিকানা চেক
+প্রতিটি কুরিয়ার রিকোয়েস্ট তৈরির সময় সার্ভার `risk_cases` সারি বানায়, সিগন্যাল ও স্কোর হিসাব করে (`features/admin/risk.ts`-এর একই সূত্র: fail = পুরো ওজন, warn = অর্ধেক; ≥৬০ উচ্চ, ≥৩০ মাঝারি)।
+- সিগন্যাল: ব্লকলিস্ট, ইমেইল যাচাই, সঠিক বিডি মোবাইল, একই নম্বর একাধিক অ্যাকাউন্টে, অ্যাকাউন্টের বয়স, ২৪ ঘণ্টায় রিকোয়েস্ট সংখ্যা, **ঠিকানা** (জেলা তালিকায় আছে কিনা, থানা, বাড়ি/রোড নম্বরসহ পূর্ণ লাইন; ম্যাপ ইন্টিগ্রেশন থাকলে জিওকোড মেলানো), কুরিয়ার ইতিহাস (নেওয়া/ফেরত %), রিপোর্ট।
+- **কুরিয়ার ইতিহাস:** নিজের প্ল্যাটফর্মের ডেলিভারি রেকর্ড সবসময়। Steadfast-এর "fraud check" মার্চেন্ট প্যানেলে আছে, কিন্তু **নথিভুক্ত পাবলিক API নিশ্চিত নয়** — Steadfast সাপোর্টে জিজ্ঞেস করে নিন; না পেলে শুধু নিজের রেকর্ড।
+- অ্যাডমিন: অনুমোদন / হোল্ড (আগাম পেমেন্ট চাওয়া) / বাতিল (+নম্বর ব্লক)। ব্লক করা ফোন/ইমেইল/ঠিকানা/ডিভাইস দিয়ে সাইন-আপ ও রিকোয়েস্ট সার্ভারে আটকান।
+- রুট: `GET/PATCH /api/admin/risk`, `GET /api/admin/risk/phone/:phone`, `/api/admin/blocklist`।
+
+### ৫.ছ API ও ইন্টিগ্রেশন (কী অ্যাডমিন থেকে)
+সব বাইরের সেবার কী `super_admin` অ্যাডমিন প্যানেল থেকে বসাতে/বদলাতে পারেন — সার্ভার রিস্টার্ট লাগে না।
+- টেবিল `integration_settings` (id, enabled, mode, public_values jsonb, **secret_values bytea — AES-256-GCM এনক্রিপ্টেড**, last_check jsonb, updated_by)। মাস্টার কী `SETTINGS_ENCRYPTION_KEY` (৩২ বাইট) **শুধু সার্ভার env-এ**।
+- API কখনো সিক্রেট ফেরত দেয় না — শুধু `{ set, last4 }`। খালি স্ট্রিং পাঠালে মুছে যায়; না পাঠালে আগেরটা থাকে।
+- পড়ার ক্রম: ডাটাবেসের মান → না থাকলে env (`GEMINI_API_KEY` ইত্যাদি) — তাই পুরোনো env সেটআপও চলবে।
+- `POST /api/admin/integrations/:id/test` সার্ভার থেকে প্রোভাইডারকে হালকা কল দেয় (Gemini: মডেল তালিকা; Steadfast: ব্যালেন্স; ইমেইল: ডোমেইন স্ট্যাটাস; bKash: টোকেন) এবং ফলাফল `last_check`-এ রাখে। কী বদলালে `last_check` মুছে "টেস্ট বাকি" হয়।
+- নিরাপত্তা: কী বদলাতে পাসওয়ার্ড/২-ধাপ আবার চাওয়া (re-auth) ভালো; অডিট লগে **কে কোন সেবার কোন ফিল্ড বদলেছে** থাকে, মান কখনো না; রেট-লিমিট।
+- ওয়েবের Firebase কনফিগ (`VITE_FIREBASE_*`) বিল্ডের সময় লাগে, তাই ওটা এখান থেকে নয়।
 
 ---
 
@@ -242,7 +274,7 @@ Firebase Auth ডিফল্টে **লিংক** পাঠায়, কো�
 
 পূর্ণ তালিকা: `.env.example`। নিয়ম:
 - `VITE_*` ব্রাউজারে যায় — **এতে সিক্রেট রাখবেন না**। Firebase web key ও Supabase anon key প্রকাশ্য-নিরাপদ (সুরক্ষা আসে RLS ও Firebase rules থেকে)।
-- `GEMINI_API_KEY`, `STEADFAST_*`, `EMAIL_PROVIDER_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `FIREBASE_PRIVATE_KEY` — শুধু সার্ভারে (Render env)।
+- `SETTINGS_ENCRYPTION_KEY` (অ্যাডমিন থেকে বসানো API কী এনক্রিপ্টের মাস্টার কী, §৫.ছ), `GEMINI_API_KEY`, `STEADFAST_*`, `EMAIL_PROVIDER_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `FIREBASE_PRIVATE_KEY` — শুধু সার্ভারে (Render env)।
 - ⚠️ **`.env.production` গিটে কমিট করা আছে।** এখনকার মানগুলো শুধু প্রকাশ্য ক্লায়েন্ট কী (সার্ভার সিক্রেট ফাঁকা — যাচাই করা হয়েছে), তবু ফাইলটি `git rm --cached .env.production` করে `.gitignore`-এ দিন; মান CI/Render-এ রাখুন। ভুলে সিক্রেট ঢুকে গেলে পুরোনো কমিটেও থেকে যায় — তখন কী **রোটেট** করতে হবে।
 - রুটে ছড়ানো স্ক্রিপ্ট (`fix_*.py`, `test-*.js`, `split_migration_*`, `create_bucket.*`, `lint_errors.txt`, `binimoy_files.txt`) — ক্লিনআপ করুন (`scripts/`-এ নিন বা মুছুন)।
 
@@ -256,7 +288,7 @@ VITE_UI_PREVIEW=true pnpm --filter web dev     # লগইন/ব্যাকএ
 ```
 - `VITE_UI_PREVIEW` শুধু **ডেভে** কাজ করে (`import.meta.env.DEV` গার্ড) — প্রোডাকশন বিল্ডে চালু হওয়া অসম্ভব।
 - মক ডেটায় মেসেজ পাঠানো, এক্সচেঞ্জ গ্রহণ, নোটিফিকেশন পড়া, কুরিয়ার কনফার্ম সবই কাজ করে।
-- অ্যাডমিন দেখতে: `/admin`, `/admin/courier`, `/admin/ads`।
+- অ্যাডমিন দেখতে: `/admin`, `/admin/courier`, `/admin/risk`, `/admin/payments`, `/admin/ads`, `/admin/integrations`।
 
 ### রিলিজের আগে পরীক্ষা (প্রতিটি PR-এ)
 1. `pnpm --filter web exec tsc -b` — ত্রুটি ০

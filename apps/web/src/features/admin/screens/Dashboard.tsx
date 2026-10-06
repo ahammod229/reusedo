@@ -2,7 +2,7 @@ import { QueryState } from "@/features/data/QueryState";
 import { useLang, useNum, useTr } from "@/features/feed/i18n";
 import { Pill } from "@/features/feed/parts";
 import { Button } from "@/shared/components/ui";
-import { Boxes, Flag, Repeat, ShieldAlert, Truck, Users } from "lucide-react";
+import { Boxes, Flag, Repeat, ScanSearch, ShieldAlert, Truck, Users, Wallet } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router";
 import {
@@ -36,6 +36,18 @@ export function Dashboard() {
           label: tr("খোলা রিপোর্ট", "open reports"),
           href: "/admin/reports",
           icon: Flag,
+        },
+        {
+          n: s.openRisk,
+          label: tr("রিকোয়েস্টের ফ্রড চেক বাকি", "requests to fraud-check"),
+          href: "/admin/risk",
+          icon: ScanSearch,
+        },
+        {
+          n: s.pendingPayments,
+          label: tr("পেমেন্ট যাচাই বাকি", "payments to verify"),
+          href: "/admin/payments",
+          icon: Wallet,
         },
         {
           n: s.pendingVerifications,

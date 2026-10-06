@@ -12,4 +12,7 @@ export { Settings } from "./Settings";
 export { Flags } from "./Flags";
 export { Audit } from "./Audit";
 export { CourierQueue } from "../pages/courier/CourierQueue";
-export { AdSettings } from "../pages/ads/AdSettings";
+export { Ads } from "./Ads";
+export { Payments } from "./Payments";
+export { Risk } from "./Risk";
+export { Integrations } from "./Integrations";

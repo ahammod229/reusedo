@@ -7,10 +7,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  Switch,
   cn,
 } from "@/shared/components/ui";
 import { ArrowDownRight, ArrowUpRight, Search } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { Link } from "react-router";
 
 /** Page frame: title, description and a right-aligned action slot. */
@@ -163,7 +164,11 @@ export function DataTable<T>({
                     key={c.key}
                     className={cn("px-4 py-3 align-middle", c.actions && "text-right", c.className)}
                   >
-                    {c.cell(r)}
+                    {c.actions ? (
+                      <div className="flex items-center justify-end gap-2">{c.cell(r)}</div>
+                    ) : (
+                      c.cell(r)
+                    )}
                   </td>
                 ))}
               </tr>
@@ -329,5 +334,108 @@ export function Panel({
       )}
       {children}
     </section>
+  );
+}
+
+/** Like ConfirmDialog, but asks for a short reason (kept in the audit trail / shown to the user). */
+export function ReasonDialog({
+  open,
+  onClose,
+  onConfirm,
+  title,
+  desc,
+  confirmLabel,
+  danger,
+  required = true,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: (reason: string) => void;
+  title: string;
+  desc?: string;
+  confirmLabel: string;
+  danger?: boolean;
+  required?: boolean;
+  children?: ReactNode;
+}) {
+  const tr = useTr();
+  const [reason, setReason] = useState("");
+  const ok = !required || reason.trim().length >= 3;
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        if (!o) {
+          setReason("");
+          onClose();
+        }
+      }}
+    >
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          {desc && <DialogDescription>{desc}</DialogDescription>}
+        </DialogHeader>
+        <label className="block space-y-1.5">
+          <span className="text-sm font-semibold">
+            {tr("কারণ", "Reason")}
+            {!required && ` (${tr("ঐচ্ছিক", "optional")})`}
+          </span>
+          <textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            rows={3}
+            maxLength={300}
+            className="w-full rounded-xl border bg-background px-3 py-2 text-base outline-none focus:border-primary focus:ring-4 focus:ring-primary/15 sm:text-sm"
+          />
+        </label>
+        {children}
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            {tr("বাতিল", "Cancel")}
+          </Button>
+          <Button
+            disabled={!ok}
+            className={cn(danger && "bg-destructive text-white hover:bg-destructive/90")}
+            onClick={() => {
+              onConfirm(reason.trim());
+              setReason("");
+              onClose();
+            }}
+          >
+            {confirmLabel}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Label + description + switch, used by settings-style forms. */
+export function ToggleRow({
+  title,
+  desc,
+  checked,
+  onChange,
+  children,
+}: {
+  title: string;
+  desc?: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  children?: ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border p-3">
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="font-semibold">{title}</p>
+          {desc && <p className="text-sm text-muted-foreground">{desc}</p>}
+        </div>
+        <Switch checked={checked} onCheckedChange={onChange} aria-label={title} />
+      </div>
+      {checked && children && <div className="mt-3">{children}</div>}
+    </div>
   );
 }

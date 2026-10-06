@@ -15,6 +15,5 @@ export * from "./settings/PlatformSettings";
 export * from "./settings/FeatureFlags";
 export * from "./audit/AuditLogs";
 export * from "./courier/CourierQueue";
-export * from "./ads/AdSettings";
 
 export const NotFound = () => <div>404 - Not Found</div>;
