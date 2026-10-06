@@ -154,11 +154,11 @@ export function Onboarding() {
             onChange={(e) => set("landmark")(e.target.value)}
           />
 
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Button type="button" variant="outline" className="flex-1" disabled>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" className="flex-1 basis-44" disabled>
               <LocateFixed className="mr-2 h-4 w-4" /> {t("useMyLocation")}
             </Button>
-            <Button type="button" variant="outline" className="flex-1" disabled>
+            <Button type="button" variant="outline" className="flex-1 basis-44" disabled>
               <MapPin className="mr-2 h-4 w-4" /> {t("pinOnMap")}
             </Button>
           </div>

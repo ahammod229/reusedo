@@ -1,5 +1,6 @@
 /// <reference types="node" />
 import { getApp, getApps, initializeApp } from "firebase/app";
+import { UI_PREVIEW } from "@/shared/uiPreview";
 import { getAuth } from "firebase/auth";
 
 const getEnvVar = (viteKey: unknown, nodeKey?: string): string | undefined => {
@@ -11,10 +12,12 @@ const getEnvVar = (viteKey: unknown, nodeKey?: string): string | undefined => {
 };
 
 const firebaseConfig = {
-  apiKey: getEnvVar(
-    (import.meta as unknown as { env: Record<string, string> }).env?.VITE_FIREBASE_API_KEY,
-    "VITE_FIREBASE_API_KEY",
-  ),
+  apiKey:
+    (UI_PREVIEW ? "ui-preview" : undefined) ??
+    getEnvVar(
+      (import.meta as unknown as { env: Record<string, string> }).env?.VITE_FIREBASE_API_KEY,
+      "VITE_FIREBASE_API_KEY",
+    ),
   authDomain: getEnvVar(
     (import.meta as unknown as { env: Record<string, string> }).env?.VITE_FIREBASE_AUTH_DOMAIN,
     "VITE_FIREBASE_AUTH_DOMAIN",

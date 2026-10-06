@@ -89,5 +89,7 @@ export interface CourierRequestItem {
   weightKg: number;
   charge: number;
   status: "pending" | "confirmed" | "rejected";
+  /** Steadfast tracking code, set when an admin confirms. */
+  tracking?: string;
   createdAt: string;
 }

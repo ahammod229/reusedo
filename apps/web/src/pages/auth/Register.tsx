@@ -27,7 +27,7 @@ export const Register = () => {
     setError(null);
     try {
       await AuthService.register(data);
-      navigate("/dashboard");
+      navigate("/feed");
       // biome-ignore lint/suspicious/noExplicitAny: Firebase error
     } catch (err: any) {
       setError(err.message || "Failed to register. Please try again.");
@@ -39,7 +39,7 @@ export const Register = () => {
   const handleGoogle = async () => {
     try {
       await AuthService.loginWithGoogle();
-      navigate("/dashboard");
+      navigate("/feed");
       // biome-ignore lint/suspicious/noExplicitAny: Firebase error
     } catch (err: any) {
       setError(err.message || "Google sign up failed.");

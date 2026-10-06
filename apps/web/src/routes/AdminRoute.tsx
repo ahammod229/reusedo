@@ -1,9 +1,12 @@
 import { useAuthStore } from "@/features/auth";
+import { UI_PREVIEW } from "@/shared/uiPreview";
 import { Navigate, Outlet } from "react-router";
 
 export const AdminRoute = () => {
   const { user, status } = useAuthStore();
   const loading = status === "loading";
+
+  if (UI_PREVIEW) return <Outlet />;
 
   if (loading) {
     return (

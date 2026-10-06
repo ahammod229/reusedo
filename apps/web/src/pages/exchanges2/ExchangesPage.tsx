@@ -1,5 +1,7 @@
 import { useTr } from "@/features/feed/i18n";
-import { MOCK_EXCHANGES, type ExchangeStatus, type MockExchange } from "@/features/feed/mock";
+import { QueryState } from "@/features/data/QueryState";
+import { useAdvanceExchange, useExchanges } from "@/features/data/hooks";
+import type { ExchangeStatus } from "@/features/data/types";
 import { PageHeading, Pill } from "@/features/feed/parts";
 import { categoryOf } from "@/features/feed/types";
 import { Button, cn } from "@/shared/components/ui";
@@ -13,7 +15,8 @@ const STEPS: ExchangeStatus[] = ["requested", "accepted", "scheduled", "complete
 export function ExchangesPage() {
   const tr = useTr();
   const [tab, setTab] = useState<"active" | "done" | "all">("active");
-  const [items, setItems] = useState<MockExchange[]>(MOCK_EXCHANGES);
+  const { data: items = [], isLoading, error, refetch } = useExchanges();
+  const advanceMut = useAdvanceExchange();
 
   const label: Record<ExchangeStatus, string> = {
     requested: tr("রিকোয়েস্ট", "Requested"),
@@ -31,14 +34,7 @@ export function ExchangesPage() {
         : !["completed", "cancelled"].includes(e.status),
   );
 
-  const advance = (id: string) =>
-    setItems((all) =>
-      all.map((e) => {
-        if (e.id !== id) return e;
-        const i = STEPS.indexOf(e.status);
-        return i >= 0 && i < STEPS.length - 1 ? { ...e, status: STEPS[i + 1] } : e;
-      }),
-    );
+  const advance = (id: string) => advanceMut.mutate(id);
 
   const tabs = [
     ["active", tr("চলমান", "Active")],
@@ -74,118 +70,123 @@ export function ExchangesPage() {
         ))}
       </div>
 
-      {shown.length === 0 && (
-        <p className="py-16 text-center text-muted-foreground">
-          {tr("এখানে কিছু নেই", "Nothing here")}
-        </p>
-      )}
+      <QueryState isLoading={isLoading} error={error} onRetry={refetch}>
+        {shown.length === 0 && (
+          <p className="py-16 text-center text-muted-foreground">
+            {tr("এখানে কিছু নেই", "Nothing here")}
+          </p>
+        )}
 
-      <ul className="space-y-3">
-        {shown.map((e) => {
-          const cat = categoryOf(e.category);
-          const idx = STEPS.indexOf(e.status);
-          const cancelled = e.status === "cancelled";
-          return (
-            <li key={e.id} className="rounded-2xl border bg-card p-4">
-              <div className="flex items-start gap-3">
-                <span
-                  className={cn(
-                    "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-2xl",
-                    cat.tone,
-                  )}
-                >
-                  {cat.emoji}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="font-bold leading-snug">{e.title}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {e.role === "giver"
-                      ? tr("আপনি দিচ্ছেন →", "You give →")
-                      : tr("আপনি নিচ্ছেন ←", "You receive ←")}{" "}
-                    {e.other}
-                  </p>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <Pill
-                      tone={cancelled ? "danger" : e.status === "completed" ? "success" : "warning"}
-                    >
-                      {label[e.status]}
-                    </Pill>
-                    <Pill>
-                      {e.via === "courier" ? (
-                        <>
-                          <Truck className="mr-1 inline h-3 w-3" />
-                          {tr("কুরিয়ার", "Courier")}
-                        </>
-                      ) : (
-                        <>
-                          <PackageCheck className="mr-1 inline h-3 w-3" />
-                          {tr("সরাসরি", "Pickup")}
-                        </>
-                      )}
-                    </Pill>
-                    <span className="text-xs text-muted-foreground">{e.updated}</span>
+        <ul className="space-y-3">
+          {shown.map((e) => {
+            const cat = categoryOf(e.category);
+            const idx = STEPS.indexOf(e.status);
+            const cancelled = e.status === "cancelled";
+            return (
+              <li key={e.id} className="rounded-2xl border bg-card p-4">
+                <div className="flex items-start gap-3">
+                  <span
+                    className={cn(
+                      "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-2xl",
+                      cat.tone,
+                    )}
+                  >
+                    {cat.emoji}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold leading-snug">{e.title}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {e.role === "giver"
+                        ? tr("আপনি দিচ্ছেন →", "You give →")
+                        : tr("আপনি নিচ্ছেন ←", "You receive ←")}{" "}
+                      {e.other}
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <Pill
+                        tone={
+                          cancelled ? "danger" : e.status === "completed" ? "success" : "warning"
+                        }
+                      >
+                        {label[e.status]}
+                      </Pill>
+                      <Pill>
+                        {e.via === "courier" ? (
+                          <>
+                            <Truck className="mr-1 inline h-3 w-3" />
+                            {tr("কুরিয়ার", "Courier")}
+                          </>
+                        ) : (
+                          <>
+                            <PackageCheck className="mr-1 inline h-3 w-3" />
+                            {tr("সরাসরি", "Pickup")}
+                          </>
+                        )}
+                      </Pill>
+                      <span className="text-xs text-muted-foreground">{e.updated}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {!cancelled && (
-                <ol className="mt-4 flex items-center" aria-label="progress">
-                  {STEPS.map((s, i) => (
-                    <li key={s} className="flex flex-1 items-center last:flex-none">
-                      <span
-                        className={cn(
-                          "flex h-6 w-6 items-center justify-center rounded-full border-2 text-[10px]",
-                          i <= idx
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-border text-muted-foreground",
-                        )}
-                        title={label[s]}
-                      >
-                        {i <= idx && <Check className="h-3 w-3" />}
-                      </span>
-                      {i < STEPS.length - 1 && (
+                {!cancelled && (
+                  <ol className="mt-4 flex items-center" aria-label="progress">
+                    {STEPS.map((s, i) => (
+                      <li key={s} className="flex flex-1 items-center last:flex-none">
                         <span
-                          className={cn("h-0.5 flex-1", i < idx ? "bg-primary" : "bg-border")}
-                        />
-                      )}
-                    </li>
-                  ))}
-                </ol>
-              )}
+                          className={cn(
+                            "flex h-6 w-6 items-center justify-center rounded-full border-2 text-[10px]",
+                            i <= idx
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-border text-muted-foreground",
+                          )}
+                          title={label[s]}
+                        >
+                          {i <= idx && <Check className="h-3 w-3" />}
+                        </span>
+                        {i < STEPS.length - 1 && (
+                          <span
+                            className={cn("h-0.5 flex-1", i < idx ? "bg-primary" : "bg-border")}
+                          />
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+                )}
 
-              <div className="mt-4 flex gap-2">
-                <Button asChild variant="outline" size="sm">
-                  <Link to="/messages/c1">
-                    <MessageCircle className="mr-1.5 h-4 w-4" /> {tr("চ্যাট", "Chat")}
-                  </Link>
-                </Button>
-                {e.role === "giver" && e.status === "requested" && (
-                  <Button size="sm" onClick={() => advance(e.id)}>
-                    {tr("গ্রহণ করুন", "Accept")}
+                <div className="mt-4 flex gap-2">
+                  <Button asChild variant="outline" size="sm">
+                    <Link to="/messages/c1">
+                      <MessageCircle className="mr-1.5 h-4 w-4" /> {tr("চ্যাট", "Chat")}
+                    </Link>
                   </Button>
-                )}
-                {e.status === "accepted" && e.via === "courier" && (
-                  <Button asChild size="sm">
-                    <Link to="/courier">{tr("কুরিয়ার", "Courier")}</Link>
-                  </Button>
-                )}
-                {(e.status === "scheduled" || (e.status === "accepted" && e.via === "pickup")) && (
-                  <Button size="sm" onClick={() => advance(e.id)}>
-                    {e.role === "giver"
-                      ? tr("হস্তান্তর হয়েছে", "Handed over")
-                      : tr("পেয়েছি", "Received")}
-                  </Button>
-                )}
-                {e.status === "completed" && (
-                  <Button size="sm" variant="secondary">
-                    {tr("রিভিউ দিন", "Leave a review")}
-                  </Button>
-                )}
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+                  {e.role === "giver" && e.status === "requested" && (
+                    <Button size="sm" onClick={() => advance(e.id)}>
+                      {tr("গ্রহণ করুন", "Accept")}
+                    </Button>
+                  )}
+                  {e.status === "accepted" && e.via === "courier" && (
+                    <Button asChild size="sm">
+                      <Link to="/courier">{tr("কুরিয়ার", "Courier")}</Link>
+                    </Button>
+                  )}
+                  {(e.status === "scheduled" ||
+                    (e.status === "accepted" && e.via === "pickup")) && (
+                    <Button size="sm" onClick={() => advance(e.id)}>
+                      {e.role === "giver"
+                        ? tr("হস্তান্তর হয়েছে", "Handed over")
+                        : tr("পেয়েছি", "Received")}
+                    </Button>
+                  )}
+                  {e.status === "completed" && (
+                    <Button size="sm" variant="secondary">
+                      {tr("রিভিউ দিন", "Leave a review")}
+                    </Button>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </QueryState>
     </div>
   );
 }

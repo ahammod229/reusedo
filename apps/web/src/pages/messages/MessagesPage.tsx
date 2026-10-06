@@ -1,5 +1,7 @@
 import { useTr } from "@/features/feed/i18n";
-import { MOCK_CHATS, type MockConversation } from "@/features/feed/mock";
+import { QueryState } from "@/features/data/QueryState";
+import { useChats, useSendMessage } from "@/features/data/hooks";
+import type { Chat } from "@/features/data/types";
 import { Initial, Pill } from "@/features/feed/parts";
 import { Button, cn } from "@/shared/components/ui";
 import {
@@ -14,69 +16,72 @@ import { useEffect, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link, useNavigate, useParams } from "react-router";
 
-type Msg = MockConversation["messages"][number];
-
 export function MessagesPage() {
   const { id } = useParams();
   const tr = useTr();
-  const active = MOCK_CHATS.find((c) => c.id === id);
+  const { data: chats = [], isLoading, error, refetch } = useChats();
+  const active = chats.find((c) => c.id === id);
 
   return (
     <div className="mx-auto flex h-[calc(100dvh-8.5rem)] w-full max-w-5xl overflow-hidden bg-card md:h-[calc(100vh-4rem)] md:border-x">
       <Helmet>
         <title>{tr("মেসেজ", "Messages")} — ReuseDo</title>
       </Helmet>
-      <aside className={cn("w-full shrink-0 border-r md:block md:w-80", active && "hidden")}>
+      <aside
+        className={cn("w-full shrink-0 border-r lg:block lg:w-80", active && "hidden lg:block")}
+      >
         <div className="border-b p-4">
           <h1 className="text-xl font-extrabold">{tr("মেসেজ", "Messages")}</h1>
         </div>
-        <ul className="overflow-y-auto">
-          {MOCK_CHATS.map((c) => (
-            <li key={c.id}>
-              <Link
-                to={`/messages/${c.id}`}
-                aria-current={c.id === id ? "page" : undefined}
-                className={cn(
-                  "flex gap-3 border-b px-4 py-3 transition-colors hover:bg-accent/60",
-                  c.id === id && "bg-primary/5",
-                )}
-              >
-                <Initial name={c.with} className="h-11 w-11" />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="flex items-center gap-1 truncate font-semibold">
-                      {c.with}
-                      {c.verified && <BadgeCheck className="h-4 w-4 shrink-0 text-primary" />}
-                    </span>
-                    <span className="shrink-0 text-xs text-muted-foreground">{c.when}</span>
-                  </div>
-                  <p className="truncate text-xs text-muted-foreground">{c.postTitle}</p>
-                  <div className="flex items-center justify-between gap-2">
-                    <p
-                      className={cn(
-                        "truncate text-sm",
-                        c.unread ? "font-semibold" : "text-muted-foreground",
-                      )}
-                    >
-                      {c.last}
-                    </p>
-                    {c.unread > 0 && (
-                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-bold text-primary-foreground">
-                        {c.unread}
+        <QueryState isLoading={isLoading} error={error} onRetry={refetch} rows={4}>
+          <ul className="overflow-y-auto">
+            {chats.map((c) => (
+              <li key={c.id}>
+                <Link
+                  to={`/messages/${c.id}`}
+                  aria-current={c.id === id ? "page" : undefined}
+                  className={cn(
+                    "flex gap-3 border-b px-4 py-3 transition-colors hover:bg-accent/60",
+                    c.id === id && "bg-primary/5",
+                  )}
+                >
+                  <Initial name={c.with} className="h-11 w-11" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="flex items-center gap-1 truncate font-semibold">
+                        {c.with}
+                        {c.verified && <BadgeCheck className="h-4 w-4 shrink-0 text-primary" />}
                       </span>
-                    )}
+                      <span className="shrink-0 text-xs text-muted-foreground">{c.when}</span>
+                    </div>
+                    <p className="truncate text-xs text-muted-foreground">{c.postTitle}</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p
+                        className={cn(
+                          "truncate text-sm",
+                          c.unread ? "font-semibold" : "text-muted-foreground",
+                        )}
+                      >
+                        {c.last}
+                      </p>
+                      {c.unread > 0 && (
+                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-bold text-primary-foreground">
+                          {c.unread}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </QueryState>
       </aside>
 
       {active ? (
         <Thread key={active.id} chat={active} />
       ) : (
-        <div className="hidden flex-1 flex-col items-center justify-center gap-3 text-center text-muted-foreground md:flex">
+        <div className="hidden flex-1 flex-col items-center justify-center gap-3 text-center text-muted-foreground lg:flex">
           <span className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
             <MessageCircle className="h-8 w-8" />
           </span>
@@ -87,10 +92,11 @@ export function MessagesPage() {
   );
 }
 
-function Thread({ chat }: { chat: MockConversation }) {
+function Thread({ chat }: { chat: Chat }) {
   const tr = useTr();
   const navigate = useNavigate();
-  const [msgs, setMsgs] = useState<Msg[]>(chat.messages);
+  const send$ = useSendMessage();
+  const msgs = chat.messages;
   const [text, setText] = useState("");
   const end = useRef<HTMLDivElement>(null);
 
@@ -102,7 +108,7 @@ function Thread({ chat }: { chat: MockConversation }) {
   const send = (t = text) => {
     const v = t.trim();
     if (!v) return;
-    setMsgs((m) => [...m, { from: "me", text: v, time: tr("এখন", "now") }]);
+    send$.mutate({ chatId: chat.id, text: v });
     setText("");
   };
 
@@ -118,7 +124,7 @@ function Thread({ chat }: { chat: MockConversation }) {
         <Button
           variant="ghost"
           size="icon"
-          className="md:hidden"
+          className="lg:hidden"
           onClick={() => navigate("/messages")}
         >
           <ArrowLeft className="h-5 w-5" />

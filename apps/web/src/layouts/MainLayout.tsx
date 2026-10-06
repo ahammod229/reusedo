@@ -29,11 +29,11 @@ export function MainLayout() {
   const sidebarItems = [
     { title: t("navHome"), href: "/", icon: <Home className={ic} /> },
     { title: t("navFeed"), href: "/feed", icon: <Newspaper className={ic} /> },
-    { title: t("navMyPosts"), href: "/my-products", icon: <PackageOpen className={ic} /> },
+    { title: t("navMyPosts"), href: "/my-posts", icon: <PackageOpen className={ic} /> },
     { title: t("navExchanges"), href: "/exchanges", icon: <Repeat className={ic} /> },
     { title: t("navCourier"), href: "/courier", icon: <Truck className={ic} /> },
     { title: t("navMessages"), href: "/messages", icon: <MessageCircle className={ic} /> },
-    { title: t("navSaved"), href: "/search/saved", icon: <Bookmark className={ic} /> },
+    { title: t("navSaved"), href: "/saved", icon: <Bookmark className={ic} /> },
     { title: t("navProfile"), href: "/profile", icon: <UserIcon className={ic} /> },
     { title: t("navSettings"), href: "/settings", icon: <Settings className={ic} /> },
     { title: t("navHelp"), href: "/help", icon: <HelpCircle className={ic} /> },

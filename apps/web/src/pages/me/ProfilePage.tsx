@@ -1,6 +1,8 @@
 import { PostCard } from "@/features/feed/PostCard";
 import { useNum, useTr } from "@/features/feed/i18n";
-import { MOCK_POSTS, MOCK_USERS } from "@/features/feed/mock";
+import { QueryState } from "@/features/data/QueryState";
+import { useFeed, useUser } from "@/features/data/hooks";
+import type { UserProfile } from "@/features/data/types";
 import { Initial, Pill, Stars, TrustRing } from "@/features/feed/parts";
 import { Button, cn } from "@/shared/components/ui";
 import {
@@ -16,14 +18,33 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { Link } from "react-router";
+import { Link, useParams } from "react-router";
 
 export function ProfilePage({ own = false }: { own?: boolean }) {
+  const { username = "rakib" } = useParams();
+  const { data: u, isLoading, error, refetch } = useUser(own ? "rakib" : username);
+  const tr = useTr();
+  return (
+    <div className="mx-auto w-full max-w-3xl px-4 py-5">
+      <QueryState isLoading={isLoading} error={error} onRetry={refetch} rows={2}>
+        {u ? (
+          <ProfileView u={u} own={own} />
+        ) : (
+          <p className="py-24 text-center text-muted-foreground">
+            {tr("প্রোফাইল পাওয়া যায়নি", "Profile not found")}
+          </p>
+        )}
+      </QueryState>
+    </div>
+  );
+}
+
+function ProfileView({ u, own }: { u: UserProfile; own: boolean }) {
   const tr = useTr();
   const num = useNum();
-  const u = MOCK_USERS.rakib;
   const [tab, setTab] = useState<"posts" | "reviews">("posts");
-  const posts = MOCK_POSTS.filter((p) => p.author.name === u.name);
+  const { data: all = [] } = useFeed({ kind: "all", category: "all", scope: "country" });
+  const posts = all.filter((p) => p.author.name === u.name);
 
   const checklist = [
     { done: true, label: tr("ইমেইল যাচাই", "Email verified") },
@@ -34,7 +55,7 @@ export function ProfilePage({ own = false }: { own?: boolean }) {
   const avg = (u.reviews.reduce((a, r) => a + r.stars, 0) / u.reviews.length).toFixed(1);
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-5 px-4 py-5">
+    <div className="space-y-5">
       <Helmet>
         <title>{u.name} — ReuseDo</title>
       </Helmet>

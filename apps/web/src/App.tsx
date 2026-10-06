@@ -2,39 +2,27 @@ import { ThemeProvider } from "@/shared/components/ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Suspense, lazy } from "react";
 import { HelmetProvider } from "react-helmet-async";
-import { BrowserRouter, Route, Routes } from "react-router";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import { EmptyLayout } from "./layouts/EmptyLayout";
 import { MainLayout } from "./layouts/MainLayout";
-const AddressBook = lazy(() => import("./pages").then((m) => ({ default: m.AddressBook })));
-const EditProfile = lazy(() => import("./pages").then((m) => ({ default: m.EditProfile })));
-const Explore = lazy(() => import("./pages").then((m) => ({ default: m.Explore })));
 const ForgotPassword = lazy(() => import("./pages").then((m) => ({ default: m.ForgotPassword })));
 const VerifyEmail = lazy(() => import("./pages").then((m) => ({ default: m.VerifyEmail })));
 const Home = lazy(() => import("./pages").then((m) => ({ default: m.Home })));
 const Login = lazy(() => import("./pages").then((m) => ({ default: m.Login })));
-const MyNeeds = lazy(() => import("./pages").then((m) => ({ default: m.MyNeeds })));
-const MyProducts = lazy(() => import("./pages").then((m) => ({ default: m.MyProducts })));
-const NeedDetails = lazy(() => import("./pages").then((m) => ({ default: m.NeedDetails })));
-const NeedForm = lazy(() => import("./pages").then((m) => ({ default: m.NeedForm })));
-const NeedList = lazy(() => import("./pages").then((m) => ({ default: m.NeedList })));
-const ProductDetails = lazy(() => import("./pages").then((m) => ({ default: m.ProductDetails })));
-const ProductForm = lazy(() => import("./pages").then((m) => ({ default: m.ProductForm })));
-const ProductList = lazy(() => import("./pages").then((m) => ({ default: m.ProductList })));
 const Register = lazy(() => import("./pages").then((m) => ({ default: m.Register })));
-const ReputationDashboard = lazy(() =>
-  import("./pages").then((m) => ({ default: m.ReputationDashboard })),
-);
-const VerificationForm = lazy(() =>
-  import("./pages").then((m) => ({ default: m.VerificationForm })),
-);
-const UserDashboard = lazy(() => import("./pages").then((m) => ({ default: m.UserDashboard })));
-const PersonalAnalytics = lazy(() =>
-  import("./pages").then((m) => ({ default: m.PersonalAnalytics })),
-);
-const ActivityTimeline = lazy(() =>
-  import("./pages").then((m) => ({ default: m.ActivityTimeline })),
-);
 
+const SearchPage = lazy(() =>
+  import("./pages/discover/SearchPage").then((m) => ({ default: m.SearchPage })),
+);
+const SavedPage = lazy(() =>
+  import("./pages/discover/SavedPage").then((m) => ({ default: m.SavedPage })),
+);
+const MyPostsPage = lazy(() =>
+  import("./pages/discover/MyPostsPage").then((m) => ({ default: m.MyPostsPage })),
+);
+const EditProfilePage = lazy(() =>
+  import("./pages/discover/EditProfilePage").then((m) => ({ default: m.EditProfilePage })),
+);
 const PostDetail = lazy(() =>
   import("./pages/post/PostDetail").then((m) => ({ default: m.PostDetail })),
 );
@@ -79,27 +67,11 @@ const CourierQueue = lazy(() =>
   import("./features/admin/pages").then((m) => ({ default: m.CourierQueue })),
 );
 
-const SearchIndex = lazy(() =>
-  import("./pages/search/SearchIndex").then((m) => ({ default: m.SearchIndex })),
-);
-const SearchProducts = lazy(() =>
-  import("./pages/search/SearchProducts").then((m) => ({ default: m.SearchProducts })),
-);
-const SearchNeeds = lazy(() =>
-  import("./pages/search/SearchNeeds").then((m) => ({ default: m.SearchNeeds })),
-);
-const SearchUsers = lazy(() =>
-  import("./pages/search/SearchUsers").then((m) => ({ default: m.SearchUsers })),
-);
-const SavedSearches = lazy(() =>
-  import("./pages/search/SavedSearches").then((m) => ({ default: m.SavedSearches })),
-);
-import { ShipmentDetails } from "./pages/shipping/ShipmentDetails";
-import { ShippingDashboard } from "./pages/shipping/ShippingDashboard";
 import { AuthProvider } from "./providers/AuthProvider";
 import { SocketProvider } from "./providers/SocketProvider";
 import { AdminRoute } from "./routes/AdminRoute";
 import { GuestRoute } from "./routes/GuestRoute";
+import { ToPost } from "./routes/Redirects";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
 
 const AdminLayout = lazy(() =>
@@ -172,65 +144,71 @@ function App() {
                     {/* Main App Layout */}
                     <Route element={<MainLayout />}>
                       <Route path="/" element={<Home />} />
-                      <Route path="/explore" element={<Explore />} />
                       <Route path="/feed" element={<FeedPage />} />
+                      <Route path="/search" element={<SearchPage />} />
+                      <Route path="/post/:id" element={<PostDetail />} />
+                      <Route path="/users/:username" element={<ProfilePage />} />
                       <Route path="/help" element={<HelpPage />} />
                       <Route path="/about" element={<AboutPage />} />
                       <Route path="/contact" element={<ContactPage />} />
                       <Route path="/terms" element={<LegalPage kind="terms" />} />
                       <Route path="/privacy" element={<LegalPage kind="privacy" />} />
-                      <Route path="/post/:id" element={<PostDetail />} />
 
-                      {/* Search Routes */}
-                      <Route path="/search" element={<SearchIndex />} />
-                      <Route path="/search/products" element={<SearchProducts />} />
-                      <Route path="/search/needs" element={<SearchNeeds />} />
-                      <Route path="/search/users" element={<SearchUsers />} />
-
-                      {/* Public Profile */}
-                      <Route path="/users/:username" element={<ProfilePage />} />
-
-                      {/* Protected Routes */}
+                      {/* Signed-in pages */}
                       <Route element={<ProtectedRoute />}>
                         <Route path="/post/new" element={<QuickPost />} />
+                        <Route path="/my-posts" element={<MyPostsPage />} />
+                        <Route path="/saved" element={<SavedPage />} />
                         <Route path="/courier" element={<CourierRequest />} />
-                        <Route path="/products" element={<ProductList />} />
-                        <Route path="/products/create" element={<ProductForm />} />
-                        <Route path="/products/:id" element={<ProductDetails />} />
-                        <Route path="/products/:id/edit" element={<ProductForm />} />
-                        <Route path="/my-products" element={<MyProducts />} />
-                        <Route path="/needs" element={<NeedList />} />
-                        <Route path="/needs/create" element={<NeedForm />} />
-                        <Route path="/needs/:id" element={<NeedDetails />} />
-                        <Route path="/needs/:id/edit" element={<NeedForm />} />
-                        <Route path="/my-needs" element={<MyNeeds />} />
-
-                        {/* Exchange Routes */}
-                        <Route path="exchanges" element={<ExchangesPage />} />
-
-                        {/* Chat Routes */}
-                        <Route path="messages" element={<MessagesPage />} />
-                        <Route path="messages/:id" element={<MessagesPage />} />
-
-                        {/* Profile & Account */}
+                        <Route path="/exchanges" element={<ExchangesPage />} />
+                        <Route path="/messages" element={<MessagesPage />} />
+                        <Route path="/messages/:id" element={<MessagesPage />} />
                         <Route path="/profile" element={<ProfilePage own />} />
-                        <Route path="/profile/edit" element={<EditProfile />} />
-                        <Route path="/profile/addresses" element={<AddressBook />} />
-                        <Route path="/profile/reputation" element={<ReputationDashboard />} />
-                        <Route path="/profile/verification" element={<VerificationForm />} />
+                        <Route path="/profile/edit" element={<EditProfilePage />} />
                         <Route path="/notifications" element={<NotificationsPage />} />
-                        <Route path="/search/saved" element={<SavedSearches />} />
-                        <Route path="/shipping" element={<ShippingDashboard />} />
-                        <Route path="/shipping/:id" element={<ShipmentDetails />} />
-
-                        {/* Settings */}
                         <Route path="/settings" element={<SettingsPage />} />
-
-                        {/* Dashboard Routes */}
-                        <Route path="/dashboard" element={<UserDashboard />} />
-                        <Route path="/dashboard/analytics" element={<PersonalAnalytics />} />
-                        <Route path="/dashboard/activity" element={<ActivityTimeline />} />
                       </Route>
+
+                      {/* Legacy URLs → new screens (old API-bound pages stay on disk, unrouted) */}
+                      <Route path="/explore" element={<Navigate to="/feed" replace />} />
+                      <Route
+                        path="/products"
+                        element={<Navigate to="/feed?kind=offer" replace />}
+                      />
+                      <Route path="/needs" element={<Navigate to="/feed?kind=need" replace />} />
+                      <Route
+                        path="/products/create"
+                        element={<Navigate to="/post/new" replace />}
+                      />
+                      <Route path="/needs/create" element={<Navigate to="/post/new" replace />} />
+                      <Route path="/products/:id" element={<ToPost />} />
+                      <Route path="/needs/:id" element={<ToPost />} />
+                      <Route
+                        path="/products/:id/edit"
+                        element={<Navigate to="/my-posts" replace />}
+                      />
+                      <Route path="/needs/:id/edit" element={<Navigate to="/my-posts" replace />} />
+                      <Route path="/my-products" element={<Navigate to="/my-posts" replace />} />
+                      <Route path="/my-needs" element={<Navigate to="/my-posts" replace />} />
+                      <Route path="/search/saved" element={<Navigate to="/saved" replace />} />
+                      <Route path="/search/products" element={<Navigate to="/search" replace />} />
+                      <Route path="/search/needs" element={<Navigate to="/search" replace />} />
+                      <Route path="/search/users" element={<Navigate to="/search" replace />} />
+                      <Route
+                        path="/profile/addresses"
+                        element={<Navigate to="/settings" replace />}
+                      />
+                      <Route
+                        path="/profile/verification"
+                        element={<Navigate to="/onboarding" replace />}
+                      />
+                      <Route
+                        path="/profile/reputation"
+                        element={<Navigate to="/profile" replace />}
+                      />
+                      <Route path="/shipping" element={<Navigate to="/courier" replace />} />
+                      <Route path="/shipping/:id" element={<Navigate to="/courier" replace />} />
+                      <Route path="/dashboard/*" element={<Navigate to="/feed" replace />} />
                     </Route>
 
                     {/* Admin Routes */}

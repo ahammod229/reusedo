@@ -1,12 +1,16 @@
 import { Badge, Button, Card, cn } from "@/shared/components/ui";
 import { Bookmark, BadgeCheck, MapPin, MessageCircle, Share2, Flag } from "lucide-react";
 import { Link } from "react-router";
+import { Photo } from "./Photo";
+import { useSaved } from "./saved";
 import { useLang, useNum, useT } from "./i18n";
 import { type FeedPost, categoryOf } from "./types";
 
 export function PostCard({ post }: { post: FeedPost }) {
   const t = useT();
   const num = useNum();
+  const isSaved = useSaved((s) => s.ids.includes(post.id));
+  const toggleSaved = useSaved((s) => s.toggle);
   const lang = useLang((s) => s.lang);
   const cat = categoryOf(post.category);
   const isOffer = post.kind === "offer";
@@ -50,16 +54,9 @@ export function PostCard({ post }: { post: FeedPost }) {
         <p className="mt-1 text-sm text-muted-foreground">{post.description}</p>
       </div>
 
-      <div
-        className={cn(
-          "mx-4 mt-3 flex h-48 items-center justify-center rounded-lg bg-gradient-to-br text-6xl",
-          cat.tone,
-        )}
-        role="img"
-        aria-label={lang === "bn" ? cat.bn : cat.en}
-      >
-        {cat.emoji}
-      </div>
+      <Link to={`/post/${post.id}`} className="mx-4 mt-3 block overflow-hidden rounded-xl">
+        <Photo post={post} className="h-48" />
+      </Link>
 
       <div className="flex items-center gap-2 px-4 pt-3 text-xs text-muted-foreground">
         <Badge variant="outline">{lang === "bn" ? cat.bn : cat.en}</Badge>
@@ -81,8 +78,15 @@ export function PostCard({ post }: { post: FeedPost }) {
         <Button variant="outline" size="sm" className="w-10 px-0" aria-label={t("chat")}>
           <MessageCircle className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="sm" className="w-10 px-0" aria-label={t("save")}>
-          <Bookmark className="h-4 w-4" />
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-10 px-0"
+          aria-label={t("save")}
+          aria-pressed={isSaved}
+          onClick={() => toggleSaved(post.id)}
+        >
+          <Bookmark className={cn("h-4 w-4", isSaved && "fill-primary text-primary")} />
         </Button>
         <Button variant="ghost" size="sm" className="w-10 px-0" aria-label={t("share")}>
           <Share2 className="h-4 w-4" />

@@ -27,7 +27,7 @@ export const Login = () => {
     setError(null);
     try {
       await AuthService.login(data);
-      navigate("/dashboard");
+      navigate("/feed");
     } catch (err) {
       setError((err as Error).message || "Failed to login. Please check your credentials.");
     } finally {
@@ -38,7 +38,7 @@ export const Login = () => {
   const handleGoogleLogin = async () => {
     try {
       await AuthService.loginWithGoogle();
-      navigate("/dashboard");
+      navigate("/feed");
       // biome-ignore lint/suspicious/noExplicitAny: Firebase error
     } catch (err: any) {
       setError(err.message || "Google login failed.");

@@ -1,26 +1,29 @@
-import { useAuthStore } from "@/features/auth";
+import { useNotifications } from "@/features/data/hooks";
+import { useNum, useTr } from "@/features/feed/i18n";
 import { Bell } from "lucide-react";
 import { Link } from "react-router";
-import { useNotificationRealtime } from "../hooks/useNotificationRealtime";
-import { useUnreadNotificationCount } from "../hooks/useNotifications";
 
+/** Header bell with unread count, fed by the data layer (mock now, API later). */
 export const NotificationBadge = () => {
-  const user = useAuthStore((state) => state.user);
-
-  // Realtime listener initialized here globally for the app header
-  useNotificationRealtime(user?.uid);
-
-  const { data: unreadCount = 0 } = useUnreadNotificationCount();
+  const tr = useTr();
+  const num = useNum();
+  const { data = [] } = useNotifications();
+  const unread = data.filter((n) => n.unread).length;
 
   return (
     <Link
       to="/notifications"
-      className="relative p-2 text-gray-500 hover:text-blue-600 transition-colors"
+      aria-label={
+        unread
+          ? tr(`${num(unread)}টি নতুন নোটিফিকেশন`, `${unread} new notifications`)
+          : tr("নোটিফিকেশন", "Notifications")
+      }
+      className="relative flex h-10 w-10 items-center justify-center rounded-xl text-foreground/80 transition-colors hover:bg-accent"
     >
-      <Bell className="w-6 h-6" />
-      {unreadCount > 0 && (
-        <span className="absolute top-1 right-1 inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold text-white bg-red-500 rounded-full border-2 border-white">
-          {unreadCount > 99 ? "99+" : unreadCount}
+      <Bell className="h-5 w-5" />
+      {unread > 0 && (
+        <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white ring-2 ring-background">
+          {unread > 99 ? "99+" : num(unread)}
         </span>
       )}
     </Link>

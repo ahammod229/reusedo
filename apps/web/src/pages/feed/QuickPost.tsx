@@ -1,30 +1,13 @@
 import { useLang, useT } from "@/features/feed/i18n";
-import { CATEGORIES, type CategoryId, type PostKind } from "@/features/feed/types";
+import { useAiDraft, usePublishPost } from "@/features/data/hooks";
+import type { AiDraft } from "@/features/data/types";
+import { compressImage } from "@/features/feed/image";
+import { CATEGORIES, type PostKind } from "@/features/feed/types";
 import { Button, Card, Input, Textarea, cn } from "@/shared/components/ui";
 import { Camera, CheckCircle2, Loader2, Sparkles, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router";
-
-interface Draft {
-  title: string;
-  description: string;
-  category: CategoryId;
-  condition: "new" | "good" | "used";
-}
-
-// UI-phase stand-in for `POST /api/ai/draft` (server-side Gemini call, free tier).
-// Contract: multipart images in → { title, description, category, condition } out.
-// A 429 from the API should surface as the `aiLimit` message and manual entry.
-async function requestDraft(_files: File[]): Promise<Draft> {
-  await new Promise((r) => setTimeout(r, 1400));
-  return {
-    title: "ব্যবহৃত স্কুলের বইয়ের সেট",
-    description: "ভালো অবস্থায় আছে, কয়েকটি পাতায় সামান্য দাগ। বিনামূল্যে দিয়ে দিতে চাই।",
-    category: "books",
-    condition: "good",
-  };
-}
 
 const MAX_PHOTOS = 5;
 type Stage = "pick" | "analyzing" | "edit" | "done";
@@ -36,7 +19,7 @@ export function QuickPost() {
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [stage, setStage] = useState<Stage>("pick");
-  const [draft, setDraft] = useState<Draft>({
+  const [draft, setDraft] = useState<AiDraft>({
     title: "",
     description: "",
     category: "other",
@@ -44,6 +27,8 @@ export function QuickPost() {
   });
   const [limitHit, setLimitHit] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  const aiDraft = useAiDraft();
+  const publish = usePublishPost();
 
   useEffect(() => {
     const urls = files.map((f) => URL.createObjectURL(f));
@@ -53,15 +38,16 @@ export function QuickPost() {
     };
   }, [files]);
 
-  const addFiles = (list: FileList | null) => {
+  const addFiles = async (list: FileList | null) => {
     if (!list) return;
-    setFiles((prev) => [...prev, ...Array.from(list)].slice(0, MAX_PHOTOS));
+    const added = await Promise.all(Array.from(list).map(compressImage));
+    setFiles((prev) => [...prev, ...added].slice(0, MAX_PHOTOS));
   };
 
   const analyze = async () => {
     setStage("analyzing");
     try {
-      setDraft(await requestDraft(files));
+      setDraft(await aiDraft.mutateAsync(files));
     } catch {
       setLimitHit(true);
     }
@@ -227,10 +213,20 @@ export function QuickPost() {
                 {t("retake")}
               </Button>
             )}
+            {publish.isError && (
+              <p role="alert" className="basis-full text-sm font-medium text-destructive">
+                {publish.error instanceof Error ? publish.error.message : "Publish failed"}
+              </p>
+            )}
             <Button
               className="flex-1"
-              disabled={!draft.title.trim()}
-              onClick={() => setStage("done")}
+              disabled={!draft.title.trim() || publish.isPending}
+              onClick={() =>
+                publish.mutate(
+                  { ...draft, kind, photos: files },
+                  { onSuccess: () => setStage("done") },
+                )
+              }
             >
               {t("publish")}
             </Button>
