@@ -1,7 +1,7 @@
-import { useTr } from "@/features/feed/i18n";
 import { QueryState } from "@/features/data/QueryState";
 import { useChats, useSendMessage } from "@/features/data/hooks";
 import type { Chat } from "@/features/data/types";
+import { useTr } from "@/features/feed/i18n";
 import { Initial, Pill } from "@/features/feed/parts";
 import { Button, cn } from "@/shared/components/ui";
 import {

@@ -1,9 +1,11 @@
 import { QueryState } from "@/features/data/QueryState";
-import { useFeed, usePost } from "@/features/data/hooks";
+import { useFeed, usePost, useRequestItem } from "@/features/data/hooks";
 import { AdCard } from "@/features/feed/AdCard";
 import { Photo } from "@/features/feed/Photo";
+import { PostTags, ReportDialog, StatusRibbon, useShare } from "@/features/feed/PostBits";
 import { PostCard } from "@/features/feed/PostCard";
 import { useLang, useNum, useTr } from "@/features/feed/i18n";
+import { useMyUsername } from "@/features/feed/me";
 import { Initial, Pill, TrustRing } from "@/features/feed/parts";
 import { useSaved } from "@/features/feed/saved";
 import type { FeedPost } from "@/features/feed/types";
@@ -33,7 +35,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 
 export function PostDetail() {
   const { id } = useParams();
@@ -63,9 +65,20 @@ function PostDetailView({ post, all }: { post: FeedPost; all: FeedPost[] }) {
   const isOffer = post.kind === "offer";
   const [active, setActive] = useState(0);
 
-  const [open, setOpen] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [via, setVia] = useState<"pickup" | "courier">("pickup");
+  const [params, setParams] = useSearchParams();
+  const mine = post.author.username === useMyUsername();
+  const canRequest = post.status === "available" && !mine;
+  // Cards link here with ?request=1 so "I want this" lands straight in the dialog.
+  const [open, setOpenState] = useState(params.get("request") === "1" && canRequest);
+  const setOpen = (o: boolean) => {
+    setOpenState(o);
+    if (!o && params.has("request")) setParams({}, { replace: true });
+  };
+  const request = useRequestItem();
+  const sent = request.isSuccess;
+  const { share, copied } = useShare();
+  const [reporting, setReporting] = useState(false);
+  const [via, setVia] = useState<"pickup" | "courier">(post.delivery[0] ?? "pickup");
   const [msg, setMsg] = useState("");
   const saved = useSaved((s) => s.ids.includes(post.id));
   const toggleSaved = useSaved((s) => s.toggle);
@@ -91,7 +104,7 @@ function PostDetailView({ post, all }: { post: FeedPost; all: FeedPost[] }) {
       </button>
 
       <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-8">
-        <div className="lg:sticky lg:top-20">
+        <div className="relative lg:sticky lg:top-20">
           <Photo
             post={post}
             index={active}
@@ -99,6 +112,7 @@ function PostDetailView({ post, all }: { post: FeedPost; all: FeedPost[] }) {
             className="h-64 rounded-3xl sm:h-80 lg:h-[26rem]"
             emojiSize="text-8xl"
           />
+          <StatusRibbon status={post.status} />
           {post.images.length > 1 && (
             <div className="mt-2 flex gap-2 overflow-x-auto scrollbar-none">
               {post.images.map((src, i) => (
@@ -145,6 +159,7 @@ function PostDetailView({ post, all }: { post: FeedPost; all: FeedPost[] }) {
               </span>
             </p>
             <p className="whitespace-pre-line text-base leading-relaxed">{post.description}</p>
+            <PostTags post={post} />
 
             <dl className="grid grid-cols-2 gap-3 rounded-2xl border bg-card p-4 text-sm sm:grid-cols-3">
               <div>
@@ -157,7 +172,13 @@ function PostDetailView({ post, all }: { post: FeedPost; all: FeedPost[] }) {
               </div>
               <div className="col-span-2 sm:col-span-1">
                 <dt className="text-muted-foreground">{tr("হস্তান্তর", "Handover")}</dt>
-                <dd className="font-semibold">{tr("সরাসরি / কুরিয়ার", "In person / courier")}</dd>
+                <dd className="font-semibold">
+                  {post.delivery
+                    .map((d) =>
+                      d === "pickup" ? tr("নিজে নেওয়া", "Pickup") : tr("কুরিয়ার", "Courier"),
+                    )
+                    .join(" / ")}
+                </dd>
               </div>
             </dl>
 
@@ -171,10 +192,20 @@ function PostDetailView({ post, all }: { post: FeedPost; all: FeedPost[] }) {
                 <Bookmark className={cn("mr-1.5 h-4 w-4", saved && "fill-primary text-primary")} />
                 {saved ? tr("সেভ করা হয়েছে", "Saved") : tr("সেভ", "Save")}
               </Button>
-              <Button variant="outline" size="sm">
-                <Share2 className="mr-1.5 h-4 w-4" /> {tr("শেয়ার", "Share")}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => share(post.title, `/post/${post.id}`)}
+              >
+                <Share2 className="mr-1.5 h-4 w-4" />
+                {copied ? tr("লিংক কপি হয়েছে ✓", "Link copied ✓") : tr("শেয়ার", "Share")}
               </Button>
-              <Button variant="ghost" size="sm" className="ml-auto text-muted-foreground">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="ml-auto text-muted-foreground"
+                onClick={() => setReporting(true)}
+              >
                 <Flag className="mr-1.5 h-4 w-4" /> {tr("রিপোর্ট", "Report")}
               </Button>
             </div>
@@ -188,7 +219,7 @@ function PostDetailView({ post, all }: { post: FeedPost; all: FeedPost[] }) {
               <Initial name={post.author.name} className="h-12 w-12 text-lg" />
               <div className="min-w-0 flex-1">
                 <Link
-                  to="/users/rakib"
+                  to={`/users/${post.author.username}`}
                   className="flex items-center gap-1 font-bold hover:underline"
                 >
                   <span className="truncate">{post.author.name}</span>
@@ -244,13 +275,19 @@ function PostDetailView({ post, all }: { post: FeedPost; all: FeedPost[] }) {
             size="lg"
             className={cn("flex-1", !isOffer && "bg-need text-white hover:bg-need/90")}
             onClick={() => setOpen(true)}
-            disabled={sent}
+            disabled={sent || !canRequest}
           >
-            {sent
-              ? tr("রিকোয়েস্ট পাঠানো হয়েছে ✓", "Request sent ✓")
-              : isOffer
-                ? tr("আমার চাই", "I want this")
-                : tr("আমার কাছে আছে", "I have this")}
+            {mine
+              ? tr("এটা আপনার পোস্ট", "This is your post")
+              : !canRequest
+                ? post.status === "given"
+                  ? tr("দেওয়া হয়ে গেছে", "Already given")
+                  : tr("রিজার্ভ করা আছে", "Reserved")
+                : sent
+                  ? tr("রিকোয়েস্ট পাঠানো হয়েছে ✓", "Request sent ✓")
+                  : isOffer
+                    ? tr("আমার চাই", "I want this")
+                    : tr("আমার কাছে আছে", "I have this")}
           </Button>
         </div>
       </div>
@@ -294,44 +331,50 @@ function PostDetailView({ post, all }: { post: FeedPost; all: FeedPost[] }) {
                       tr("চার্জ আপনি দেবেন (ডেলিভারিতে)", "You pay the fee on delivery"),
                     ],
                   ] as const
-                ).map(([v, Icon, label, hint]) => (
-                  <label
-                    key={v}
-                    className={cn(
-                      "flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5",
-                    )}
-                  >
-                    <input
-                      type="radio"
-                      name="via"
-                      value={v}
-                      checked={via === v}
-                      onChange={() => setVia(v)}
-                      className="sr-only"
-                    />
-                    <Icon className="h-5 w-5 text-primary" />
-                    <span className="flex-1">
-                      <span className="block text-sm font-semibold">{label}</span>
-                      <span className="block text-xs text-muted-foreground">{hint}</span>
-                    </span>
-                    {via === v && <CheckCircle2 className="h-5 w-5 text-primary" />}
-                  </label>
-                ))}
+                )
+                  .filter(([v]) => post.delivery.includes(v))
+                  .map(([v, Icon, label, hint]) => (
+                    <label
+                      key={v}
+                      className={cn(
+                        "flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5",
+                      )}
+                    >
+                      <input
+                        type="radio"
+                        name="via"
+                        value={v}
+                        checked={via === v}
+                        onChange={() => setVia(v)}
+                        className="sr-only"
+                      />
+                      <Icon className="h-5 w-5 text-primary" />
+                      <span className="flex-1">
+                        <span className="block text-sm font-semibold">{label}</span>
+                        <span className="block text-xs text-muted-foreground">{hint}</span>
+                      </span>
+                      {via === v && <CheckCircle2 className="h-5 w-5 text-primary" />}
+                    </label>
+                  ))}
               </div>
             </fieldset>
             <Button
               size="lg"
               className="w-full"
-              onClick={() => {
-                setSent(true);
-                setOpen(false);
-              }}
+              disabled={request.isPending}
+              onClick={() =>
+                request.mutate(
+                  { postId: post.id, message: msg, via },
+                  { onSuccess: () => setOpen(false) },
+                )
+              }
             >
               {tr("রিকোয়েস্ট পাঠান", "Send request")}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
+      <ReportDialog post={post} open={reporting} onOpenChange={setReporting} />
     </div>
   );
 }

@@ -107,7 +107,12 @@ Page ──► hooks.ts (TanStack Query) ──► source ──┬─► mockSo
 
 | স্ক্রিন | রাউট | ফাইল | ডেটা-মেথড | বিদ্যমান ব্যাকএন্ড | ফাঁক |
 |---|---|---|---|---|---|
-| ফিড | `/feed` | `pages/feed/FeedPage` | `listFeed` | `GET /api/products`, `/api/needs` | **NEW** একীভূত `/api/feed` (দুটো মেশানো + এলাকা-র‍্যাংক) |
+| হোম ড্যাশবোর্ড | `/home` | `pages/me/HomeDashboard` | `getDashboard` | **NEW** `GET /api/me/dashboard` | অপেক্ষমাণ কাজ, আপনার জন্য, কাছের দরকার, সম্মিলিত লক্ষ্য — সংখ্যা সার্ভার থেকে (`docs/STUDENT_UX.md`) |
+| ফিড | `/feed` | `pages/feed/FeedPage` | `listFeed` | `GET /api/products`, `/api/needs` | **NEW** একীভূত `/api/feed`। ফিল্টার URL-এ (`features/feed/feedParams.ts`); একই নিয়ম `features/data/filtering.ts` → সার্ভারে SQL-এ |
+| পোস্ট লেখা | `/post/new`, `/post/new?kind=need` | `pages/feed/QuickPost` | `publishPost` | পোস্ট রুট | নতুন ফিল্ড: `edu {level, detail}`, `delivery[]`, `urgency`, `qty`, `status` |
+| রিকোয়েস্ট/রিপোর্ট | কার্ড, `/post/:id?request=1` | `features/feed/PostBits` | `requestItem`, `reportPost` | **NEW** `POST /api/posts/:id/requests`, `POST /api/reports` | |
+| সেভ করা খোঁজ | `/saved?tab=searches` | `features/feed/alerts.ts` | (এখন ডিভাইসে) | **NEW** `saved_searches` + মিলে গেলে নোটিফিকেশন | |
+| ধন্যবাদ নোট | `/exchanges` | `ExchangesPage` → `ThanksDialog` | `sendThanks` | **NEW** `POST /api/exchanges/:id/thanks` | দাতার প্রোফাইলে দেখায় |
 | সার্চ | `/search?q=` | `pages/discover/SearchPage` | `listFeed({q})` | `/api/search` | টেক্সট সার্চ যোগ করা |
 | পোস্ট বিস্তারিত | `/post/:id` | `pages/post/PostDetail` | `getPost` | `GET /products/:id`, `/needs/:id` | কোনটি product/need তা বোঝার উপায় (`kind` ফিল্ড) |
 | দ্রুত পোস্ট | `/post/new` | `pages/feed/QuickPost` | `aiDraft`, `publishPost` | `POST /products`, `/needs`, `/products/:id/images`, `/publish` | **NEW** `POST /api/ai/draft` |
@@ -117,7 +122,7 @@ Page ──► hooks.ts (TanStack Query) ──► source ──┬─► mockSo
 | আদান-প্রদান | `/exchanges` | `pages/exchanges2/ExchangesPage` | `listExchanges`, `advanceExchange` | `/api/exchanges*` | ⚠️ **মডেল অমিল** — নিচে |
 | কুরিয়ার (ইউজার) | `/courier` | `pages/courier/CourierRequest` | (যোগ হবে) | `/api/shipping` | **NEW** দুজনের সম্মতি → অ্যাডমিন রিকোয়েস্ট |
 | প্রোফাইল | `/profile`, `/users/:username` | `pages/me/ProfilePage` | `getUser` | `/api/users/me`, `/:username`, `/api/reviews` | ট্রাস্ট স্কোর `trust.service` থেকে |
-| প্রোফাইল এডিট | `/profile/edit` | `pages/discover/EditProfilePage` | (যোগ হবে) | `PATCH /api/users/me` | অ্যাভাটার আপলোড |
+| প্রোফাইল এডিট | `/profile/edit` | `pages/discover/EditProfilePage` | (এখন `features/feed/me.ts`) | `PATCH /api/users/me` | অ্যাভাটার, পড়াশোনার স্তর, প্রতিষ্ঠান (+দেখাবে কিনা, ডিফল্ট বন্ধ), আগ্রহ |
 | নোটিফিকেশন | `/notifications` | `pages/me/NotificationsPage` | `listNotifications`, `markNotificationRead` | `/api/notifications*` | — (প্রায় সরাসরি) |
 | সেটিংস | `/settings` | `pages/me/SettingsPage` | (যোগ হবে) | `/api/users/me/settings` | অ্যাকাউন্ট মুছা |
 | সাইন-আপ যাত্রা | `/register` `/verify-email` `/onboarding` | `pages/auth/*` | `otp.api.ts` | `/api/auth/session` | **NEW** ইমেইল OTP, প্রোফাইল-যাচাই সেভ |
@@ -267,6 +272,23 @@ Firebase Auth ডিফল্টে **লিংক** পাঠায়, কো�
 3. AdSense/AdX অনুমোদনে সাইটে প্রাইভেসি পলিসি + যোগাযোগ + ‘আমাদের কথা’ থাকা লাগে — তিনটিই আছে (ঠিকানা/ইমেইল `support@reusedo.app` আপনার আসল ইমেইলে বদলান)।
 4. Play Store/App Store-এ প্রাইভেসি লিংক ও ডেটা-সেফটি ফর্ম লাগবে (§১০)।
 5. অ্যাকাউন্ট মুছার কার্যকর ফ্লো (সেটিংসে বোতাম আছে, ব্যাকএন্ড বাকি) — **Apple ও Google দুজনেই বাধ্যতামূলক চায়**।
+
+---
+
+## ৬.৫ হোস্টিং — কোথায় কী চলবে (সুপারিশ)
+
+**সিদ্ধান্ত: ওয়েব Firebase Hosting-এ, ডেটা Supabase-এ।** Vercel লাগবে না।
+
+| অংশ | কোথায় | কেন |
+|---|---|---|
+| ওয়েব (এই React অ্যাপ) | **Firebase Hosting** — ফ্রি `*.web.app` ঠিকানা | লগইন আগে থেকেই Firebase-এ; ফ্রি SSL ও CDN; পরে নিজের ডোমেইন এক ক্লিকে জোড়া যায়। `firebase.json`-এ SPA rewrite আছে |
+| ডেটাবেস, ছবি, রিয়েলটাইম চ্যাট | **Supabase** (Postgres + Storage + Realtime) | কোড আগে থেকেই Supabase-এর জন্য লেখা; ফ্রি টিয়ারে শুরু করা যায় |
+| লগইন ও পুশ নোটিফিকেশন | **Firebase Auth + FCM** | Flutter অ্যাপেও একই অ্যাকাউন্ট চলবে |
+| গোপন কী লাগে এমন সার্ভার কাজ (Gemini, Steadfast, ইমেইল, পেমেন্ট) | এখন: বিদ্যমান Express API **Render**-এ (`render.yaml`)। পরে চাইলে: **Supabase Edge Functions** | Render-এর ফ্রি প্ল্যান ১৫ মিনিট পর ঘুমিয়ে পড়ে (প্রথম রিকোয়েস্টে ৩০–৫০ সেকেন্ড দেরি) — লঞ্চের সময় পেইড প্ল্যান ($7/মাস) নিন, অথবা কাজগুলো Edge Functions-এ সরান |
+
+কেন Vercel নয়: Vercel ভালো হোস্টিং, কিন্তু ডাটাবেস দেয় না আর এই প্রজেক্টের Socket.io (রিয়েলটাইম চ্যাট) তার সার্ভারলেসে চলে না — তাহলে তিনটা আলাদা সেবা সামলাতে হতো। Firebase-এর Cloud Functions বাইরের API (Gemini, Steadfast) ডাকতে Blaze (কার্ড লাগে) প্ল্যান চায়, তাই সেটাও এখন নয়।
+
+ডিপ্লয় (একবার সেটআপের পর): `pnpm --filter @reusedo/web build` → `firebase deploy --only hosting:web`। `.firebaserc`-এ প্রজেক্ট `binimoy-we` (পুরোনো নাম) — নতুন Firebase প্রজেক্ট বানালে এটা বদলাবেন। `firebase.json`-এর `admin` টার্গেট এখন অপ্রয়োজনীয় (অ্যাডমিন ওয়েব অ্যাপের ভেতরেই `/admin`)।
 
 ---
 

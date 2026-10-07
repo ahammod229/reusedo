@@ -5,7 +5,14 @@ import type {
   MockNotification,
   MockUser,
 } from "@/features/feed/mock";
-import type { CourierRequestItem, FeedPost, PostKind } from "@/features/feed/types";
+import type {
+  CourierRequestItem,
+  Delivery,
+  EduLevel,
+  FeedPost,
+  PostKind,
+  Urgency,
+} from "@/features/feed/types";
 import type { AdPlacement, Payment, PaymentMethod } from "./platformStore";
 
 export type { ExchangeStatus };
@@ -54,12 +61,24 @@ export interface CourierPaymentInput {
   senderNumber?: string;
 }
 
+export type SortBy = "near" | "new" | "urgent" | "popular";
+
 export interface FeedFilters {
   kind: PostKind | "all";
   category: string;
   scope: "area" | "district" | "country";
-  /** Free-text search over title and description. */
+  /** Free-text search over title, description and study detail. */
   q?: string;
+  level?: EduLevel | "all";
+  conditions?: FeedPost["condition"][];
+  delivery?: Delivery | "any";
+  within?: "24h" | "7d" | "any";
+  verifiedOnly?: boolean;
+  photoOnly?: boolean;
+  urgentOnly?: boolean;
+  /** Given-away posts are hidden unless asked for. */
+  showGiven?: boolean;
+  sort?: SortBy;
 }
 
 export interface AiDraft {
@@ -73,7 +92,47 @@ export interface NewPostInput extends AiDraft {
   kind: PostKind;
   /** Image files already compressed on the client. */
   photos: File[];
+  edu?: FeedPost["edu"];
+  delivery: Delivery[];
+  urgency?: Urgency;
+  qty?: number;
 }
+
+export interface ThanksNote {
+  by: string;
+  item: string;
+  text: string;
+  when: string;
+}
+
+export interface Dashboard {
+  todo: {
+    requestsToAnswer: number;
+    unreadMessages: number;
+    activeExchanges: number;
+    /** Completed exchanges where I received and haven't said thanks yet. */
+    thanksToWrite: { exchangeId: string; item: string; to: string }[];
+  };
+  /** Offers that fit my study level / interests, nearest first. */
+  forYou: FeedPost[];
+  /** Needs near me — people I could help today. */
+  needsNearby: FeedPost[];
+  recentThanks: ThanksNote[];
+  /** A shared goal, e.g. a new-school-year book drive. Real counts from the API only. */
+  community: {
+    bn: string;
+    en: string;
+    current: number;
+    target: number;
+    endsBn: string;
+    endsEn: string;
+  } | null;
+  /** People active in my district this week (real count from the API). */
+  activeNearby: number;
+}
+
+export type { Delivery };
+export type ReportReason = "spam" | "fraud" | "fake_item" | "inappropriate" | "sold" | "other";
 
 /**
  * Everything the UI needs from a backend. `mockSource` implements it in memory;
@@ -96,6 +155,11 @@ export interface DataSource {
   markNotificationRead(id: string | "all"): Promise<void>;
 
   getUser(username: string): Promise<UserProfile | null>;
+  getDashboard(): Promise<Dashboard>;
+  /** "I want this" / "I have this" on a post. */
+  requestItem(postId: string, input: { message: string; via: Delivery }): Promise<void>;
+  reportPost(postId: string, reason: ReportReason, details: string): Promise<void>;
+  sendThanks(exchangeId: string, text: string): Promise<void>;
 
   listCourierRequests(): Promise<CourierRequest[]>;
   decideCourierRequest(id: string, decision: "confirmed" | "rejected"): Promise<CourierRequest>;

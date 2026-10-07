@@ -1,5 +1,22 @@
 export type PostKind = "offer" | "need";
 
+/** Study level, so students find books and gear for their class. */
+export type EduLevel = "primary" | "junior" | "ssc" | "hsc" | "admission" | "university";
+
+export const EDU_LEVELS: { id: EduLevel; bn: string; en: string; short: string }[] = [
+  { id: "primary", bn: "প্রাথমিক (১–৫)", en: "Primary (1–5)", short: "১–৫" },
+  { id: "junior", bn: "নিম্ন মাধ্যমিক (৬–৮)", en: "Junior (6–8)", short: "৬–৮" },
+  { id: "ssc", bn: "SSC (৯–১০)", en: "SSC (9–10)", short: "SSC" },
+  { id: "hsc", bn: "HSC (১১–১২)", en: "HSC (11–12)", short: "HSC" },
+  { id: "admission", bn: "ভর্তি প্রস্তুতি", en: "Admission prep", short: "ভর্তি" },
+  { id: "university", bn: "বিশ্ববিদ্যালয়", en: "University", short: "বিশ্ববিদ্যালয়" },
+];
+export const eduOf = (id?: EduLevel) => EDU_LEVELS.find((l) => l.id === id);
+
+export type Delivery = "pickup" | "courier";
+/** Set by the poster only — never shown as a countdown. */
+export type Urgency = "urgent" | "soon" | "anytime";
+
 export interface FeedPost {
   id: string;
   kind: PostKind;
@@ -10,10 +27,19 @@ export interface FeedPost {
   area: string;
   district: string;
   distanceKm: number;
-  author: { name: string; verified: boolean; trust: number };
+  author: { name: string; username: string; verified: boolean; trust: number };
   images: string[];
   postedAt: string;
+  /** For sorting/filtering by recency. */
+  hoursAgo: number;
   requests: number;
+  /** Study level and a free detail like "ক্লাস ৮ · বাংলা ভার্সন". */
+  edu?: { level: EduLevel; detail?: string };
+  delivery: Delivery[];
+  urgency?: Urgency;
+  qty?: number;
+  /** "given" posts stay visible for a while as social proof. */
+  status: "available" | "reserved" | "given";
 }
 
 export type CategoryId =

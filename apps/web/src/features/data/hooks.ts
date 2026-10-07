@@ -1,7 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AdPlacement } from "./platformStore";
 import { source } from "./source";
-import type { CourierPaymentInput, FeedFilters, NewPostInput } from "./types";
+import type {
+  CourierPaymentInput,
+  Delivery,
+  FeedFilters,
+  NewPostInput,
+  ReportReason,
+} from "./types";
 
 export const keys = {
   feed: (f: FeedFilters) => ["feed", f] as const,
@@ -98,3 +104,36 @@ export const useCheckoutConfig = () =>
 
 export const useSubmitCourierPayment = () =>
   useMutation({ mutationFn: (v: CourierPaymentInput) => source.submitCourierPayment(v) });
+
+export const useDashboard = () =>
+  useQuery({ queryKey: ["dashboard"], queryFn: () => source.getDashboard() });
+
+export function useRequestItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { postId: string; message: string; via: Delivery }) =>
+      source.requestItem(v.postId, { message: v.message, via: v.via }),
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ["feed"] });
+      qc.invalidateQueries({ queryKey: keys.post(v.postId) });
+    },
+  });
+}
+
+export const useReportPost = () =>
+  useMutation({
+    mutationFn: (v: { postId: string; reason: ReportReason; details: string }) =>
+      source.reportPost(v.postId, v.reason, v.details),
+  });
+
+export function useSendThanks() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { exchangeId: string; text: string }) =>
+      source.sendThanks(v.exchangeId, v.text),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["user"] });
+    },
+  });
+}

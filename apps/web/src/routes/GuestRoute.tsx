@@ -9,7 +9,7 @@ export const GuestRoute = () => {
 
   if (UI_PREVIEW) return <Outlet />;
   if (!isReady || status === "loading") return <div>Loading Session...</div>;
-  if (status === "authenticated") return <Navigate to="/feed" replace />;
+  if (status === "authenticated") return <Navigate to="/home" replace />;
 
   return <Outlet />;
 };

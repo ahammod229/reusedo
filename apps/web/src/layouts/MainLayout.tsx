@@ -27,7 +27,7 @@ export function MainLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const sidebarItems = [
-    { title: t("navHome"), href: "/", icon: <Home className={ic} /> },
+    { title: t("navHome"), href: "/home", icon: <Home className={ic} /> },
     { title: t("navFeed"), href: "/feed", icon: <Newspaper className={ic} /> },
     { title: t("navMyPosts"), href: "/my-posts", icon: <PackageOpen className={ic} /> },
     { title: t("navExchanges"), href: "/exchanges", icon: <Repeat className={ic} /> },
@@ -40,8 +40,8 @@ export function MainLayout() {
   ];
 
   const mobileItems = [
+    { title: t("navHome"), href: "/home", icon: <Home className={ic} /> },
     { title: t("navFeed"), href: "/feed", icon: <Newspaper className={ic} /> },
-    { title: t("navExchanges"), href: "/exchanges", icon: <Repeat className={ic} /> },
     { title: t("navPost"), href: "/post/new", icon: <Plus className="h-7 w-7" />, primary: true },
     { title: t("navMessages"), href: "/messages", icon: <MessageCircle className={ic} /> },
     { title: t("navProfile"), href: "/profile", icon: <UserIcon className={ic} /> },

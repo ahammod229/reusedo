@@ -1,7 +1,7 @@
 import { cn } from "@/shared/components/ui";
-import { useNum } from "./i18n";
 import { Star } from "lucide-react";
 import type { ReactNode } from "react";
+import { useNum } from "./i18n";
 
 export function Initial({ name, className }: { name: string; className?: string }) {
   return (

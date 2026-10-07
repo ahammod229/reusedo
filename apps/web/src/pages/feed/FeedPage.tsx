@@ -1,28 +1,34 @@
 import { QueryState } from "@/features/data/QueryState";
+import { advancedCount, matchesFilters } from "@/features/data/filtering";
 import { useAdConfig, useFeed } from "@/features/data/hooks";
 import { AdCard } from "@/features/feed/AdCard";
-import { CategoryStrip, FeedToolbar, type Scope } from "@/features/feed/FeedFilters";
+import { CategoryStrip, FeedToolbar } from "@/features/feed/FeedFilters";
 import { FeedRail } from "@/features/feed/FeedRail";
+import { ActiveFilters, FilterButton, FilterSheet } from "@/features/feed/FilterSheet";
 import { PostCard } from "@/features/feed/PostCard";
-import { useT } from "@/features/feed/i18n";
-import type { CategoryId, PostKind } from "@/features/feed/types";
+import { RESET_ADVANCED, useFeedParams } from "@/features/feed/feedParams";
+import { useT, useTr } from "@/features/feed/i18n";
+import type { CategoryId } from "@/features/feed/types";
 import { Button } from "@/shared/components/ui";
-import { Camera } from "lucide-react";
+import { Camera, HandHeart } from "lucide-react";
 import { Fragment, useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { Link, useSearchParams } from "react-router";
+import { Link } from "react-router";
 
 export function FeedPage() {
   const t = useT();
-  const [params] = useSearchParams();
-  const initialKind = params.get("kind");
-  const [kind, setKind] = useState<PostKind | "all">(
-    initialKind === "offer" || initialKind === "need" ? initialKind : "all",
-  );
-  const [cat, setCat] = useState<CategoryId | "all">("all");
-  const [scope, setScope] = useState<Scope>("country");
+  const tr = useTr();
+  const { filters, update } = useFeedParams();
+  const [sheet, setSheet] = useState(false);
 
-  const { data: posts = [], isLoading, error, refetch } = useFeed({ kind, category: cat, scope });
+  const { data: posts = [], isLoading, error, refetch } = useFeed(filters);
+  // Unfiltered list so the filter sheet can show "Show N posts" before applying.
+  const { data: everything = [] } = useFeed({
+    kind: "all",
+    category: "all",
+    scope: "country",
+    showGiven: true,
+  });
   // Frequency and per-page cap come from the admin Ads manager.
   const { data: ads } = useAdConfig("feed");
   const every = ads?.enabled ? Math.max(3, ads.every) : 0;
@@ -34,42 +40,87 @@ export function FeedPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-[64rem] justify-center gap-6 px-4 py-4">
-      <div className="w-full max-w-2xl min-w-0 space-y-4">
+      <div className="w-full min-w-0 max-w-2xl space-y-4">
         <Helmet>
           <title>ReuseDo — {t("feed")}</title>
         </Helmet>
 
-        <Link
-          to="/post/new"
-          className="flex items-center gap-3 rounded-xl border bg-card p-3 shadow-sm hover:bg-accent/50"
-        >
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-primary">
-            <Camera className="h-5 w-5" />
-          </div>
-          <span className="flex-1 text-sm text-muted-foreground">{t("postSomething")}</span>
-          <span className="rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground">
-            {t("takePhoto")}
-          </span>
-        </Link>
+        <div className="grid grid-cols-2 gap-2">
+          <Link
+            to="/post/new"
+            className="flex items-center gap-2.5 rounded-2xl border bg-card p-3 shadow-sm transition-colors hover:border-offer/40 hover:bg-offer-soft/50"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-offer-soft text-offer">
+              <Camera className="h-5 w-5" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-bold">{tr("কিছু দিন", "Give something")}</span>
+              <span className="block truncate text-xs text-muted-foreground">
+                {tr("ছবি তুলে ১ মিনিটে", "Photo, 1 minute")}
+              </span>
+            </span>
+          </Link>
+          <Link
+            to="/post/new?kind=need"
+            className="flex items-center gap-2.5 rounded-2xl border bg-card p-3 shadow-sm transition-colors hover:border-need/40 hover:bg-need-soft/50"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-need-soft text-need">
+              <HandHeart className="h-5 w-5" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-bold">{tr("কিছু চান", "Ask for something")}</span>
+              <span className="block truncate text-xs text-muted-foreground">
+                {tr("লিখেই পোস্ট", "Just type it")}
+              </span>
+            </span>
+          </Link>
+        </div>
 
-        <CategoryStrip value={cat} onChange={setCat} />
-        <FeedToolbar kind={kind} onKind={setKind} scope={scope} onScope={setScope} />
+        <CategoryStrip
+          value={filters.category as CategoryId | "all"}
+          onChange={(c) => update({ category: c })}
+        />
+        <FeedToolbar
+          kind={filters.kind}
+          onKind={(k) => update({ kind: k })}
+          scope={filters.scope}
+          onScope={(s) => update({ scope: s })}
+          extra={<FilterButton count={advancedCount(filters)} onClick={() => setSheet(true)} />}
+        />
+        <ActiveFilters filters={filters} onChange={update} />
 
         <QueryState isLoading={isLoading} error={error} onRetry={refetch}>
           {posts.length === 0 ? (
-            <div className="py-16 text-center text-muted-foreground">
+            <div className="rounded-2xl border border-dashed py-14 text-center">
               <div className="mb-2 text-4xl">🔍</div>
-              {t("emptyFeed")}
-              <div className="mt-4">
+              <p className="font-semibold">
+                {tr("এই ফিল্টারে কিছু নেই", "Nothing matches these filters")}
+              </p>
+              <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">
+                {tr(
+                  "ফিল্টার কমিয়ে দেখুন, অথবা নিজেই পোস্ট করুন — কেউ হয়তো দিতে চাইছেন।",
+                  "Loosen the filters, or post it yourself — someone may want to give.",
+                )}
+              </p>
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    setKind("all");
-                    setCat("all");
-                    setScope("country");
-                  }}
+                  onClick={() =>
+                    update({
+                      ...RESET_ADVANCED,
+                      kind: "all",
+                      category: "all",
+                      scope: "country",
+                      q: undefined,
+                    })
+                  }
                 >
-                  {t("all")}
+                  {tr("ফিল্টার মুছুন", "Clear filters")}
+                </Button>
+                <Button asChild>
+                  <Link to="/post/new?kind=need">
+                    {tr("আমার দরকার — পোস্ট করি", "Post what I need")}
+                  </Link>
                 </Button>
               </div>
             </div>
@@ -84,6 +135,13 @@ export function FeedPage() {
         </QueryState>
       </div>
       <FeedRail />
+      <FilterSheet
+        open={sheet}
+        onOpenChange={setSheet}
+        filters={filters}
+        onApply={update}
+        resultCount={(f) => everything.filter((p) => matchesFilters(p, f)).length}
+      />
     </div>
   );
 }

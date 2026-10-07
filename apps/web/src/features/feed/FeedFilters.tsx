@@ -6,6 +6,7 @@ import {
   cn,
 } from "@/shared/components/ui";
 import { Check, ChevronDown, MapPin, Sparkles } from "lucide-react";
+import type { ReactNode } from "react";
 import { useLang, useTr } from "./i18n";
 import { CATEGORIES, type CategoryId, type PostKind } from "./types";
 
@@ -17,11 +18,14 @@ export function FeedToolbar({
   onKind,
   scope,
   onScope,
+  extra,
 }: {
   kind: PostKind | "all";
   onKind: (k: PostKind | "all") => void;
   scope: Scope;
   onScope: (s: Scope) => void;
+  /** e.g. the Filters button. */
+  extra?: ReactNode;
 }) {
   const tr = useTr();
   const tabs: [PostKind | "all", string][] = [
@@ -67,7 +71,9 @@ export function FeedToolbar({
               className="flex h-11 shrink-0 items-center gap-1.5 rounded-xl border bg-card px-3 text-sm font-semibold transition-colors hover:bg-accent"
             >
               <MapPin className="h-4 w-4 text-primary" />
-              <span className="max-w-20 truncate sm:max-w-28">{current}</span>
+              <span className="hidden max-w-20 truncate min-[400px]:inline sm:max-w-28">
+                {current}
+              </span>
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
             </button>
           </DropdownMenuTrigger>
@@ -80,6 +86,7 @@ export function FeedToolbar({
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
+        {extra}
       </div>
     </div>
   );

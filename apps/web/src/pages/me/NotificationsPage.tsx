@@ -1,6 +1,6 @@
-import { useTr } from "@/features/feed/i18n";
 import { QueryState } from "@/features/data/QueryState";
 import { useMarkRead, useNotifications } from "@/features/data/hooks";
+import { useTr } from "@/features/feed/i18n";
 import { PageHeading } from "@/features/feed/parts";
 import { Button, cn } from "@/shared/components/ui";
 import { BellRing, CheckCheck, MessageCircle, Search, Star, Truck, UserPlus } from "lucide-react";

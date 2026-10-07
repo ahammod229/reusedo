@@ -25,7 +25,13 @@ export const apiSource: DataSource = {
   listNotifications: todo("GET /api/notifications"),
   markNotificationRead: todo("PATCH /api/notifications/:id/read | POST /read-all"),
 
-  getUser: todo("GET /api/users/:username"),
+  getUser: todo("GET /api/users/:username (+ stats, thanks, level; institution only if public)"),
+  getDashboard: todo(
+    "GET /api/me/dashboard (NEW — todo counts, for-you, needs nearby, community goal)",
+  ),
+  requestItem: todo("POST /api/posts/:id/requests (NEW — creates exchange + chat, notifies owner)"),
+  reportPost: todo("POST /api/reports"),
+  sendThanks: todo("POST /api/exchanges/:id/thanks (NEW — shown on the giver's profile)"),
 
   listCourierRequests: todo("GET /api/admin/courier-requests (NEW)"),
   decideCourierRequest: todo(

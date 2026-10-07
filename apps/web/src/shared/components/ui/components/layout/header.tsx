@@ -1,6 +1,7 @@
 import { Menu, Search } from "lucide-react";
 import { Link } from "react-router";
 
+import { cn } from "../../lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
 import {
@@ -11,7 +12,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { cn } from "../../lib/utils";
 import { Logo } from "./logo";
 import { ThemeToggle } from "./theme-toggle";
 

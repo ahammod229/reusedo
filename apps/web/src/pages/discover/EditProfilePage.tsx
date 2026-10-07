@@ -1,7 +1,9 @@
-import { useTr } from "@/features/feed/i18n";
-import { PageHeading } from "@/features/feed/parts";
+import { useLang, useTr } from "@/features/feed/i18n";
 import { compressImage } from "@/features/feed/image";
-import { Button } from "@/shared/components/ui";
+import { useMe } from "@/features/feed/me";
+import { PageHeading } from "@/features/feed/parts";
+import { CATEGORIES, EDU_LEVELS } from "@/features/feed/types";
+import { Button, Switch, cn } from "@/shared/components/ui";
 import { Camera } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
@@ -10,6 +12,14 @@ import { Field } from "../auth/components/Field";
 
 export function EditProfilePage() {
   const tr = useTr();
+  const lang = useLang((s) => s.lang);
+  const me = useMe();
+  const [study, setStudy] = useState({
+    level: me.level,
+    institution: me.institution,
+    showInstitution: me.showInstitution,
+    interests: me.interests,
+  });
   const [name, setName] = useState("রাকিব হাসান");
   const [bio, setBio] = useState("পড়ার বই আর খাতা দিয়ে দিতে ভালো লাগে।");
   const [photo, setPhoto] = useState<File | null>(null);
@@ -33,6 +43,7 @@ export function EditProfilePage() {
         className="space-y-5 rounded-3xl border bg-card p-5"
         onSubmit={(e) => {
           e.preventDefault();
+          me.set(study);
           setSaved(true);
         }}
       >
@@ -83,7 +94,95 @@ export function EditProfilePage() {
             className="w-full rounded-xl border border-input bg-background px-4 py-3 text-base outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
           />
         </div>
-        <div className="flex items-center gap-3">
+        <fieldset className="space-y-3 rounded-2xl border p-4">
+          <legend className="px-1 text-sm font-bold">🎓 {tr("পড়াশোনা", "Studies")}</legend>
+          <div className="flex flex-wrap gap-2">
+            {[
+              ...EDU_LEVELS.map((l) => [l.id, lang === "bn" ? l.bn : l.en] as const),
+              ["none", tr("পড়ি না / অভিভাবক", "Not a student")] as const,
+            ].map(([id, label]) => {
+              const on = id === "none" ? !study.level : study.level === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => {
+                    setStudy((x) => ({
+                      ...x,
+                      level: id === "none" ? undefined : (id as typeof x.level),
+                    }));
+                    setSaved(false);
+                  }}
+                  className={cn(
+                    "rounded-full border px-3 py-1.5 text-sm font-medium",
+                    on ? "border-primary bg-primary text-primary-foreground" : "hover:bg-accent",
+                  )}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          <Field
+            label={tr("স্কুল / কলেজ / বিশ্ববিদ্যালয়", "School / college / university")}
+            value={study.institution}
+            maxLength={80}
+            onChange={(e) => {
+              setStudy((x) => ({ ...x, institution: e.target.value }));
+              setSaved(false);
+            }}
+          />
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm">
+              <span className="block font-semibold">
+                {tr("প্রোফাইলে দেখাব", "Show on my profile")}
+              </span>
+              <span className="block text-xs text-muted-foreground">
+                {tr("ডিফল্টে বন্ধ — শুধু আপনি দেখেন", "Off by default — only you see it")}
+              </span>
+            </span>
+            <Switch
+              checked={study.showInstitution}
+              onCheckedChange={(v) => {
+                setStudy((x) => ({ ...x, showInstitution: v }));
+                setSaved(false);
+              }}
+              aria-label={tr("প্রোফাইলে দেখাব", "Show on my profile")}
+            />
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm font-semibold">{tr("আগ্রহ", "Interests")}</p>
+            <div className="flex flex-wrap gap-2">
+              {CATEGORIES.map((c) => {
+                const on = study.interests.includes(c.id);
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => {
+                      setStudy((x) => ({
+                        ...x,
+                        interests: on
+                          ? x.interests.filter((i) => i !== c.id)
+                          : [...x.interests, c.id],
+                      }));
+                      setSaved(false);
+                    }}
+                    className={cn(
+                      "rounded-full border px-3 py-1.5 text-sm font-medium",
+                      on ? "border-primary bg-primary/10 text-primary" : "hover:bg-accent",
+                    )}
+                  >
+                    {c.emoji} {lang === "bn" ? c.bn : c.en}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </fieldset>
+        <div className="flex flex-wrap items-center gap-3">
           <Button type="submit" size="lg">
             {tr("সংরক্ষণ", "Save")}
           </Button>

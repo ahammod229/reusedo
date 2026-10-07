@@ -58,6 +58,9 @@ const NotFoundPage = lazy(() =>
 );
 const Onboarding = lazy(() => import("./pages").then((m) => ({ default: m.Onboarding })));
 const FeedPage = lazy(() => import("./pages").then((m) => ({ default: m.FeedPage })));
+const HomeDashboard = lazy(() =>
+  import("./pages/me/HomeDashboard").then((m) => ({ default: m.HomeDashboard })),
+);
 const QuickPost = lazy(() => import("./pages").then((m) => ({ default: m.QuickPost })));
 const CourierRequest = lazy(() => import("./pages").then((m) => ({ default: m.CourierRequest })));
 
@@ -67,7 +70,7 @@ import { SocketProvider } from "./providers/SocketProvider";
 import { AdminRoute } from "./routes/AdminRoute";
 import { GuestRoute } from "./routes/GuestRoute";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
-import { ToPost } from "./routes/Redirects";
+import { LandingOrHome, ToPost } from "./routes/Redirects";
 
 const AdminLayout = lazy(() =>
   import("./features/admin/layouts/AdminLayout").then((m) => ({ default: m.AdminLayout })),
@@ -142,7 +145,14 @@ function App() {
                   <Routes>
                     {/* Main App Layout */}
                     <Route element={<MainLayout />}>
-                      <Route path="/" element={<Home />} />
+                      <Route
+                        path="/"
+                        element={
+                          <LandingOrHome>
+                            <Home />
+                          </LandingOrHome>
+                        }
+                      />
                       <Route path="/feed" element={<FeedPage />} />
                       <Route path="/search" element={<SearchPage />} />
                       <Route path="/post/:id" element={<PostDetail />} />
@@ -155,6 +165,7 @@ function App() {
 
                       {/* Signed-in pages */}
                       <Route element={<ProtectedRoute />}>
+                        <Route path="/home" element={<HomeDashboard />} />
                         <Route path="/post/new" element={<QuickPost />} />
                         <Route path="/my-posts" element={<MyPostsPage />} />
                         <Route path="/saved" element={<SavedPage />} />
@@ -372,6 +383,9 @@ function App() {
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
                         <Route path="/forgot-password" element={<ForgotPassword />} />
+                      </Route>
+                      {/* Signed in but not finished setting up: email code → address/phone → about you */}
+                      <Route element={<ProtectedRoute />}>
                         <Route path="/verify-email" element={<VerifyEmail />} />
                         <Route path="/onboarding" element={<Onboarding />} />
                       </Route>

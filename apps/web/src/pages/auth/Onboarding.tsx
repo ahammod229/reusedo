@@ -1,6 +1,8 @@
-import { useLang, useNum, useT } from "@/features/feed/i18n";
+import { useLang, useNum, useT, useTr } from "@/features/feed/i18n";
+import { useMe } from "@/features/feed/me";
+import { CATEGORIES, type CategoryId, EDU_LEVELS, type EduLevel } from "@/features/feed/types";
 import { BD_DIVISIONS, isBdMobile, normalizePhone } from "@/features/geo/bd";
-import { Button, cn } from "@/shared/components/ui";
+import { Button, Switch, cn } from "@/shared/components/ui";
 import { Check, LocateFixed, MapPin, PartyPopper, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
@@ -8,10 +10,23 @@ import { AuthShell } from "./components/AuthShell";
 import { ErrorBanner, Field, SelectField } from "./components/Field";
 import { saveVerificationProfile } from "./otp.api";
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2 | 3 | 4;
 
 export function Onboarding() {
   const t = useT();
+  const tr = useTr();
+  const me = useMe();
+  const [about, setAbout] = useState<{
+    level?: EduLevel;
+    institution: string;
+    showInstitution: boolean;
+    interests: CategoryId[];
+  }>({
+    level: me.level,
+    institution: me.institution,
+    showInstitution: me.showInstitution,
+    interests: me.interests,
+  });
   const lang = useLang((s) => s.lang);
   const num = useNum();
   const [step, setStep] = useState<Step>(2); // email step is already done when we arrive
@@ -35,7 +50,7 @@ export function Onboarding() {
   const phoneOk = isBdMobile(f.phone);
   const req = touched ? t("required") : undefined;
 
-  const steps = [t("stepEmail"), t("stepAddress"), t("stepPhone")];
+  const steps = [t("stepEmail"), t("stepAddress"), t("stepPhone"), tr("আপনি", "You")];
 
   const next = () => {
     setTouched(true);
@@ -51,7 +66,8 @@ export function Onboarding() {
     setError(null);
     try {
       await saveVerificationProfile({ ...f, phone: normalizePhone(f.phone) });
-      setDone(true);
+      setTouched(false);
+      setStep(4);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -67,7 +83,7 @@ export function Onboarding() {
             <PartyPopper className="h-10 w-10" />
           </div>
           <Button asChild size="lg" className="w-full">
-            <Link to="/feed">{t("goFeed")}</Link>
+            <Link to="/home">{tr("হোমে যান", "Go to home")}</Link>
           </Button>
         </div>
       </AuthShell>
@@ -199,6 +215,123 @@ export function Onboarding() {
               {t("back")}
             </Button>
             <Button size="lg" className="flex-1" disabled={saving} onClick={finish}>
+              {t("finish")}
+            </Button>
+          </div>
+        </div>
+      )}
+      {step === 4 && (
+        <div className="space-y-5">
+          <p className="rounded-xl bg-primary/5 p-3 text-sm">
+            {tr(
+              "ঐচ্ছিক — জানালে আপনার ক্লাসের বই আর দরকারি জিনিস আগে দেখাব।",
+              "Optional — it lets us show things for your class first.",
+            )}
+          </p>
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-semibold">
+              {tr("আপনি কী পড়েন?", "What are you studying?")}
+            </legend>
+            <div className="flex flex-wrap gap-2">
+              {[
+                ...EDU_LEVELS.map((l) => [l.id, lang === "bn" ? l.bn : l.en] as const),
+                ["none", tr("পড়ি না / অভিভাবক", "Not a student / parent")] as const,
+              ].map(([id, label]) => {
+                const on = id === "none" ? !about.level : about.level === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() =>
+                      setAbout((a) => ({
+                        ...a,
+                        level: id === "none" ? undefined : (id as EduLevel),
+                      }))
+                    }
+                    className={cn(
+                      "rounded-full border px-3 py-1.5 text-sm font-medium",
+                      on ? "border-primary bg-primary text-primary-foreground" : "hover:bg-accent",
+                    )}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+          <div className="space-y-2">
+            <Field
+              label={tr(
+                "স্কুল / কলেজ / বিশ্ববিদ্যালয় (ঐচ্ছিক)",
+                "School / college / university (optional)",
+              )}
+              value={about.institution}
+              maxLength={80}
+              onChange={(e) => setAbout((a) => ({ ...a, institution: e.target.value }))}
+            />
+            <div className="flex items-center justify-between gap-3 rounded-xl border p-3">
+              <span className="text-sm">
+                <span className="block font-semibold">
+                  {tr("প্রোফাইলে দেখাব", "Show on my profile")}
+                </span>
+                <span className="block text-xs text-muted-foreground">
+                  {tr(
+                    "বন্ধ থাকলে কেউ দেখবে না — নিরাপত্তার জন্য ডিফল্টে বন্ধ।",
+                    "Hidden unless you turn it on — off by default for safety.",
+                  )}
+                </span>
+              </span>
+              <Switch
+                checked={about.showInstitution}
+                onCheckedChange={(v) => setAbout((a) => ({ ...a, showInstitution: v }))}
+                aria-label={tr("প্রোফাইলে দেখাব", "Show on my profile")}
+              />
+            </div>
+          </div>
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-semibold">
+              {tr("কোন জিনিসে আগ্রহ?", "What are you interested in?")}
+            </legend>
+            <div className="flex flex-wrap gap-2">
+              {CATEGORIES.map((c) => {
+                const on = about.interests.includes(c.id);
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() =>
+                      setAbout((a) => ({
+                        ...a,
+                        interests: on
+                          ? a.interests.filter((x) => x !== c.id)
+                          : [...a.interests, c.id],
+                      }))
+                    }
+                    className={cn(
+                      "rounded-full border px-3 py-1.5 text-sm font-medium",
+                      on ? "border-primary bg-primary/10 text-primary" : "hover:bg-accent",
+                    )}
+                  >
+                    {c.emoji} {lang === "bn" ? c.bn : c.en}
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="lg" onClick={() => setDone(true)}>
+              {tr("পরে করব", "Skip")}
+            </Button>
+            <Button
+              size="lg"
+              className="flex-1"
+              onClick={() => {
+                me.set(about);
+                setDone(true);
+              }}
+            >
               {t("finish")}
             </Button>
           </div>

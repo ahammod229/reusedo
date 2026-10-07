@@ -1,6 +1,6 @@
+import { UI_PREVIEW } from "@/shared/uiPreview";
 /// <reference types="node" />
 import { getApp, getApps, initializeApp } from "firebase/app";
-import { UI_PREVIEW } from "@/shared/uiPreview";
 import { getAuth } from "firebase/auth";
 
 const getEnvVar = (viteKey: unknown, nodeKey?: string): string | undefined => {
