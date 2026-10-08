@@ -22,6 +22,9 @@ const MyProfile = lazy(() => import("./pages").then((m) => ({ default: m.MyProfi
 const NeedDetails = lazy(() => import("./pages").then((m) => ({ default: m.NeedDetails })));
 const NeedForm = lazy(() => import("./pages").then((m) => ({ default: m.NeedForm })));
 const NeedList = lazy(() => import("./pages").then((m) => ({ default: m.NeedList })));
+const OrderConfirmation = lazy(() =>
+  import("./pages").then((m) => ({ default: m.OrderConfirmation })),
+);
 const NotFound = lazy(() => import("./pages").then((m) => ({ default: m.NotFound })));
 const NotificationCenter = lazy(() =>
   import("./pages").then((m) => ({ default: m.NotificationCenter })),
@@ -156,6 +159,10 @@ function App() {
                       <Route path="/" element={<Home />} />
                       <Route path="/explore" element={<Explore />} />
                       <Route path="/help" element={<Help />} />
+                      <Route
+                        path="/order-confirmation/:orderNumber"
+                        element={<OrderConfirmation />}
+                      />
 
                       {/* Search Routes */}
                       <Route path="/search" element={<SearchIndex />} />
