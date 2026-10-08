@@ -30,8 +30,8 @@ export interface BrandConfig {
   name: string;
   siteUrl: string;
   /**
-   * Absolute, publicly reachable PNG/JPG (Gmail blocks SVG). When empty, a text
-   * wordmark with an "N" badge is rendered instead, so the header never shows a broken image.
+   * Absolute, publicly reachable PNG/JPG (Gmail blocks SVG). Defaults to the file in
+   * apps/web/public/email-logo.png once the web app is deployed. When empty, an "N" badge is shown.
    */
   logoUrl?: string;
   supportEmail: string;
@@ -47,12 +47,12 @@ export interface BrandConfig {
 export const defaultBrand: BrandConfig = {
   name: "Noklity",
   siteUrl: process.env.SITE_URL || "https://noklity.com",
-  logoUrl: process.env.EMAIL_LOGO_URL || undefined,
+  logoUrl: process.env.EMAIL_LOGO_URL || `${process.env.SITE_URL || "https://noklity.com"}/email-logo.png`,
   supportEmail: process.env.SUPPORT_EMAIL || "noklitybd@gmail.com",
   supportPhone: process.env.SUPPORT_PHONE || undefined,
   supportHours: process.env.SUPPORT_HOURS || undefined,
-  primaryColor: process.env.BRAND_PRIMARY_COLOR || "#1d4ed8",
-  accentColor: process.env.BRAND_ACCENT_COLOR || "#e11d48",
+  primaryColor: process.env.BRAND_PRIMARY_COLOR || "#173e65",
+  accentColor: process.env.BRAND_ACCENT_COLOR || "#bc1823",
   social: [],
 };
 
@@ -95,12 +95,11 @@ export function renderOrderConfirmation(
   const brandName = escapeHtml(brand.name);
   const subject = `Order ${data.orderNumber} confirmed – thank you for shopping with ${brand.name}`;
 
-  const logo = brand.logoUrl
-    ? `<img src="${brand.logoUrl}" alt="${brandName}" height="40" style="display:block;height:40px;width:auto;border:0;" />`
-    : `<table role="presentation" cellpadding="0" cellspacing="0"><tr>
-         <td align="center" valign="middle" width="40" height="40" style="width:40px;height:40px;border-radius:20px;background:${brand.primaryColor};color:#ffffff;font-size:20px;font-weight:800;font-family:${FONT};">N<span style="color:${brand.accentColor};">.</span></td>
-         <td style="padding-left:10px;font-size:22px;font-weight:800;letter-spacing:.14em;color:#111827;font-family:${FONT};">${brandName.toUpperCase()}</td>
-       </tr></table>`;
+  const wordmark = `<td style="padding-left:12px;font-size:22px;font-weight:800;letter-spacing:.16em;color:${brand.primaryColor};font-family:${FONT};">${brandName.toUpperCase()}</td>`;
+  const mark = brand.logoUrl
+    ? `<td valign="middle"><img src="${brand.logoUrl}" alt="${brandName}" height="44" style="display:block;height:44px;width:auto;border:0;" /></td>`
+    : `<td align="center" valign="middle" width="40" height="40" style="width:40px;height:40px;border-radius:20px;background:${brand.primaryColor};color:#ffffff;font-size:20px;font-weight:800;font-family:${FONT};">N</td>`;
+  const logo = `<table role="presentation" cellpadding="0" cellspacing="0"><tr>${mark}${wordmark}</tr></table>`;
 
   const itemRows = data.items
     .map((i) => {
