@@ -102,45 +102,64 @@ export function renderOrderConfirmation(
   const logo = `<table role="presentation" cellpadding="0" cellspacing="0"><tr>${mark}${wordmark}</tr></table>`;
 
   const itemRows = data.items
-    .map((i) => {
+    .map((i, idx) => {
       const image = i.imageUrl
-        ? `<td width="76" valign="top" style="padding:16px 16px 16px 0;"><img src="${i.imageUrl}" width="60" height="60" alt="" style="display:block;width:60px;height:60px;border-radius:8px;border:1px solid #e5e7eb;object-fit:cover;" /></td>`
-        : "";
+        ? `<td width="72" valign="middle" style="padding:14px 14px 14px 16px;"><img src="${i.imageUrl}" width="56" height="56" alt="" style="display:block;width:56px;height:56px;border-radius:10px;border:1px solid #e5e7eb;object-fit:cover;" /></td>`
+        : `<td width="6" style="padding:0;"></td>`;
+      const border = idx < data.items.length - 1 ? "border-bottom:1px solid #eef0f4;" : "";
       return `
         <tr>
           ${image}
-          <td valign="top" style="padding:16px 0;border-bottom:1px solid #eef0f3;">
-            <div style="font-size:15px;font-weight:600;line-height:1.4;color:#1f2937;">${escapeHtml(i.name)} <span style="color:#6b7280;font-weight:400;">&times; ${i.quantity}</span></div>
-            ${i.variant ? `<div style="font-size:13px;color:#6b7280;margin-top:2px;">${escapeHtml(i.variant)}</div>` : ""}
+          <td valign="middle" style="padding:14px 8px 14px ${i.imageUrl ? "0" : "14px"};${border}">
+            <div style="font-size:15px;font-weight:600;line-height:1.4;color:#111827;">${escapeHtml(i.name)}</div>
+            <div style="font-size:13px;color:#6b7280;margin-top:3px;">${i.variant ? `${escapeHtml(i.variant)} &nbsp;&middot;&nbsp; ` : ""}Qty ${i.quantity}</div>
           </td>
-          <td align="right" valign="top" style="padding:16px 0 16px 12px;border-bottom:1px solid #eef0f3;font-size:15px;font-weight:600;color:#1f2937;white-space:nowrap;">${money(i.price * i.quantity, currency)}</td>
+          <td align="right" valign="middle" style="padding:14px 16px 14px 8px;${border}font-size:15px;font-weight:700;color:#111827;white-space:nowrap;">${money(i.price * i.quantity, currency)}</td>
         </tr>`;
     })
     .join("");
 
   const line = (label: string, value: string) => `
         <tr>
-          <td style="padding:4px 0;font-size:15px;color:#6b7280;">${label}</td>
-          <td align="right" style="padding:4px 0;font-size:15px;font-weight:600;color:#374151;">${value}</td>
+          <td style="padding:5px 0;font-size:14px;color:#6b7280;">${label}</td>
+          <td align="right" style="padding:5px 0;font-size:14px;font-weight:600;color:#374151;">${value}</td>
         </tr>`;
 
-  const info = (label: string, value?: string) =>
-    value
-      ? `<td class="stack" width="50%" valign="top" style="padding:0 16px 28px 0;">
-           <div style="font-size:15px;font-weight:600;color:#1f2937;margin-bottom:4px;">${label}</div>
-           <div style="font-size:15px;line-height:1.55;color:#6b7280;">${escapeHtml(value).replace(/\n/g, "<br />")}</div>
+  const card = (label: string, rows: { title?: string; value?: string }[]) => {
+    const body = rows
+      .filter((r) => r.value)
+      .map(
+        (r) =>
+          `${r.title ? `<div style="font-size:12px;font-weight:600;color:#6b7280;margin-top:10px;">${r.title}</div>` : ""}<div style="font-size:14px;line-height:1.6;color:#1f2937;">${escapeHtml(r.value as string).replace(/\n/g, "<br />")}</div>`,
+      )
+      .join("");
+    return body
+      ? `<td class="stack" width="50%" valign="top" style="padding:0 6px 12px 0;">
+           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:10px;">
+             <tr><td style="padding:14px 16px;">
+               <div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${brand.primaryColor};"><span style="color:${brand.accentColor};">&#9632;</span>&nbsp; ${label}</div>
+               <div style="height:6px;line-height:6px;font-size:0;">&nbsp;</div>${body}
+             </td></tr>
+           </table>
          </td>`
       : "";
+  };
 
-  const infoRow = (a: string, b: string) => (a || b ? `<tr>${a}${b}</tr>` : "");
+  const step = (n: number, label: string, active: boolean) => `
+      <td align="center" width="25%" valign="top" style="padding:0 2px;">
+        <div style="width:28px;height:28px;line-height:28px;border-radius:14px;margin:0 auto;font-size:13px;font-weight:700;text-align:center;${
+          active ? `background:${brand.accentColor};color:#ffffff;` : "background:#e5e7eb;color:#9ca3af;"
+        }">${active ? "&#10003;" : n}</div>
+        <div style="font-size:11px;margin-top:6px;font-weight:${active ? 700 : 500};color:${active ? "#111827" : "#9ca3af"};">${label}</div>
+      </td>`;
 
   const support = [
     brand.supportPhone
-      ? `Customer Care: <strong style="color:#111827;">${escapeHtml(brand.supportPhone)}</strong>${
-          brand.supportHours ? ` <span style="color:#6b7280;">(${escapeHtml(brand.supportHours)})</span>` : ""
+      ? `<strong style="color:#111827;">${escapeHtml(brand.supportPhone)}</strong>${
+          brand.supportHours ? ` <span style="color:#6b7280;">&middot; ${escapeHtml(brand.supportHours)}</span>` : ""
         }`
       : "",
-    `Email: <a href="mailto:${brand.supportEmail}" style="color:${brand.primaryColor};text-decoration:none;font-weight:600;">${brand.supportEmail}</a>`,
+    `<a href="mailto:${brand.supportEmail}" style="color:${brand.primaryColor};text-decoration:none;font-weight:600;">${brand.supportEmail}</a>`,
   ]
     .filter(Boolean)
     .join("<br />");
@@ -148,7 +167,7 @@ export function renderOrderConfirmation(
   const social = (brand.social ?? [])
     .map(
       (s) =>
-        `<a href="${s.url}" style="display:inline-block;margin:0 8px;font-size:13px;color:#6b7280;text-decoration:none;">${escapeHtml(s.label)}</a>`,
+        `<a href="${s.url}" style="display:inline-block;margin:0 10px;font-size:13px;color:#6b7280;text-decoration:none;">${escapeHtml(s.label)}</a>`,
     )
     .join("");
 
@@ -162,92 +181,105 @@ export function renderOrderConfirmation(
   <style>
     @media (max-width:620px){
       .container{width:100%!important}
-      .pad{padding-left:20px!important;padding-right:20px!important}
+      .pad{padding-left:18px!important;padding-right:18px!important}
       .stack{display:block!important;width:100%!important;padding-right:0!important}
-      .btn{display:block!important;text-align:center!important}
-      .right{text-align:left!important;display:block!important;width:100%!important;padding-top:6px!important}
+      .hero-title{font-size:24px!important}
     }
   </style>
 </head>
-<body style="margin:0;padding:0;background:#f4f6f9;font-family:${FONT};">
+<body style="margin:0;padding:0;background:#eef1f6;font-family:${FONT};">
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;">
     Order ${orderNo} is confirmed. We are getting it ready to ship.
   </div>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f9;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef1f6;">
     <tr><td align="center" style="padding:28px 12px;">
-      <table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 2px 10px rgba(17,24,39,.06);">
+      <table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;">
 
-        <!-- Brand bar -->
-        <tr><td style="height:5px;line-height:5px;font-size:0;background:${brand.primaryColor};">&nbsp;</td></tr>
-
-        <!-- Header: logo left, order number right -->
-        <tr><td class="pad" style="padding:26px 40px 8px 40px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
-            <td valign="middle"><a href="${brand.siteUrl}" style="text-decoration:none;">${logo}</a></td>
-            <td class="right" align="right" valign="middle" style="font-size:13px;letter-spacing:.1em;color:#9ca3af;text-transform:uppercase;">Order ${orderNo}</td>
-          </tr></table>
+        <!-- Logo -->
+        <tr><td align="center" style="padding:4px 0 20px 0;">
+          <a href="${brand.siteUrl}" style="text-decoration:none;display:inline-block;">${logo}</a>
         </td></tr>
 
-        <!-- Hero -->
-        <tr><td class="pad" style="padding:28px 40px 4px 40px;">
-          <h1 style="margin:0 0 10px 0;font-size:28px;line-height:1.25;font-weight:700;color:#111827;">Thanks for your purchase, ${name}!</h1>
-          <p style="margin:0;font-size:16px;line-height:1.6;color:#6b7280;">We&rsquo;re getting your order ready to be shipped. We will notify you when it has been sent.</p>
-        </td></tr>
-
-        <!-- Actions -->
-        <tr><td class="pad" style="padding:24px 40px 8px 40px;">
-          <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-            <td class="btn" align="center" bgcolor="${brand.primaryColor}" style="border-radius:8px;"><a href="${orderUrl}" style="display:block;padding:15px 30px;font-size:16px;font-weight:600;color:#ffffff;text-decoration:none;">View your order</a></td>
-            <td style="padding-left:16px;font-size:15px;color:#6b7280;">or <a href="${brand.siteUrl}" style="color:${brand.primaryColor};text-decoration:none;font-weight:600;">Visit our store</a></td>
-          </tr></table>
-        </td></tr>
-
-        <!-- Order meta -->
-        <tr><td class="pad" style="padding:28px 40px 0 40px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;"><tr>
-            <td class="stack" style="padding:16px 20px;"><div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#9ca3af;">Order number</div><div style="font-size:20px;font-weight:800;color:${brand.primaryColor};margin-top:2px;">${orderNo}</div></td>
-            <td class="stack" style="padding:16px 20px;"><div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#9ca3af;">Order date</div><div style="font-size:15px;font-weight:600;color:#374151;margin-top:4px;">${dateText}</div></td>
-          </tr></table>
-        </td></tr>
-
-        <!-- Order summary -->
-        <tr><td class="pad" style="padding:32px 40px 0 40px;">
-          <h2 style="margin:0 0 6px 0;font-size:20px;font-weight:700;color:#111827;">Order summary</h2>
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${itemRows}</table>
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px;">
-            ${line("Subtotal", money(subtotal, currency))}
-            ${line("Shipping", money(shippingFee, currency))}
-            ${discount ? line("Discount", `&minus; ${money(discount, currency)}`) : ""}
-            <tr><td colspan="2" style="padding-top:12px;"><div style="border-top:2px solid #e5e7eb;"></div></td></tr>
-            <tr>
-              <td style="padding:12px 0 0 0;font-size:16px;color:#374151;">Total</td>
-              <td align="right" style="padding:12px 0 0 0;font-size:26px;font-weight:800;color:#111827;white-space:nowrap;">${money(total, currency)} <span style="font-size:13px;font-weight:600;color:#6b7280;">${escapeHtml(currency)}</span></td>
-            </tr>
-          </table>
-        </td></tr>
-
-        <!-- Customer information -->
-        <tr><td class="pad" style="padding:36px 40px 0 40px;">
-          <h2 style="margin:0 0 18px 0;font-size:20px;font-weight:700;color:#111827;">Customer information</h2>
+        <tr><td style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 18px rgba(23,62,101,.08);">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-            ${infoRow(info("Shipping address", data.shippingAddress), info("Billing address", data.billingAddress ?? data.shippingAddress))}
-            ${infoRow(info("Payment", data.paymentMethod), info("Shipping method", data.shippingMethod))}
-          </table>
-        </td></tr>
 
-        <!-- Support -->
-        <tr><td class="pad" style="padding:8px 40px 32px 40px;">
-          <div style="border-top:1px solid #e5e7eb;padding-top:22px;font-size:14px;line-height:1.7;color:#4b5563;">
-            If you have any questions about your order, our team is happy to help.<br /><br />
-            ${support}
-          </div>
+            <!-- Hero -->
+            <tr><td class="pad" align="center" bgcolor="${brand.primaryColor}" style="background:${brand.primaryColor};background-image:linear-gradient(135deg,${brand.primaryColor} 0%,#0f2b47 100%);padding:40px 40px 36px 40px;">
+              <div style="width:52px;height:52px;line-height:52px;border-radius:26px;background:#ffffff;color:${brand.accentColor};font-size:26px;font-weight:700;text-align:center;margin:0 auto 16px auto;">&#10003;</div>
+              <h1 class="hero-title" style="margin:0 0 8px 0;font-size:28px;line-height:1.25;font-weight:700;color:#ffffff;">Order confirmed</h1>
+              <p style="margin:0 0 20px 0;font-size:15px;line-height:1.6;color:#cbd5e1;">Thank you, ${name}. We&rsquo;ve received your order and will let you know as soon as it ships.</p>
+              <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto;"><tr>
+                <td style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:9px 20px;font-size:13px;color:#e2e8f0;letter-spacing:.04em;">
+                  Order <strong style="color:#ffffff;font-size:15px;">#${orderNo}</strong> &nbsp;&middot;&nbsp; ${dateText}
+                </td>
+              </tr></table>
+            </td></tr>
+
+            <!-- Tracker -->
+            <tr><td class="pad" style="padding:28px 40px 4px 40px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+                ${step(1, "Order placed", true)}${step(2, "Processing", false)}${step(3, "Shipped", false)}${step(4, "Delivered", false)}
+              </tr></table>
+            </td></tr>
+
+            <!-- CTA -->
+            <tr><td class="pad" align="center" style="padding:24px 40px 8px 40px;">
+              <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+                <td align="center" bgcolor="${brand.accentColor}" style="border-radius:10px;"><a href="${orderUrl}" style="display:inline-block;padding:14px 34px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;">View order details</a></td>
+              </tr></table>
+              <div style="margin-top:12px;font-size:13px;"><a href="${brand.siteUrl}" style="color:${brand.primaryColor};text-decoration:none;font-weight:600;">Continue shopping &rarr;</a></div>
+            </td></tr>
+
+            <!-- Items -->
+            <tr><td class="pad" style="padding:28px 40px 0 40px;">
+              <div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${brand.primaryColor};margin-bottom:10px;">Your items</div>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:12px;">${itemRows}</table>
+            </td></tr>
+
+            <!-- Totals -->
+            <tr><td class="pad" style="padding:18px 40px 0 40px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:0 4px;">
+                ${line("Subtotal", money(subtotal, currency))}
+                ${line("Shipping", money(shippingFee, currency))}
+                ${discount ? line("Discount", `&minus; ${money(discount, currency)}`) : ""}
+              </table>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px;background:#f1f5f9;border-radius:10px;">
+                <tr>
+                  <td style="padding:16px 18px;font-size:14px;font-weight:600;color:#374151;">Total amount</td>
+                  <td align="right" style="padding:16px 18px;font-size:24px;font-weight:800;color:${brand.primaryColor};white-space:nowrap;">${money(total, currency)} <span style="font-size:12px;font-weight:600;color:#6b7280;">${escapeHtml(currency)}</span></td>
+                </tr>
+              </table>
+            </td></tr>
+
+            <!-- Info cards -->
+            <tr><td class="pad" style="padding:28px 34px 0 40px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+                ${card("Shipping to", [{ value: data.shippingAddress }])}
+                ${card("Payment &amp; delivery", [
+                  { title: "Payment method", value: data.paymentMethod },
+                  { title: "Delivery option", value: data.shippingMethod },
+                ])}
+              </tr></table>
+            </td></tr>
+
+            <!-- Help -->
+            <tr><td class="pad" style="padding:12px 40px 36px 40px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fafbfc;border:1px dashed #d1d5db;border-radius:10px;"><tr>
+                <td style="padding:16px 18px;font-size:14px;line-height:1.7;color:#4b5563;">
+                  <strong style="color:#111827;">Need help with your order?</strong><br />
+                  ${support}
+                </td>
+              </tr></table>
+            </td></tr>
+
+          </table>
         </td></tr>
 
         <!-- Footer -->
-        <tr><td align="center" style="background:#f8fafc;border-top:1px solid #e5e7eb;padding:22px 24px;">
+        <tr><td align="center" style="padding:24px 12px 4px 12px;">
           ${social ? `<div style="margin-bottom:10px;">${social}</div>` : ""}
-          <div style="font-size:12px;color:#9ca3af;">&copy; ${new Date().getFullYear()} ${brandName}. All rights reserved.</div>
-          <div style="font-size:12px;margin-top:2px;"><a href="${brand.siteUrl}" style="color:#9ca3af;text-decoration:none;">${brand.siteUrl.replace(/^https?:\/\//, "")}</a></div>
+          <div style="font-size:12px;color:#6b7280;">&copy; ${new Date().getFullYear()} ${brandName}. All rights reserved.</div>
+          <div style="font-size:12px;margin-top:2px;"><a href="${brand.siteUrl}" style="color:#6b7280;text-decoration:none;">${brand.siteUrl.replace(/^https?:\/\//, "")}</a></div>
         </td></tr>
 
       </table>
