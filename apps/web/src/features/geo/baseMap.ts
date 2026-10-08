@@ -19,7 +19,13 @@ const ATTRIBUTION =
 /** Area-level only: deeper zoom would suggest more precision than we store. */
 export const MAX_ZOOM = 15;
 
-export function createBdMap(el: HTMLElement, opts: { interactive?: boolean } = {}) {
+export function createBdMap(
+  el: HTMLElement,
+  opts: {
+    /** Inside a scrolling page: no wheel zoom, and one finger scrolls the page on phones. */
+    embedded?: boolean;
+  } = {},
+) {
   // Fit to the real border (tighter than BD_BOUNDS) so the country fills the box.
   const bounds = L.latLngBounds(BD_OUTLINE.flat());
   const limit = L.latLngBounds(BD_BOUNDS);
@@ -30,7 +36,8 @@ export function createBdMap(el: HTMLElement, opts: { interactive?: boolean } = {
     maxBoundsViscosity: 1, // can't drag the country out of view
     maxZoom: MAX_ZOOM,
     zoomSnap: 0.25,
-    scrollWheelZoom: opts.interactive !== false ? "center" : false,
+    scrollWheelZoom: opts.embedded ? false : "center",
+    dragging: !(opts.embedded && L.Browser.mobile),
     tapHold: false,
   });
   L.tileLayer(TILE_URL, { attribution: ATTRIBUTION, maxZoom: MAX_ZOOM, detectRetina: true }).addTo(
@@ -54,15 +61,26 @@ export function createBdMap(el: HTMLElement, opts: { interactive?: boolean } = {
   L.control.zoom({ position: "bottomright" }).addTo(map);
 
   // Whole country fills the box on any screen; never zoom out past that.
+  // A box can start at 0×0 (lazy chunk, dialog animation) — fit again once it has a real size.
+  let fitted = false;
   const fit = () => {
     map.invalidateSize();
-    map.fitBounds(bounds, { padding: [24, 24] });
+    if (!el.clientWidth || !el.clientHeight) return;
+    map.fitBounds(bounds, { padding: [24, 24], animate: false });
     map.setMinZoom(map.getBoundsZoom(bounds, false, L.point(24, 24)) - 0.25);
+    fitted = true;
   };
+  map.setView(bounds.getCenter(), 7, { animate: false }); // valid state even before the first fit
   fit();
+  const ro = new ResizeObserver(() => (fitted ? map.invalidateSize() : fit()));
+  ro.observe(el);
   return {
     map,
     fitCountry: () => map.flyToBounds(bounds, { padding: [24, 24], duration: 0.6 }),
     refit: fit,
+    destroy: () => {
+      ro.disconnect();
+      map.remove();
+    },
   };
 }

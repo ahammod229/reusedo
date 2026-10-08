@@ -2,6 +2,8 @@
 // AREA centre — never at anyone's address (docs/STUDENT_UX.md §3). With the API
 // these come from the post's saved area (geocoded once via the Maps integration).
 
+import { DISTRICT_COORDS } from "./districts";
+
 export type LatLng = [number, number];
 
 /** Bangladesh, with a little padding so edge districts aren't clipped. */
@@ -11,22 +13,8 @@ export const BD_BOUNDS: [LatLng, LatLng] = [
 ];
 export const BD_CENTER: LatLng = [23.69, 90.35];
 
-export const DISTRICT_CENTERS: Record<string, LatLng> = {
-  ঢাকা: [23.8103, 90.4125],
-  চট্টগ্রাম: [22.3569, 91.7832],
-  সিলেট: [24.8949, 91.8687],
-  রাজশাহী: [24.3745, 88.6042],
-  খুলনা: [22.8456, 89.5403],
-  বরিশাল: [22.701, 90.3535],
-  রংপুর: [25.7439, 89.2752],
-  ময়মনসিংহ: [24.7471, 90.4203],
-  কুমিল্লা: [23.4607, 91.1809],
-  গাজীপুর: [23.9999, 90.4203],
-  নারায়ণগঞ্জ: [23.6238, 90.5],
-  বগুড়া: [24.8465, 89.3773],
-  যশোর: [23.1664, 89.2081],
-  কক্সবাজার: [21.4272, 92.0058],
-};
+/** All 64 district centres (features/geo/districts.ts). */
+export const DISTRICT_CENTERS: Record<string, LatLng> = DISTRICT_COORDS;
 
 const AREA_CENTERS: Record<string, LatLng> = {
   "মিরপুর ১": [23.7956, 90.3537],

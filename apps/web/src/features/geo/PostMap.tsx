@@ -7,6 +7,7 @@ import { LocateFixed, Maximize2, ShieldCheck, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import { MAX_ZOOM, createBdMap } from "./baseMap";
+import { clusterByPixels } from "./cluster";
 import { DISTRICT_CENTERS, type LatLng, inBangladesh, placeOf } from "./places";
 
 /** Below this zoom we show one bubble per district; above it, one pin per area. */
@@ -42,27 +43,6 @@ function groupBy(posts: FeedPost[], by: "area" | "district"): Group[] {
 
 const esc = (s: string) =>
   s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] ?? c);
-
-/** Greedy screen-space clustering so nearby areas never stack on top of each other. */
-function clusterByPixels(groups: Group[], map: L.Map, radius: number) {
-  const out: { groups: Group[]; at: LatLng; px: L.Point }[] = [];
-  const sorted = [...groups].sort((a, b) => b.posts.length - a.posts.length);
-  for (const g of sorted) {
-    const px = map.project(g.at);
-    const hit = out.find((c) => c.px.distanceTo(px) < radius);
-    if (!hit) {
-      out.push({ groups: [g], at: g.at, px });
-      continue;
-    }
-    hit.groups.push(g);
-    const w = hit.groups.reduce((n, x) => n + x.posts.length, 0);
-    const lat = hit.groups.reduce((n, x) => n + x.at[0] * x.posts.length, 0) / w;
-    const lng = hit.groups.reduce((n, x) => n + x.at[1] * x.posts.length, 0) / w;
-    hit.at = [lat, lng];
-    hit.px = map.project(hit.at);
-  }
-  return out;
-}
 
 export default function PostMap({ posts, className }: { posts: FeedPost[]; className?: string }) {
   const tr = useTr();
@@ -101,11 +81,8 @@ export default function PostMap({ posts, className }: { posts: FeedPost[]; class
     setZoom(a.map.getZoom());
     a.map.on("zoomend", () => setZoom(a.map.getZoom()));
     a.map.on("click", () => setSelected(null));
-    const ro = new ResizeObserver(() => a.map.invalidateSize());
-    ro.observe(box.current);
     return () => {
-      ro.disconnect();
-      a.map.remove();
+      a.destroy();
       api.current = null;
     };
   }, []);
@@ -129,14 +106,15 @@ export default function PostMap({ posts, className }: { posts: FeedPost[]; class
           .addTo(lg);
       }
     } else {
-      for (const c of clusterByPixels(byArea, map, 54)) {
-        const all = c.groups.flatMap((g) => g.posts);
+      for (const c of clusterByPixels(byArea, map, 54, (g) => g.posts.length)) {
+        const groups = c.items;
+        const all = groups.flatMap((g) => g.posts);
         const hasOffer = all.some((p) => p.kind === "offer");
         const hasNeed = all.some((p) => p.kind === "need");
         const ring =
           hasOffer && hasNeed ? "var(--primary)" : hasNeed ? "var(--need)" : "var(--offer)";
         const top = [...all].sort((a, b) => b.requests - a.requests)[0];
-        const keys = c.groups.map((g) => g.key);
+        const keys = groups.map((g) => g.key);
         const active = !!selected && keys.every((k) => selected.includes(k));
         const size = all.length > 1 ? 46 : 40;
         const icon = L.divIcon({
@@ -146,13 +124,13 @@ export default function PostMap({ posts, className }: { posts: FeedPost[]; class
             all.length > 1 ? `<span class="rd-pin__count">${num(all.length)}</span>` : ""
           }</div>`,
         });
-        const title = c.groups.map((g) => g.label).join(" · ");
+        const title = groups.map((g) => g.label).join(" · ");
         L.marker(c.at, { icon, keyboard: true, title })
           .on("click", (e) => {
             L.DomEvent.stopPropagation(e);
             // Several areas overlap: zoom in to separate them while we still can.
-            if (c.groups.length > 1 && map.getZoom() < MAX_ZOOM - 0.5) {
-              map.flyToBounds(L.latLngBounds(c.groups.map((g) => g.at)), {
+            if (groups.length > 1 && map.getZoom() < MAX_ZOOM - 0.5) {
+              map.flyToBounds(L.latLngBounds(groups.map((g) => g.at)), {
                 padding: [90, 90],
                 maxZoom: MAX_ZOOM,
                 duration: 0.6,

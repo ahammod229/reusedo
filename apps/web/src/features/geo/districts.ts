@@ -65,9 +65,3 @@ export const DISTRICT_COORDS: Record<string, [number, number]> = {
   নেত্রকোণা: [24.87, 90.73],
   শেরপুর: [25.02, 90.01],
 };
-
-/** Rough bounds of Bangladesh, used to frame the map. */
-export const BD_BOUNDS: [[number, number], [number, number]] = [
-  [20.6, 88.0],
-  [26.7, 92.7],
-];

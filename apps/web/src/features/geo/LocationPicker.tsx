@@ -40,7 +40,8 @@ export default function LocationPicker({
   // biome-ignore lint/correctness/useExhaustiveDependencies: rebuild only when opened, not on every render
   useEffect(() => {
     if (!open || !box) return;
-    const { map } = createBdMap(box);
+    const bd = createBdMap(box);
+    const { map } = bd;
     mapRef.current = map;
     const icon = L.divIcon({
       className: "",
@@ -79,7 +80,7 @@ export default function LocationPicker({
     const t = setTimeout(() => map.invalidateSize(), 250);
     return () => {
       clearTimeout(t);
-      map.remove();
+      bd.destroy();
       mapRef.current = null;
       pin.current = null;
       setAt(null);
