@@ -6,6 +6,7 @@ import { PostTags } from "@/features/feed/PostBits";
 import { useAlerts } from "@/features/feed/alerts";
 import { toParams } from "@/features/feed/feedParams";
 import { levelOf } from "@/features/feed/gamify";
+import { makeImpactCard, shareOrSaveImage } from "@/features/feed/impactCard";
 import { useLang, useNum, useTr } from "@/features/feed/i18n";
 import { useMe } from "@/features/feed/me";
 import { categoryOf, eduOf } from "@/features/feed/types";
@@ -21,12 +22,16 @@ import {
   Leaf,
   MessageCircle,
   Repeat,
+  Share2,
   Sparkles,
   Users,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode, Suspense, lazy, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router";
+
+// Leaflet is ~40 KB; load it only when Home renders.
+const DonationMap = lazy(() => import("@/features/map/DonationMap"));
 
 function greeting(tr: (bn: string, en: string) => string) {
   const h = new Date().getHours();
@@ -51,6 +56,9 @@ export function HomeDashboard() {
         {d && me && (
           <>
             <Hero name={me.name.split(" ")[0]} given={me.stats.given} />
+            <Suspense fallback={<div className="h-80 animate-pulse rounded-3xl bg-muted" />}>
+              <DonationMap />
+            </Suspense>
             <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
               <div className="min-w-0 space-y-5">
                 <Todo todo={d.todo} />
@@ -345,6 +353,36 @@ function NeedsNearby({ posts }: { posts: import("@/features/feed/types").FeedPos
 function Impact({ stats }: { stats: import("@/features/feed/gamify").ImpactStats }) {
   const tr = useTr();
   const num = useNum();
+  const lang = useLang((s) => s.lang);
+  const [busy, setBusy] = useState(false);
+  const lv = levelOf(stats.given);
+
+  const shareCard = async () => {
+    setBusy(true);
+    try {
+      const blob = await makeImpactCard({
+        title: tr("আমার ReuseDo অবদান", "My ReuseDo impact"),
+        level: lang === "bn" ? lv.bn : lv.en,
+        emoji: lv.emoji,
+        lines: [
+          { value: num(stats.given), label: tr("জিনিস দিয়েছি", "items given") },
+          { value: `≈${num(Math.round(stats.kgSaved))}`, label: tr("কেজি বাঁচিয়েছি", "kg saved") },
+        ],
+        footer: tr(
+          "যা দরকার নেই, কারও জন্য আশীর্বাদ — reusedo",
+          "What you don't need blesses someone — reusedo",
+        ),
+      });
+      await shareOrSaveImage(
+        blob,
+        "reusedo-impact.png",
+        tr("আমি ReuseDo-তে দান করছি। আপনিও পারেন!", "I give on ReuseDo. You can too!"),
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const tiles = [
     { icon: Gift, v: num(stats.given), l: tr("দিয়েছেন", "Given"), tone: "text-offer" },
     { icon: HandHeart, v: num(stats.received), l: tr("পেয়েছেন", "Received"), tone: "text-need" },
@@ -375,6 +413,16 @@ function Impact({ stats }: { stats: import("@/features/feed/gamify").ImpactStats
       <p className="mt-2 text-[11px] text-muted-foreground">
         {tr("কেজির হিসাব আনুমানিক — জিনিসের ধরন দেখে।", "The kg figure is an estimate by item type.")}
       </p>
+      <Button
+        variant="outline"
+        size="sm"
+        className="mt-3 w-full"
+        disabled={busy || stats.given === 0}
+        onClick={shareCard}
+      >
+        <Share2 className="mr-1.5 h-4 w-4" />
+        {tr("অবদানের ছবি শেয়ার করুন", "Share my impact picture")}
+      </Button>
     </Card>
   );
 }

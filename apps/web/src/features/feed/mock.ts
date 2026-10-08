@@ -562,6 +562,16 @@ export const MOCK_EXCHANGES: MockExchange[] = [
     updated: "গত সপ্তাহ",
   },
   {
+    id: "e6",
+    title: "জ্যামিতি বক্স ও খাতা",
+    category: "stationery",
+    role: "receiver",
+    other: "মিতু আক্তার",
+    status: "scheduled",
+    via: "pickup",
+    updated: "আজ ০৯:১০",
+  },
+  {
     id: "e5",
     title: "পুরনো ল্যাপটপ",
     category: "electronics",

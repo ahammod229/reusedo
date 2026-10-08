@@ -28,6 +28,13 @@ export const useFeed = (f: FeedFilters) =>
 export const usePost = (id: string) =>
   useQuery({ queryKey: keys.post(id), queryFn: () => source.getPost(id) });
 
+export const useDonationMap = () =>
+  useQuery({
+    queryKey: ["donation-map"],
+    queryFn: () => source.getDonationMap(),
+    staleTime: 5 * 60_000,
+  });
+
 export const useChats = () => useQuery({ queryKey: keys.chats, queryFn: () => source.listChats() });
 
 export const useExchanges = () =>
@@ -54,6 +61,23 @@ export function useAdvanceExchange() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => source.advanceExchange(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.exchanges }),
+  });
+}
+
+export const useHandoverCode = (exchangeId: string | null) =>
+  useQuery({
+    queryKey: ["handover-code", exchangeId],
+    queryFn: () => source.getHandoverCode(exchangeId as string),
+    enabled: !!exchangeId,
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+
+export function useConfirmHandover() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { exchangeId: string; code: string }) =>
+      source.confirmHandover(v.exchangeId, v.code),
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.exchanges }),
   });
 }

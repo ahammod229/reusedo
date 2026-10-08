@@ -1,7 +1,7 @@
 import { cn } from "@/shared/components/ui";
 import { type ClipboardEvent, type KeyboardEvent, useRef } from "react";
 
-const LEN = 6;
+const DEFAULT_LEN = 6;
 const toLatin = (s: string) => s.replace(/[০-৯]/g, (d) => String("০১২৩৪৫৬৭৮৯".indexOf(d)));
 
 /** Six single-digit boxes; supports paste, backspace, arrows, Bengali digits and SMS/email autofill. */
@@ -10,11 +10,13 @@ export function OtpInput({
   onChange,
   invalid,
   autoFocus,
+  length: LEN = DEFAULT_LEN,
 }: {
   value: string;
   onChange: (v: string) => void;
   invalid?: boolean;
   autoFocus?: boolean;
+  length?: number;
 }) {
   const refs = useRef<(HTMLInputElement | null)[]>([]);
   const digits = Array.from({ length: LEN }, (_, i) => value[i] ?? "");

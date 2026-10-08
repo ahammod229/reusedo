@@ -20,12 +20,21 @@ export const apiSource: DataSource = {
   sendMessage: todo("POST /api/chat/conversations/:id/messages"),
 
   listExchanges: todo("GET /api/exchanges/incoming + /outgoing + /history"),
+  getHandoverCode: todo(
+    "GET /api/exchanges/:id/handover-code (NEW — giver only, 4 digits, stored hashed)",
+  ),
+  confirmHandover: todo(
+    "POST /api/exchanges/:id/handover { code } (NEW — receiver only, 5 tries, then completes the exchange)",
+  ),
   advanceExchange: todo("POST /api/exchanges/:id/accept | status transitions"),
 
   listNotifications: todo("GET /api/notifications"),
   markNotificationRead: todo("PATCH /api/notifications/:id/read | POST /read-all"),
 
   getUser: todo("GET /api/users/:username (+ stats, thanks, level; institution only if public)"),
+  getDonationMap: todo(
+    "GET /api/stats/donation-map (NEW — per-district donors/items; only people who opted in appear in `recent`; hide a district's names until it has 3+ donors)",
+  ),
   getDashboard: todo(
     "GET /api/me/dashboard (NEW — todo counts, for-you, needs nearby, community goal)",
   ),

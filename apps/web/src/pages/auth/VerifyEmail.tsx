@@ -26,11 +26,16 @@ export const VerifyEmail = () => {
 
   const explain = (e: unknown) => {
     const code = (e as Error).message;
-    if (code === "expired") return tr("কোডের মেয়াদ শেষ — নতুন কোড নিন।", "Code expired — request a new one.");
+    if (code === "expired")
+      return tr("কোডের মেয়াদ শেষ — নতুন কোড নিন।", "Code expired — request a new one.");
     if (code === "too_many_attempts")
       return tr("অনেকবার ভুল হয়েছে — নতুন কোড নিন।", "Too many wrong tries — request a new code.");
-    if (code === "cooldown") return tr("এক মিনিট পরে আবার চেষ্টা করুন।", "Wait a minute and try again.");
-    return tr("কোড পাঠানো যায়নি। ইন্টারনেট দেখে আবার চেষ্টা করুন।", "Could not reach the server. Try again.");
+    if (code === "cooldown")
+      return tr("এক মিনিট পরে আবার চেষ্টা করুন।", "Wait a minute and try again.");
+    return tr(
+      "কোড পাঠানো যায়নি। ইন্টারনেট দেখে আবার চেষ্টা করুন।",
+      "Could not reach the server. Try again.",
+    );
   };
 
   // Send the first code as soon as the screen opens. A "cooldown" reply just means one was sent moments ago.

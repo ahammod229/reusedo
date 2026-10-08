@@ -18,6 +18,7 @@ import { Check, MessageCircle, PackageCheck, Star, Truck } from "lucide-react";
 import { useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router";
+import { HandoverDialog } from "./HandoverDialog";
 
 const STEPS: ExchangeStatus[] = ["requested", "accepted", "scheduled", "completed"];
 
@@ -28,6 +29,7 @@ export function ExchangesPage() {
   const advanceMut = useAdvanceExchange();
   const thanked = useMe((s) => s.thanked);
   const [thanking, setThanking] = useState<Exchange | null>(null);
+  const [handover, setHandover] = useState<Exchange | null>(null);
 
   const label: Record<ExchangeStatus, string> = {
     requested: tr("রিকোয়েস্ট", "Requested"),
@@ -181,9 +183,9 @@ export function ExchangesPage() {
                   )}
                   {(e.status === "scheduled" ||
                     (e.status === "accepted" && e.via === "pickup")) && (
-                    <Button size="sm" onClick={() => advance(e.id)}>
+                    <Button size="sm" onClick={() => setHandover(e)}>
                       {e.role === "giver"
-                        ? tr("হস্তান্তর হয়েছে", "Handed over")
+                        ? tr("হস্তান্তরের কোড", "Handover code")
                         : tr("পেয়েছি", "Received")}
                     </Button>
                   )}
@@ -214,6 +216,7 @@ export function ExchangesPage() {
           })}
         </ul>
       </QueryState>
+      <HandoverDialog exchange={handover} onClose={() => setHandover(null)} />
       {thanking && <ThanksDialog e={thanking} onClose={() => setThanking(null)} />}
     </div>
   );

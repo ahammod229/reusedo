@@ -26,6 +26,22 @@ const wait = <T>(v: T, ms = 250) =>
   new Promise<T>((r) => setTimeout(() => r(structuredClone(v)), ms));
 const STEPS: ExchangeStatus[] = ["requested", "accepted", "scheduled", "completed"];
 
+const WHEN_EN: Record<string, string> = {
+  "২ ঘণ্টা আগে": "2 hours ago",
+  "৫ ঘণ্টা আগে": "5 hours ago",
+  "৩ ঘণ্টা আগে": "3 hours ago",
+  "৪ ঘণ্টা আগে": "4 hours ago",
+  "আজ সকালে": "this morning",
+  "আজ দুপুরে": "this afternoon",
+  গতকাল: "yesterday",
+  "২ দিন আগে": "2 days ago",
+  "৩ দিন আগে": "3 days ago",
+};
+
+// Sample-only: the real code is random, stored hashed, and never derivable from the id.
+const mockHandoverCode = (id: string) =>
+  String([...id].reduce((n, c) => (n * 31 + c.charCodeAt(0)) % 9000, 7) + 1000);
+
 export const mockSource: DataSource = {
   async listFeed(f) {
     return wait(
@@ -98,6 +114,17 @@ export const mockSource: DataSource = {
     return wait(e, 120);
   },
 
+  async getHandoverCode(id) {
+    return wait(mockHandoverCode(id), 120);
+  },
+  async confirmHandover(id, code) {
+    const e = exchanges.find((x) => x.id === id);
+    if (!e) throw new Error("exchange_not_found");
+    if (code !== mockHandoverCode(id)) throw new Error("wrong_code");
+    e.status = "completed";
+    return wait(e, 120);
+  },
+
   async listNotifications() {
     return wait(notifications);
   },
@@ -141,6 +168,41 @@ export const mockSource: DataSource = {
       thanks: [],
     };
     return wait(profile);
+  },
+
+  // Sample numbers so the map is reviewable; the real endpoint returns live aggregates.
+  async getDonationMap() {
+    const sample: [string, number, number, string, string, string][] = [
+      ["ঢাকা", 124, 311, "রাকিব", "ক্লাস ৮-এর বই", "২ ঘণ্টা আগে"],
+      ["চট্টগ্রাম", 61, 142, "নাজমা", "শীতের জামা", "৫ ঘণ্টা আগে"],
+      ["সিলেট", 28, 60, "ফাহিম", "ল্যাপটপ ব্যাগ", "আজ সকালে"],
+      ["রাজশাহী", 33, 71, "শিউলি", "খেলনা সেট", "গতকাল"],
+      ["খুলনা", 27, 55, "তানভীর", "পড়ার টেবিল", "গতকাল"],
+      ["রংপুর", 19, 38, "মাহবুব", "খাতা ১২টি", "২ দিন আগে"],
+      ["বরিশাল", 14, 29, "সুমি", "স্কুল ব্যাগ", "আজ দুপুরে"],
+      ["ময়মনসিংহ", 22, 47, "আরিফ", "গল্পের বই", "৩ ঘণ্টা আগে"],
+      ["গাজীপুর", 41, 96, "রুবেল", "কাঠের বুকশেলফ", "আজ সকালে"],
+      ["কুমিল্লা", 25, 52, "মিতু", "জ্যামিতি বক্স", "৪ ঘণ্টা আগে"],
+      ["বগুড়া", 17, 33, "সোহেল", "সাইকেল", "গতকাল"],
+      ["যশোর", 12, 24, "পারভীন", "কাপড়", "২ দিন আগে"],
+      ["নারায়ণগঞ্জ", 36, 80, "জুয়েল", "টেবিল ফ্যান", "আজ সকালে"],
+      ["কক্সবাজার", 9, 17, "রিয়া", "শিশুদের বই", "৩ দিন আগে"],
+      ["দিনাজপুর", 11, 20, "কবির", "ইউনিফর্ম", "গতকাল"],
+      ["টাঙ্গাইল", 10, 21, "লাবনী", "খাতা-কলম", "২ দিন আগে"],
+    ];
+    const hubs = sample.map(([district, donors, items, name, item, whenBn]) => ({
+      district,
+      donors,
+      items,
+      fresh: /আজ|ঘণ্টা/.test(whenBn),
+      recent: [{ name, item, whenBn, whenEn: WHEN_EN[whenBn] ?? whenBn }],
+    }));
+    return wait({
+      hubs,
+      givenToday: 38,
+      givenThisMonth: hubs.reduce((n, h) => n + h.items, 0),
+      districtsActive: hubs.length,
+    });
   },
 
   async getDashboard() {

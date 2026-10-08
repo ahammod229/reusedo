@@ -139,6 +139,26 @@ export type ReportReason = "spam" | "fraud" | "fake_item" | "inappropriate" | "s
  * `apiSource` is where the real HTTP calls go. Pages never call either directly —
  * they use the hooks in ./hooks.ts.
  */
+/** Donations aggregated per district for the Home map. District level only, never an address. */
+export interface DonationHub {
+  district: string;
+  /** People in this district who gave something away. */
+  donors: number;
+  /** Things given this month. */
+  items: number;
+  /** True when someone here gave something in the last 24 hours (the marker pulses). */
+  fresh: boolean;
+  /** Latest donations from people who chose to appear (first name only). */
+  recent: { name: string; item: string; whenBn: string; whenEn: string }[];
+}
+
+export interface DonationMapData {
+  hubs: DonationHub[];
+  givenToday: number;
+  givenThisMonth: number;
+  districtsActive: number;
+}
+
 export interface DataSource {
   listFeed(filters: FeedFilters): Promise<FeedPost[]>;
   getPost(id: string): Promise<FeedPost | null>;
@@ -150,12 +170,17 @@ export interface DataSource {
 
   listExchanges(): Promise<Exchange[]>;
   advanceExchange(id: string): Promise<Exchange>;
+  /** Giver only: the 4-digit code that proves a pickup handover happened. */
+  getHandoverCode(exchangeId: string): Promise<string>;
+  /** Receiver enters the giver's code; a wrong code is rejected and counted (5 tries). */
+  confirmHandover(exchangeId: string, code: string): Promise<Exchange>;
 
   listNotifications(): Promise<AppNotification[]>;
   markNotificationRead(id: string | "all"): Promise<void>;
 
   getUser(username: string): Promise<UserProfile | null>;
   getDashboard(): Promise<Dashboard>;
+  getDonationMap(): Promise<DonationMapData>;
   /** "I want this" / "I have this" on a post. */
   requestItem(postId: string, input: { message: string; via: Delivery }): Promise<void>;
   reportPost(postId: string, reason: ReportReason, details: string): Promise<void>;

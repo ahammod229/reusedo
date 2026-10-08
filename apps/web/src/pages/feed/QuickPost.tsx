@@ -28,6 +28,8 @@ import {
   X,
 } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
+import { VoiceButton } from "@/features/feed/VoiceButton";
+import { clearDraft, loadDraft, saveDraft } from "@/features/feed/postDraft";
 import { Helmet } from "react-helmet-async";
 import { Link, useSearchParams } from "react-router";
 
@@ -76,6 +78,7 @@ export function QuickPost() {
     qty: "",
   });
   const [limitHit, setLimitHit] = useState(false);
+  const [saved, setSaved] = useState(() => loadDraft<Form>());
   const [published, setPublished] = useState<FeedPost | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const aiDraft = useAiDraft();
@@ -89,6 +92,26 @@ export function QuickPost() {
       for (const u of urls) URL.revokeObjectURL(u);
     };
   }, [files]);
+
+  // Autosave the text a moment after the last keystroke.
+  useEffect(() => {
+    if (published || (!f.title.trim() && !f.description.trim())) return;
+    const id = setTimeout(() => saveDraft({ kind, form: f, savedAt: Date.now() }), 600);
+    return () => clearTimeout(id);
+  }, [f, kind, published]);
+
+  const restore = () => {
+    if (!saved) return;
+    setKind(saved.kind);
+    setF(saved.form);
+    setStage("edit");
+    setSaved(null);
+  };
+
+  const discard = () => {
+    clearDraft();
+    setSaved(null);
+  };
 
   const switchKind = (k: PostKind) => {
     setKind(k);
@@ -157,6 +180,7 @@ export function QuickPost() {
       },
       {
         onSuccess: (p) => {
+          clearDraft();
           setPublished(p);
           setStage("done");
           window.scrollTo({ top: 0 });
@@ -171,6 +195,20 @@ export function QuickPost() {
       <Helmet>
         <title>ReuseDo — {tr("পোস্ট করুন", "New post")}</title>
       </Helmet>
+      {saved && (
+        <output className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border bg-warning-soft p-3 text-sm">
+          <span className="flex-1">
+            📝 {tr("আগের একটি অসমাপ্ত পোস্টের খসড়া আছে।", "You have an unfinished draft.")}
+            {saved.form.title && <b className="ml-1">“{saved.form.title}”</b>}
+          </span>
+          <Button size="sm" onClick={restore}>
+            {tr("ফিরিয়ে আনুন", "Restore")}
+          </Button>
+          <Button size="sm" variant="outline" onClick={discard}>
+            {tr("মুছে ফেলুন", "Discard")}
+          </Button>
+        </output>
+      )}
       <div className="mb-4">
         <h1 className="text-2xl font-extrabold">{tr("পোস্ট করুন", "New post")}</h1>
         <p className="text-sm text-muted-foreground">
@@ -297,9 +335,14 @@ export function QuickPost() {
               )}
 
               <div className="space-y-1.5">
-                <label htmlFor="qp-title" className="text-sm font-semibold">
-                  {kind === "need" ? tr("কী দরকার?", "What do you need?") : tr("শিরোনাম", "Title")}
-                </label>
+                <div className="flex items-center justify-between gap-2">
+                  <label htmlFor="qp-title" className="text-sm font-semibold">
+                    {kind === "need" ? tr("কী দরকার?", "What do you need?") : tr("শিরোনাম", "Title")}
+                  </label>
+                  <VoiceButton
+                    onText={(t) => set("title", `${f.title} ${t}`.trim().slice(0, 80))}
+                  />
+                </div>
                 <Input
                   id="qp-title"
                   value={f.title}
@@ -316,11 +359,16 @@ export function QuickPost() {
               </div>
 
               <div className="space-y-1.5">
-                <label htmlFor="qp-desc" className="text-sm font-semibold">
-                  {kind === "need"
-                    ? tr("কেন দরকার? (ঐচ্ছিক)", "Why? (optional)")
-                    : tr("বিবরণ", "Description")}
-                </label>
+                <div className="flex items-center justify-between gap-2">
+                  <label htmlFor="qp-desc" className="text-sm font-semibold">
+                    {kind === "need"
+                      ? tr("কেন দরকার? (ঐচ্ছিক)", "Why? (optional)")
+                      : tr("বিবরণ", "Description")}
+                  </label>
+                  <VoiceButton
+                    onText={(t) => set("description", `${f.description} ${t}`.trim().slice(0, 500))}
+                  />
+                </div>
                 <Textarea
                   id="qp-desc"
                   rows={3}
