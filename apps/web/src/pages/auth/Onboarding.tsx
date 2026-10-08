@@ -2,15 +2,19 @@ import { useLang, useNum, useT, useTr } from "@/features/feed/i18n";
 import { useMe } from "@/features/feed/me";
 import { CATEGORIES, type CategoryId, EDU_LEVELS, type EduLevel } from "@/features/feed/types";
 import { BD_DIVISIONS, isBdMobile, normalizePhone } from "@/features/geo/bd";
+import { DISTRICT_CENTERS, type LatLng, coarse, inBangladesh } from "@/features/geo/places";
 import { Button, Switch, cn } from "@/shared/components/ui";
 import { Check, LocateFixed, MapPin, PartyPopper, ShieldCheck } from "lucide-react";
-import { useState } from "react";
+import { Suspense, lazy, useState } from "react";
 import { Link } from "react-router";
 import { AuthShell } from "./components/AuthShell";
 import { ErrorBanner, Field, SelectField } from "./components/Field";
 import { saveVerificationProfile } from "./otp.api";
 
 type Step = 1 | 2 | 3 | 4;
+
+// Leaflet only loads if someone opens the picker.
+const LocationPicker = lazy(() => import("@/features/geo/LocationPicker"));
 
 export function Onboarding() {
   const t = useT();
@@ -34,6 +38,41 @@ export function Onboarding() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
+  const [pin, setPin] = useState<LatLng | null>(null);
+  const [picking, setPicking] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [locNote, setLocNote] = useState<string | null>(null);
+  const locateMe = () => {
+    if (!navigator.geolocation) {
+      setLocNote(
+        tr(
+          "এই ব্রাউজারে লোকেশন পাওয়া যায় না — ম্যাপে পিন করুন",
+          "Location isn't available — pin it on the map",
+        ),
+      );
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocating(false);
+        const p: LatLng = [pos.coords.latitude, pos.coords.longitude];
+        if (inBangladesh(p)) setPin(coarse(p));
+        else
+          setLocNote(
+            tr(
+              "আপনার অবস্থান বাংলাদেশের বাইরে দেখাচ্ছে — ম্যাপে পিন করুন",
+              "You appear to be outside Bangladesh — pin it on the map",
+            ),
+          );
+      },
+      () => {
+        setLocating(false);
+        setLocNote(tr("অনুমতি পাওয়া যায়নি — ম্যাপে পিন করুন", "Permission denied — pin it on the map"));
+      },
+      { timeout: 8000 },
+    );
+  };
   const [f, setF] = useState({
     division: "",
     district: "",
@@ -65,7 +104,11 @@ export function Onboarding() {
     setSaving(true);
     setError(null);
     try {
-      await saveVerificationProfile({ ...f, phone: normalizePhone(f.phone) });
+      await saveVerificationProfile({
+        ...f,
+        phone: normalizePhone(f.phone),
+        pin: pin ?? undefined,
+      });
       setTouched(false);
       setStep(4);
     } catch (e) {
@@ -171,13 +214,47 @@ export function Onboarding() {
           />
 
           <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" className="flex-1 basis-44" disabled>
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1 basis-44"
+              disabled={locating}
+              onClick={locateMe}
+            >
               <LocateFixed className="mr-2 h-4 w-4" /> {t("useMyLocation")}
             </Button>
-            <Button type="button" variant="outline" className="flex-1 basis-44" disabled>
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1 basis-44"
+              onClick={() => setPicking(true)}
+            >
               <MapPin className="mr-2 h-4 w-4" /> {t("pinOnMap")}
             </Button>
           </div>
+          {(pin || locNote) && (
+            <p
+              className={cn("text-sm font-medium", pin ? "text-success" : "text-muted-foreground")}
+            >
+              {pin
+                ? tr(
+                    "📍 ম্যাপে এলাকা চিহ্নিত হয়েছে (প্রায় ১০০ মিটারের মধ্যে)",
+                    "📍 Area marked on the map (within ~100 m)",
+                  )
+                : locNote}
+            </p>
+          )}
+          {picking && (
+            <Suspense fallback={null}>
+              <LocationPicker
+                open={picking}
+                onOpenChange={setPicking}
+                value={pin}
+                start={DISTRICT_CENTERS[f.district] ?? null}
+                onPick={setPin}
+              />
+            </Suspense>
+          )}
 
           <p className="flex gap-2 rounded-xl bg-muted p-3 text-xs text-muted-foreground">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />

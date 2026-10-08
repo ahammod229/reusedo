@@ -6,19 +6,55 @@ import { CategoryStrip, FeedToolbar } from "@/features/feed/FeedFilters";
 import { FeedRail } from "@/features/feed/FeedRail";
 import { ActiveFilters, FilterButton, FilterSheet } from "@/features/feed/FilterSheet";
 import { PostCard } from "@/features/feed/PostCard";
-import { RESET_ADVANCED, useFeedParams } from "@/features/feed/feedParams";
+import { type FeedView, RESET_ADVANCED, useFeedParams } from "@/features/feed/feedParams";
 import { useT, useTr } from "@/features/feed/i18n";
 import type { CategoryId } from "@/features/feed/types";
-import { Button } from "@/shared/components/ui";
-import { Camera, HandHeart } from "lucide-react";
-import { Fragment, useState } from "react";
+import { Button, cn } from "@/shared/components/ui";
+import { Camera, HandHeart, List, Map as MapIcon } from "lucide-react";
+import { Fragment, Suspense, lazy, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router";
+
+// Leaflet is ~150 KB; only load it when someone opens the map.
+const PostMap = lazy(() => import("@/features/geo/PostMap"));
+
+function ViewToggle({ view, onChange }: { view: FeedView; onChange: (v: FeedView) => void }) {
+  const tr = useTr();
+  const opts = [
+    ["list", List, tr("তালিকা", "List")],
+    ["map", MapIcon, tr("ম্যাপ", "Map")],
+  ] as const;
+  return (
+    <fieldset
+      className="m-0 flex h-11 shrink-0 rounded-xl border bg-card p-1"
+      aria-label={tr("দেখার ধরন", "View")}
+    >
+      {opts.map(([v, Icon, label]) => (
+        <button
+          key={v}
+          type="button"
+          aria-pressed={view === v}
+          aria-label={label}
+          onClick={() => onChange(v)}
+          className={cn(
+            "flex items-center gap-1.5 rounded-lg px-2.5 text-sm font-semibold transition-colors",
+            view === v
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          <Icon className="h-4 w-4" />
+          <span className="hidden lg:inline">{label}</span>
+        </button>
+      ))}
+    </fieldset>
+  );
+}
 
 export function FeedPage() {
   const t = useT();
   const tr = useTr();
-  const { filters, update } = useFeedParams();
+  const { filters, update, view, setView } = useFeedParams();
   const [sheet, setSheet] = useState(false);
 
   const { data: posts = [], isLoading, error, refetch } = useFeed(filters);
@@ -39,13 +75,18 @@ export function FeedPage() {
     (i + 1) / every <= (ads?.sessionCap ?? 0);
 
   return (
-    <div className="mx-auto flex w-full max-w-[64rem] justify-center gap-6 px-4 py-4">
-      <div className="w-full min-w-0 max-w-2xl space-y-4">
+    <div
+      className={cn(
+        "mx-auto flex w-full justify-center gap-6 px-4 py-4",
+        view === "map" ? "max-w-6xl" : "max-w-[64rem]",
+      )}
+    >
+      <div className={cn("w-full min-w-0 space-y-4", view === "list" && "max-w-2xl")}>
         <Helmet>
           <title>ReuseDo — {t("feed")}</title>
         </Helmet>
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className={cn("grid grid-cols-2 gap-2", view === "map" && "hidden")}>
           <Link
             to="/post/new"
             className="flex items-center gap-2.5 rounded-2xl border bg-card p-3 shadow-sm transition-colors hover:border-offer/40 hover:bg-offer-soft/50"
@@ -85,12 +126,26 @@ export function FeedPage() {
           onKind={(k) => update({ kind: k })}
           scope={filters.scope}
           onScope={(s) => update({ scope: s })}
-          extra={<FilterButton count={advancedCount(filters)} onClick={() => setSheet(true)} />}
+          extra={
+            <>
+              <ViewToggle view={view} onChange={setView} />
+              <FilterButton count={advancedCount(filters)} onClick={() => setSheet(true)} />
+            </>
+          }
         />
         <ActiveFilters filters={filters} onChange={update} />
 
         <QueryState isLoading={isLoading} error={error} onRetry={refetch}>
-          {posts.length === 0 ? (
+          {view === "map" ? (
+            <Suspense
+              fallback={<div className="h-[min(70vh,640px)] animate-pulse rounded-3xl bg-muted" />}
+            >
+              <PostMap
+                posts={posts}
+                className="h-[calc(100dvh-20rem)] min-h-[24rem] md:h-[calc(100dvh-17rem)]"
+              />
+            </Suspense>
+          ) : posts.length === 0 ? (
             <div className="rounded-2xl border border-dashed py-14 text-center">
               <div className="mb-2 text-4xl">🔍</div>
               <p className="font-semibold">
@@ -134,7 +189,7 @@ export function FeedPage() {
           )}
         </QueryState>
       </div>
-      <FeedRail />
+      {view === "list" && <FeedRail />}
       <FilterSheet
         open={sheet}
         onOpenChange={setSheet}

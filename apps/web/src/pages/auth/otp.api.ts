@@ -50,6 +50,8 @@ export async function saveVerificationProfile(data: {
   area: string;
   landmark: string;
   phone: string;
+  /** Optional map pin, already rounded to ~100 m. */
+  pin?: [number, number];
 }): Promise<void> {
   if (MOCK) return;
   try {

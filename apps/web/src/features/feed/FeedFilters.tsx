@@ -28,10 +28,10 @@ export function FeedToolbar({
   extra?: ReactNode;
 }) {
   const tr = useTr();
-  const tabs: [PostKind | "all", string][] = [
-    ["all", tr("সব", "All")],
-    ["offer", `🎁 ${tr("দিন", "Give")}`],
-    ["need", `🙏 ${tr("চাই", "Need")}`],
+  const tabs: [PostKind | "all", string, string][] = [
+    ["all", "", tr("সব", "All")],
+    ["offer", "🎁", tr("দিন", "Give")],
+    ["need", "🙏", tr("চাই", "Need")],
   ];
   const scopes: [Scope, string][] = [
     ["area", tr("আমার এলাকা", "My area")],
@@ -44,7 +44,7 @@ export function FeedToolbar({
     <div className="sticky top-14 z-10 -mx-4 border-b bg-background/90 px-4 py-2.5 backdrop-blur sm:top-16">
       <div className="flex items-center gap-2">
         <div className="grid flex-1 grid-cols-3 gap-1 rounded-xl bg-muted p-1" role="tablist">
-          {tabs.map(([k, label]) => (
+          {tabs.map(([k, emoji, label]) => (
             <button
               key={k}
               type="button"
@@ -52,12 +52,17 @@ export function FeedToolbar({
               aria-selected={kind === k}
               onClick={() => onKind(k)}
               className={cn(
-                "rounded-lg px-2 py-2 text-sm font-semibold transition-all",
+                "whitespace-nowrap rounded-lg px-1.5 py-2 text-sm font-semibold transition-all",
                 kind === k
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
+              {emoji && (
+                <span className="mr-1 hidden sm:inline" aria-hidden>
+                  {emoji}
+                </span>
+              )}
               {label}
             </button>
           ))}

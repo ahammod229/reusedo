@@ -61,10 +61,18 @@ export const RESET_ADVANCED: Partial<FeedFilters> = {
   sort: "near",
 };
 
+export type FeedView = "list" | "map";
+
 export function useFeedParams() {
   const [params, setParams] = useSearchParams();
   const filters = parseFilters(params);
-  const update = (patch: Partial<FeedFilters>) =>
-    setParams(toParams({ ...filters, ...patch }), { replace: true });
-  return { filters, update };
+  const view: FeedView = params.get("view") === "map" ? "map" : "list";
+  const write = (f: FeedFilters, v: FeedView) => {
+    const next = toParams(f);
+    if (v === "map") next.set("view", "map");
+    setParams(next, { replace: true });
+  };
+  const update = (patch: Partial<FeedFilters>) => write({ ...filters, ...patch }, view);
+  const setView = (v: FeedView) => write(filters, v);
+  return { filters, update, view, setView };
 }

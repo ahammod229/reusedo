@@ -109,6 +109,8 @@ Page ──► hooks.ts (TanStack Query) ──► source ──┬─► mockSo
 |---|---|---|---|---|---|
 | হোম ড্যাশবোর্ড | `/home` | `pages/me/HomeDashboard` | `getDashboard` | **NEW** `GET /api/me/dashboard` | অপেক্ষমাণ কাজ, আপনার জন্য, কাছের দরকার, সম্মিলিত লক্ষ্য — সংখ্যা সার্ভার থেকে (`docs/STUDENT_UX.md`) |
 | ফিড | `/feed` | `pages/feed/FeedPage` | `listFeed` | `GET /api/products`, `/api/needs` | **NEW** একীভূত `/api/feed`। ফিল্টার URL-এ (`features/feed/feedParams.ts`); একই নিয়ম `features/data/filtering.ts` → সার্ভারে SQL-এ |
+| ম্যাপ ভিউ | `/feed?view=map` | `features/geo/PostMap` (Leaflet, আলাদা chunk) | `listFeed` (একই ফিল্টার) | পোস্টে এলাকার কেন্দ্রবিন্দু (`area_lat/lng`) | দূরে: জেলা-বাবল; কাছে: এলাকা-পিন, কাছাকাছি পিন একত্রে। বাংলাদেশের বাইরে ঝাপসা, সীমানা রেখা (`bdOutline.ts`, Natural Earth)। সর্বোচ্চ জুম ১৫ — কখনো ঠিকানা নয় |
+| ম্যাপে পিন | অনবোর্ডিং ধাপ ২ | `features/geo/LocationPicker` | `saveVerificationProfile({pin})` | ঠিকানা টেবিলে `pin_lat/lng` | ~১০০ মিটারে গোল করা (`coarse`); "আমার লোকেশন" ব্রাউজার জিওলোকেশন |
 | পোস্ট লেখা | `/post/new`, `/post/new?kind=need` | `pages/feed/QuickPost` | `publishPost` | পোস্ট রুট | নতুন ফিল্ড: `edu {level, detail}`, `delivery[]`, `urgency`, `qty`, `status` |
 | রিকোয়েস্ট/রিপোর্ট | কার্ড, `/post/:id?request=1` | `features/feed/PostBits` | `requestItem`, `reportPost` | **NEW** `POST /api/posts/:id/requests`, `POST /api/reports` | |
 | সেভ করা খোঁজ | `/saved?tab=searches` | `features/feed/alerts.ts` | (এখন ডিভাইসে) | **NEW** `saved_searches` + মিলে গেলে নোটিফিকেশন | |
@@ -289,6 +291,11 @@ Firebase Auth ডিফল্টে **লিংক** পাঠায়, কো�
 কেন Vercel নয়: Vercel ভালো হোস্টিং, কিন্তু ডাটাবেস দেয় না আর এই প্রজেক্টের Socket.io (রিয়েলটাইম চ্যাট) তার সার্ভারলেসে চলে না — তাহলে তিনটা আলাদা সেবা সামলাতে হতো। Firebase-এর Cloud Functions বাইরের API (Gemini, Steadfast) ডাকতে Blaze (কার্ড লাগে) প্ল্যান চায়, তাই সেটাও এখন নয়।
 
 ডিপ্লয় (একবার সেটআপের পর): `pnpm --filter @reusedo/web build` → `firebase deploy --only hosting:web`। `.firebaserc`-এ প্রজেক্ট `binimoy-we` (পুরোনো নাম) — নতুন Firebase প্রজেক্ট বানালে এটা বদলাবেন। `firebase.json`-এর `admin` টার্গেট এখন অপ্রয়োজনীয় (অ্যাডমিন ওয়েব অ্যাপের ভেতরেই `/admin`)।
+
+---
+
+### ম্যাপ টাইল
+`VITE_MAP_TILE_URL` খালি থাকলে OpenStreetMap-এর ফ্রি সার্ভার ব্যবহার হয় — ডেভেলপমেন্টে ঠিক আছে, কিন্তু OSM-এর নীতি অনুযায়ী অ্যাপের পুরো ট্রাফিক সেখানে চালানো যায় না। লঞ্চের আগে Barikoi (বাংলাদেশি, বাংলা লেবেল) বা MapTiler-এর কী নিয়ে URL বসান; Admin → API-তে "ম্যাপ" ইন্টিগ্রেশনও সেই কী ব্যবহার করবে (জিওকোডিং)। অ্যাট্রিবিউশন লেখা সরাবেন না।
 
 ---
 
