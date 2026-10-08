@@ -1,6 +1,8 @@
 import cors from "cors";
 import express, { type NextFunction, type Request, type Response } from "express";
 import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import { ZodError } from "zod";
 
 import { adminRouter } from "./routes/admin.routes";
 import { analyticsRouter } from "./routes/analytics.routes";
@@ -21,26 +23,45 @@ import { verificationRoutes } from "./routes/verification.routes";
 
 const app = express();
 
+// Behind Render/Firebase proxies: needed so rate limits see the real client IP.
+app.set("trust proxy", 1);
+app.disable("x-powered-by");
 app.use(helmet());
+
 const allowedOrigins = [
   process.env.CLIENT_URL,
   process.env.ADMIN_URL,
-  "http://localhost:5173",
-  "http://localhost:5174"
+  ...(process.env.NODE_ENV === "production" ? [] : ["http://localhost:5173", "http://localhost:5174"]),
 ].filter(Boolean);
 
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-  credentials: true
-}));
-app.use(express.json());
+class CorsError extends Error {}
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) callback(null, true);
+      else callback(new CorsError("Origin not allowed"));
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    credentials: true,
+  }),
+);
+
+// Small JSON bodies only; uploads go through multer with its own limits.
+app.use(express.json({ limit: "100kb" }));
+
+const limiter = (windowMin: number, max: number) =>
+  rateLimit({
+    windowMs: windowMin * 60 * 1000,
+    limit: max,
+    standardHeaders: "draft-7",
+    legacyHeaders: false,
+    message: { success: false, message: "Too many requests, please slow down." },
+  });
+
+app.use("/api", limiter(15, 600));
+app.use("/api/auth", limiter(15, 60));
+app.use("/api/auth/email-code", limiter(15, 12));
 
 // Routes
 app.use("/api/auth", authRoutes);
@@ -73,6 +94,12 @@ app.get("/live", (req: Request, res: Response) => {
 });
 
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  if (err instanceof ZodError) {
+    return res.status(400).json({ success: false, message: "Validation error", details: err.issues });
+  }
+  if (err instanceof CorsError) {
+    return res.status(403).json({ success: false, message: "Origin not allowed" });
+  }
   console.error(err.stack);
   res.status(500).json({ success: false, message: "Internal Server Error" });
 });

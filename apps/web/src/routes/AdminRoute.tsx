@@ -1,14 +1,14 @@
-import { useAuthStore } from "@/features/auth";
+import { isAdminProfile, useAuthStore, useProfile } from "@/features/auth";
 import { UI_PREVIEW } from "@/shared/uiPreview";
 import { Navigate, Outlet } from "react-router";
 
 export const AdminRoute = () => {
-  const { user, status } = useAuthStore();
-  const loading = status === "loading";
+  const { status } = useAuthStore();
+  const { data: profile, isLoading } = useProfile();
 
   if (UI_PREVIEW) return <Outlet />;
 
-  if (loading) {
+  if (status === "loading" || (status === "authenticated" && isLoading)) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -16,8 +16,9 @@ export const AdminRoute = () => {
     );
   }
 
-  if (!user || (user as { role?: string }).role !== "ADMIN") {
-    return <Navigate to="/" replace />;
+  // This only hides the screens. Every /api/admin call is checked again on the server.
+  if (status !== "authenticated" || !isAdminProfile(profile)) {
+    return <Navigate to={status === "authenticated" ? "/home" : "/login"} replace />;
   }
 
   return <Outlet />;

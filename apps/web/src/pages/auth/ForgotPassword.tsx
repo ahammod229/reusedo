@@ -1,5 +1,5 @@
-import { AuthService } from "@/features/auth";
-import { useT } from "@/features/feed/i18n";
+import { AuthService, authErrorText } from "@/features/auth";
+import { useT, useTr } from "@/features/feed/i18n";
 import { Button } from "@/shared/components/ui";
 import { type ForgotPasswordInput, forgotPasswordSchema } from "@/shared/validation";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,6 +11,7 @@ import { ErrorBanner, Field } from "./components/Field";
 
 export const ForgotPassword = () => {
   const t = useT();
+  const tr = useTr();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -28,9 +29,10 @@ export const ForgotPassword = () => {
     try {
       await AuthService.resetPassword(data);
       setSuccess(true);
-      // biome-ignore lint/suspicious/noExplicitAny: Firebase error
-    } catch (err: any) {
-      setError(err.message || "Failed to send reset email.");
+    } catch (err) {
+      // Same message whether or not the email exists, so this can't be used to probe accounts.
+      if ((err as { code?: string })?.code === "auth/user-not-found") setSuccess(true);
+      else setError(authErrorText(err, tr));
     } finally {
       setLoading(false);
     }

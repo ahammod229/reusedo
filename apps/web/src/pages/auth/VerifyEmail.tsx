@@ -1,5 +1,5 @@
 import { AuthService, useAuthStore } from "@/features/auth";
-import { useNum, useT } from "@/features/feed/i18n";
+import { useNum, useT, useTr } from "@/features/feed/i18n";
 import { Button } from "@/shared/components/ui";
 import { MailCheck } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -7,21 +7,39 @@ import { useNavigate } from "react-router";
 import { AuthShell } from "./components/AuthShell";
 import { ErrorBanner } from "./components/Field";
 import { OtpInput } from "./components/OtpInput";
-import { resendEmailCode, verifyEmailCode } from "./otp.api";
+import { sendEmailCode, verifyEmailCode } from "./otp.api";
 
 const RESEND_SECONDS = 60;
 
 export const VerifyEmail = () => {
   const t = useT();
+  const tr = useTr();
   const num = useNum();
   const navigate = useNavigate();
-  const email = useAuthStore((s) => s.user?.email) ?? "you@example.com";
+  const email = useAuthStore((s) => s.user?.email) ?? "";
   const [code, setCode] = useState("");
   const [wrong, setWrong] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [left, setLeft] = useState(RESEND_SECONDS);
+
+  const explain = (e: unknown) => {
+    const code = (e as Error).message;
+    if (code === "expired") return tr("কোডের মেয়াদ শেষ — নতুন কোড নিন।", "Code expired — request a new one.");
+    if (code === "too_many_attempts")
+      return tr("অনেকবার ভুল হয়েছে — নতুন কোড নিন।", "Too many wrong tries — request a new code.");
+    if (code === "cooldown") return tr("এক মিনিট পরে আবার চেষ্টা করুন।", "Wait a minute and try again.");
+    return tr("কোড পাঠানো যায়নি। ইন্টারনেট দেখে আবার চেষ্টা করুন।", "Could not reach the server. Try again.");
+  };
+
+  // Send the first code as soon as the screen opens. A "cooldown" reply just means one was sent moments ago.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: run once on mount
+  useEffect(() => {
+    sendEmailCode().catch((e) => {
+      if ((e as Error).message !== "cooldown") setError(explain(e));
+    });
+  }, []);
 
   useEffect(() => {
     if (left <= 0) return;
@@ -42,7 +60,7 @@ export const VerifyEmail = () => {
         setWrong(true);
         setError(t("wrongCode"));
         setCode("");
-      } else setError((e as Error).message);
+      } else setError(explain(e));
     } finally {
       setLoading(false);
     }
@@ -57,11 +75,11 @@ export const VerifyEmail = () => {
   const resend = async () => {
     setError(null);
     try {
-      await resendEmailCode();
+      await sendEmailCode();
       setInfo(t("codeSentAgain"));
       setLeft(RESEND_SECONDS);
     } catch (e) {
-      setError((e as Error).message);
+      setError(explain(e));
     }
   };
 

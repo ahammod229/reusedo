@@ -2,7 +2,6 @@ import type { ForgotPasswordInput, LoginInput, RegisterInput } from "@/shared/va
 import {
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
-  sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -22,7 +21,6 @@ export class AuthService {
     await updateProfile(userCredential.user, {
       displayName: data.displayName,
     });
-    await sendEmailVerification(userCredential.user);
     return userCredential;
   }
 
@@ -39,17 +37,18 @@ export class AuthService {
     return signOut(auth);
   }
 
-  static async sendVerificationEmail() {
+  static async getIdToken(forceRefresh = false): Promise<string | null> {
     if (auth.currentUser) {
-      return sendEmailVerification(auth.currentUser);
-    }
-    throw new Error("No authenticated user.");
-  }
-
-  static async getIdToken(): Promise<string | null> {
-    if (auth.currentUser) {
-      return auth.currentUser.getIdToken();
+      return auth.currentUser.getIdToken(forceRefresh);
     }
     return null;
+  }
+
+  /** Re-reads emailVerified from Firebase and refreshes the token the API checks. */
+  static async refreshVerification(): Promise<boolean> {
+    if (!auth.currentUser) return false;
+    await auth.currentUser.reload();
+    await auth.currentUser.getIdToken(true);
+    return auth.currentUser.emailVerified;
   }
 }

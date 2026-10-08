@@ -1,21 +1,49 @@
-// Seam for the email-code endpoints. The real calls (send 6-digit code via the
-// email provider, verify with expiry + attempt limits) arrive with the backend.
-// Until then the dev build accepts 123456 so the flow can be reviewed; the
-// production build refuses instead of faking a verified account.
-const NOT_READY = "Email verification is not connected yet.";
+import { AuthService } from "@/features/auth";
+import { apiClient } from "@/services/api";
+import { UI_PREVIEW } from "@/shared/uiPreview";
+import { isAxiosError } from "axios";
+
+// Email-code endpoints live on the API (apps/api/src/services/email-code.service.ts):
+// the code is hashed, expires in 10 minutes, allows 5 wrong tries and one resend a minute.
+// Dev shortcut: set VITE_USE_MOCK=true and 123456 is accepted without a backend.
+const MOCK = import.meta.env.DEV && (UI_PREVIEW || import.meta.env.VITE_USE_MOCK === "true");
+
+const fail = (e: unknown): never => {
+  if (isAxiosError(e)) {
+    const code = e.response?.data?.code as string | undefined;
+    if (code === "invalid_code") throw new Error("invalid_code");
+    if (code) throw new Error(code);
+  }
+  throw new Error("network");
+};
+
+export async function sendEmailCode(): Promise<void> {
+  if (MOCK) return;
+  try {
+    await apiClient.post("/auth/email-code/send");
+  } catch (e) {
+    fail(e);
+  }
+}
+
+export const resendEmailCode = sendEmailCode;
 
 export async function verifyEmailCode(code: string): Promise<void> {
-  if (!import.meta.env.DEV) throw new Error(NOT_READY);
-  await new Promise((r) => setTimeout(r, 700));
-  if (code !== "123456") throw new Error("invalid_code");
+  if (MOCK) {
+    await new Promise((r) => setTimeout(r, 500));
+    if (code !== "123456") throw new Error("invalid_code");
+    return;
+  }
+  try {
+    await apiClient.post("/auth/email-code/verify", { code });
+  } catch (e) {
+    fail(e);
+  }
+  // The server flipped emailVerified; pull a fresh token so later writes are accepted.
+  await AuthService.refreshVerification();
 }
 
-export async function resendEmailCode(): Promise<void> {
-  if (!import.meta.env.DEV) throw new Error(NOT_READY);
-  await new Promise((r) => setTimeout(r, 400));
-}
-
-export async function saveVerificationProfile(_data: {
+export async function saveVerificationProfile(data: {
   division: string;
   district: string;
   upazila: string;
@@ -23,6 +51,16 @@ export async function saveVerificationProfile(_data: {
   landmark: string;
   phone: string;
 }): Promise<void> {
-  if (!import.meta.env.DEV) throw new Error(NOT_READY);
-  await new Promise((r) => setTimeout(r, 700));
+  if (MOCK) return;
+  try {
+    // Postal code is not collected yet, so the full address book entry is created later in Settings.
+    await apiClient.patch("/users/me", {
+      phone_number: data.phone,
+      district: data.district,
+      upazila: data.upazila,
+    });
+    await apiClient.post("/auth/session");
+  } catch (e) {
+    fail(e);
+  }
 }

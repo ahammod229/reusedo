@@ -1,5 +1,5 @@
-import { AuthService } from "@/features/auth";
-import { useT } from "@/features/feed/i18n";
+import { AuthService, authErrorText, isSilentAuthError } from "@/features/auth";
+import { useT, useTr } from "@/features/feed/i18n";
 import { Button } from "@/shared/components/ui";
 import { type RegisterInput, registerSchema } from "@/shared/validation";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,6 +12,7 @@ import { GoogleButton } from "./components/GoogleButton";
 
 export const Register = () => {
   const t = useT();
+  const tr = useTr();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -28,9 +29,8 @@ export const Register = () => {
     try {
       await AuthService.register(data);
       navigate("/verify-email");
-      // biome-ignore lint/suspicious/noExplicitAny: Firebase error
-    } catch (err: any) {
-      setError(err.message || "Failed to register. Please try again.");
+    } catch (err) {
+      setError(authErrorText(err, tr));
     } finally {
       setLoading(false);
     }
@@ -40,9 +40,8 @@ export const Register = () => {
     try {
       await AuthService.loginWithGoogle();
       navigate("/onboarding");
-      // biome-ignore lint/suspicious/noExplicitAny: Firebase error
-    } catch (err: any) {
-      setError(err.message || "Google sign up failed.");
+    } catch (err) {
+      if (!isSilentAuthError(err)) setError(authErrorText(err, tr));
     }
   };
 

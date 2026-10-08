@@ -1,5 +1,5 @@
-import { AuthService } from "@/features/auth";
-import { useT } from "@/features/feed/i18n";
+import { AuthService, authErrorText, isSilentAuthError } from "@/features/auth";
+import { useT, useTr } from "@/features/feed/i18n";
 import { Button } from "@/shared/components/ui";
 import { type LoginInput, loginSchema } from "@/shared/validation";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,6 +12,7 @@ import { GoogleButton } from "./components/GoogleButton";
 
 export const Login = () => {
   const t = useT();
+  const tr = useTr();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -29,7 +30,7 @@ export const Login = () => {
       await AuthService.login(data);
       navigate("/home");
     } catch (err) {
-      setError((err as Error).message || "Failed to login. Please check your credentials.");
+      setError(authErrorText(err, tr));
     } finally {
       setLoading(false);
     }
@@ -39,9 +40,8 @@ export const Login = () => {
     try {
       await AuthService.loginWithGoogle();
       navigate("/home");
-      // biome-ignore lint/suspicious/noExplicitAny: Firebase error
-    } catch (err: any) {
-      setError(err.message || "Google login failed.");
+    } catch (err) {
+      if (!isSilentAuthError(err)) setError(authErrorText(err, tr));
     }
   };
 

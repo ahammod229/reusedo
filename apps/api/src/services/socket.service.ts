@@ -1,11 +1,11 @@
 import type { Server as HTTPServer } from "node:http";
 import { Server as SocketIOServer } from "socket.io";
+import { adminAuth } from "../config/firebase-admin";
+import { ChatRepository, UserRepository } from "../database";
 
 // biome-ignore lint/complexity/noStaticOnlyClass: Service classes are used as namespaces
 export class SocketService {
   private static io: SocketIOServer;
-  // Map of userId to socketId
-  private static userSockets: Map<string, string> = new Map();
 
   static initialize(httpServer: HTTPServer) {
     const allowedOrigins = [
@@ -22,37 +22,41 @@ export class SocketService {
       },
     });
 
+    // Every socket must present a valid Firebase ID token. The rooms it may join
+    // come from that verified identity, never from ids the client sends.
+    SocketService.io.use(async (socket, next) => {
+      try {
+        const token = socket.handshake.auth?.token;
+        if (typeof token !== "string") return next(new Error("unauthorized"));
+        const decoded = await adminAuth.verifyIdToken(token);
+        const profile = await UserRepository.getProfileByUid(decoded.uid);
+        if (!profile) return next(new Error("unauthorized"));
+        socket.data.userId = profile.id;
+        next();
+      } catch {
+        next(new Error("unauthorized"));
+      }
+    });
+
     SocketService.io.on("connection", (socket) => {
-      console.log(`Socket connected: ${socket.id}`);
+      const userId = socket.data.userId as string;
+      // One room per user covers all of their open tabs and devices.
+      socket.join(userId);
 
-      // When a user authenticates with socket
-      socket.on("authenticate", (userId: string) => {
-        SocketService.userSockets.set(userId, socket.id);
-        // Also join a room for their own ID so we can broadcast to all their devices
-        socket.join(userId);
-        console.log(`User ${userId} authenticated on socket ${socket.id}`);
-      });
-
-      // Join a specific conversation room
-      socket.on("join_conversation", (conversationId: string) => {
-        socket.join(`conversation_${conversationId}`);
-        console.log(`Socket ${socket.id} joined conversation_${conversationId}`);
-      });
-
-      // Leave a conversation room
-      socket.on("leave_conversation", (conversationId: string) => {
-        socket.leave(`conversation_${conversationId}`);
-      });
-
-      socket.on("disconnect", () => {
-        console.log(`Socket disconnected: ${socket.id}`);
-        // Remove user from tracking
-        for (const [userId, socketId] of SocketService.userSockets.entries()) {
-          if (socketId === socket.id) {
-            SocketService.userSockets.delete(userId);
-            break;
-          }
+      socket.on("join_conversation", async (conversationId: unknown) => {
+        if (typeof conversationId !== "string") return;
+        try {
+          // Returns null unless this user is a participant of the conversation.
+          const conversation = await ChatRepository.getConversationById(conversationId, userId);
+          if (!conversation) return socket.emit("error_message", "not_allowed");
+          socket.join(`conversation_${conversationId}`);
+        } catch {
+          socket.emit("error_message", "not_allowed");
         }
+      });
+
+      socket.on("leave_conversation", (conversationId: unknown) => {
+        if (typeof conversationId === "string") socket.leave(`conversation_${conversationId}`);
       });
     });
   }

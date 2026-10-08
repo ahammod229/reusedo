@@ -1,6 +1,5 @@
-import { AuthService, auth, useAuthStore } from "@/features/auth";
+import { AuthService, auth, useAuthStore, useProfile } from "@/features/auth";
 import { apiClient, setupAuthInterceptor } from "@/services/api";
-import { useQuery } from "@tanstack/react-query";
 import { type User, onAuthStateChanged } from "firebase/auth";
 import type React from "react";
 import { createContext, useContext, useEffect } from "react";
@@ -15,7 +14,7 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType>({ isReady: false });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const { setAuth, user } = useAuthStore();
+  const { setAuth } = useAuthStore();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: User | null) => {
@@ -35,16 +34,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => unsubscribe();
   }, [setAuth]);
 
-  // Fetch backend profile data when user is authenticated
-  const { isLoading: profileLoading } = useQuery({
-    queryKey: ["auth", "me"],
-    queryFn: async () => {
-      const response = await apiClient.get("/auth/me");
-      return response.data.profile;
-    },
-    enabled: !!user,
-    retry: false,
-  });
+  // Backend profile (role, phone, district) — shared cache, also read by the route guards
+  const { isLoading: profileLoading } = useProfile();
 
   const isReady = useAuthStore((state) => state.status !== "loading") && !profileLoading;
 
