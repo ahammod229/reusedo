@@ -30,7 +30,6 @@ export * from "./notifications/NotificationCenter";
 export * from "./trust/ReputationDashboard";
 export * from "./trust/VerificationForm";
 
-export * from "./orders/OrderConfirmation";
 export * from "./help";
 export * from "./about";
 export * from "./contact";
