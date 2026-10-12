@@ -63,9 +63,18 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
     final f = ref.watch(feedFiltersProvider);
     final feed = ref.watch(feedProvider(f));
 
-    Widget chip(String label, bool on, VoidCallback tap) => Padding(
+    // The emoji sits in the chip's avatar slot instead of inside the label, so the
+    // label is always measured and painted with the same font and never clips.
+    Widget chip(String label, bool on, VoidCallback tap, {String? emoji}) => Padding(
           padding: const EdgeInsets.only(right: 8),
-          child: ChoiceChip(label: Text(label), selected: on, onSelected: (_) => tap(), showCheckmark: false),
+          child: ChoiceChip(
+            avatar: emoji == null ? null : Text(emoji),
+            label: Text(label),
+            selected: on,
+            onSelected: (_) => tap(),
+            showCheckmark: false,
+            visualDensity: VisualDensity.compact,
+          ),
         );
 
     return Scaffold(
@@ -108,8 +117,8 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
                 height: 38,
                 child: ListView(scrollDirection: Axis.horizontal, children: [
                   chip(t('সব', 'All'), f.kind == null, () => _update((x) => x.copyWith(kind: null))),
-                  chip('🎁 ${t('দিচ্ছি', 'Give')}', f.kind == PostKind.offer, () => _update((x) => x.copyWith(kind: PostKind.offer))),
-                  chip('🙏 ${t('চাই', 'Need')}', f.kind == PostKind.need, () => _update((x) => x.copyWith(kind: PostKind.need))),
+                  chip(t('দিচ্ছি', 'Give'), f.kind == PostKind.offer, () => _update((x) => x.copyWith(kind: PostKind.offer)), emoji: '🎁'),
+                  chip(t('চাই', 'Need'), f.kind == PostKind.need, () => _update((x) => x.copyWith(kind: PostKind.need)), emoji: '🙏'),
                   const SizedBox(width: 4),
                   chip(t('আমার এলাকা', 'My area'), f.scope == Scope.area, () => _update((x) => x.copyWith(scope: Scope.area))),
                   chip(t('আমার জেলা', 'My district'), f.scope == Scope.district, () => _update((x) => x.copyWith(scope: Scope.district))),
@@ -122,7 +131,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
                 child: ListView(scrollDirection: Axis.horizontal, children: [
                   chip(t('সব ক্যাটাগরি', 'All categories'), f.category == null, () => _update((x) => x.copyWith(category: null))),
                   for (final c in categories)
-                    chip('${c.emoji} ${lang == Lang.bn ? c.bn : c.en}', f.category == c.id, () => _update((x) => x.copyWith(category: c.id))),
+                    chip(lang == Lang.bn ? c.bn : c.en, f.category == c.id, () => _update((x) => x.copyWith(category: c.id)), emoji: c.emoji),
                 ]),
               ),
             ]),

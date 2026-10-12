@@ -345,7 +345,8 @@ class _QuickPostState extends ConsumerState<QuickPostScreen> {
             Wrap(spacing: 8, runSpacing: 8, children: [
               for (final c in categories)
                 ChoiceChip(
-                  label: Text('${c.emoji} ${lang == Lang.bn ? c.bn : c.en}'),
+                  avatar: Text(c.emoji),
+                  label: Text(lang == Lang.bn ? c.bn : c.en),
                   selected: _category == c.id,
                   showCheckmark: false,
                   onSelected: (_) => setState(() => _category = c.id),
