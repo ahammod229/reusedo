@@ -28,8 +28,9 @@ app.set("trust proxy", 1);
 app.disable("x-powered-by");
 app.use(helmet());
 
+// CLIENT_URL may hold several origins, comma separated (www, apex, *.web.app).
 const allowedOrigins = [
-  process.env.CLIENT_URL,
+  ...(process.env.CLIENT_URL ?? "").split(",").map((s) => s.trim()),
   process.env.ADMIN_URL,
   ...(process.env.NODE_ENV === "production" ? [] : ["http://localhost:5173", "http://localhost:5174"]),
 ].filter(Boolean);

@@ -9,7 +9,7 @@ export class SocketService {
 
   static initialize(httpServer: HTTPServer) {
     const allowedOrigins = [
-      process.env.CLIENT_URL,
+      ...(process.env.CLIENT_URL ?? "").split(",").map((s) => s.trim()),
       process.env.ADMIN_URL,
       "http://localhost:5173",
       "http://localhost:5174"

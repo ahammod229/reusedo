@@ -1,12 +1,33 @@
+# API (Express + Socket.io). Web is on Firebase Hosting; user data is in Supabase.
 services:
   - type: web
-    name: binimoy-api
-    env: node
-    buildCommand: pnpm install && pnpm run build --filter @reusedo/api
-    startCommand: pnpm run start --filter @reusedo/api
+    name: reusedo
+    runtime: node
+    plan: starter            # free plans sleep after idle, which drops chat sockets
+    healthCheckPath: /health
+    buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm --filter api build
+    startCommand: node apps/api/dist/index.js
     envVars:
-      - key: PORT
-        value: "8080"
       - key: NODE_ENV
         value: production
-      # Define other necessary environment variables (Supabase, Firebase) in the Render Dashboard
+      - key: PORT
+        value: "8080"
+      # Secrets: set these in the Render dashboard, never in this file.
+      - key: CLIENT_URL
+        sync: false          # https://www.reusedo.com,https://reusedo.com,https://reusedo-we.web.app
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: EMAIL_CODE_PEPPER
+        sync: false

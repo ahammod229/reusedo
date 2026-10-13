@@ -1,15 +1,12 @@
 {
   "projects": {
-    "default": "binimoy-we"
+    "default": "reusedo-we"
   },
   "targets": {
-    "binimoy-we": {
+    "reusedo-we": {
       "hosting": {
         "web": [
-          "binimoy-we"
-        ],
-        "admin": [
-          "binimoy-we-admin"
+          "reusedo-we"
         ]
       }
     }
