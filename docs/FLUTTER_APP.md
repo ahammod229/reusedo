@@ -44,7 +44,7 @@ Send the Firebase ID token as `Authorization: Bearer …` on every API call.
 
 ## Before store release
 
-- App icon and splash (`flutter_launcher_icons`, `flutter_native_splash`), bundle id (`com.reusedo.reusedo` now), signing keys.
+- App icon and splash (`flutter_launcher_icons`, `flutter_native_splash`), bundle id (`com.noklity.reusedo`), signing keys.
 - AdMob native ad unit in `lib/widgets/ad_card.dart` (placeholder today); keep ads out of chat, verification and hand-over screens.
 - Map tiles: the OpenStreetMap server is for light use only — switch `urlTemplate` in `donation_map.dart` to a tile provider.
 - Android 13+: runtime notification permission when push (FCM) is added.

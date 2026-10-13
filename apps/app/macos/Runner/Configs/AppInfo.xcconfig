@@ -8,7 +8,7 @@
 PRODUCT_NAME = reusedo
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.reusedo.reusedo
+PRODUCT_BUNDLE_IDENTIFIER = com.noklity.reusedo
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 com.reusedo. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 com.noklity. All rights reserved.

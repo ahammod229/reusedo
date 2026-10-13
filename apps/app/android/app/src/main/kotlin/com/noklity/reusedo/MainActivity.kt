@@ -1,4 +1,4 @@
-package com.reusedo.reusedo
+package com.noklity.reusedo
 
 import io.flutter.embedding.android.FlutterActivity
 

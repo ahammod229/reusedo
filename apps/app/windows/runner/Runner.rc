@@ -89,11 +89,11 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.reusedo" "\0"
+            VALUE "CompanyName", "com.noklity" "\0"
             VALUE "FileDescription", "reusedo" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "reusedo" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.reusedo. All rights reserved." "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 com.noklity. All rights reserved." "\0"
             VALUE "OriginalFilename", "reusedo.exe" "\0"
             VALUE "ProductName", "reusedo" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"

@@ -100,7 +100,7 @@ class _Body extends ConsumerWidget {
             children: [
               TileLayer(
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.reusedo.app',
+                userAgentPackageName: 'com.noklity.reusedo',
                 maxNativeZoom: 10,
               ),
               MarkerLayer(markers: [
