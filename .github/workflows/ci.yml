@@ -52,3 +52,42 @@ jobs:
       - run: flutter analyze
       - run: flutter test
       - run: flutter build web --release --no-web-resources-cdn
+
+  database:
+    # Applies the Supabase migration to a real Postgres and runs the row-level-security tests.
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGPASSWORD: postgres
+      PGHOST_ARGS: -h localhost -p 5432 -U postgres
+    steps:
+      - uses: actions/checkout@v4
+      - run: sh supabase/tests/run-local.sh 2>&1 | tee /tmp/db-tests.log
+      - name: Fail unless every test passed
+        run: grep -q "ALL RLS TESTS PASSED" /tmp/db-tests.log
+
+  functions:
+    # Edge Function unit tests (token checks, code hashing, draft cleaning, CORS). No network or secrets.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      # Run inside supabase/functions so Deno picks up its deno.json (the repo root has a package.json that would
+      # otherwise switch Deno into node_modules mode).
+      - run: deno check */index.ts
+        working-directory: supabase/functions
+      - run: deno test --allow-env --allow-net=none --allow-read .
+        working-directory: supabase/functions

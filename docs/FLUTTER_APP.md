@@ -17,6 +17,12 @@
 
 ## Connecting the backend
 
+> The web app now talks to Supabase directly (no API server; see docs/DEPLOY.md). The Flutter app should do the same:
+> `supabase_flutter` with `accessToken: () => firebaseUser.getIdToken()`, calling the same tables, views and RPC functions as
+> `apps/web/src/features/data/supabaseSource.ts`. The endpoint table below describes the old REST design; the equivalent for each
+> row is the Supabase call in that file.
+
+
 Write `ApiSource implements DataSource` and switch `dataSourceProvider` (`lib/data/providers.dart`).
 
 | `DataSource` method | Endpoint |
