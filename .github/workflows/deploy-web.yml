@@ -1,0 +1,59 @@
+name: Deploy web (Firebase Hosting)
+
+# Builds apps/web and publishes it to Firebase Hosting (project reuse-do).
+# Runs on every push to main that touches the web app, or by hand: Actions → Deploy web → Run workflow.
+# Needs one repository secret, FIREBASE_SERVICE_ACCOUNT: the JSON key of a service account with the
+# "Firebase Hosting Admin" role. Add it in GitHub → Settings → Secrets and variables → Actions. Never paste it in chat.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "apps/web/**"
+      - "firebase.json"
+      - ".firebaserc"
+      - ".env.production"
+      - "pnpm-lock.yaml"
+
+concurrency:
+  group: deploy-web
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Check before shipping
+        run: pnpm --filter web exec tsc -b && pnpm --filter web lint
+
+      # Vite reads the public VITE_* settings from .env.production (Firebase + Supabase URL and anon key).
+      - name: Build
+        run: pnpm --filter web build
+
+      - name: Fail if the build points at nothing
+        run: |
+          grep -q 'VITE_SUPABASE_URL=".\+"' .env.production
+          grep -q 'VITE_SUPABASE_ANON_KEY=".\+"' .env.production
+
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: reuse-do
+          channelId: live

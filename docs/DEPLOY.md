@@ -1,5 +1,17 @@
 # ReuseDo — আর্কিটেকচার ও ডেপ্লয় (সার্ভার ছাড়া)
 
+## দ্রুত ডেপ্লয় (GitHub Actions — কোনো গোপন কী চ্যাটে দিতে হবে না)
+
+গোপন কী আপনি শুধু GitHub-এ বসাবেন (Settings → Secrets and variables → Actions); কোড বা চ্যাটে কখনো নয়।
+
+| ধাপ | কী লাগবে | কীভাবে |
+|---|---|---|
+| ১. ওয়েব → Firebase | secret `FIREBASE_SERVICE_ACCOUNT` (প্রজেক্ট `reuse-do`-র সার্ভিস অ্যাকাউন্ট JSON, রোল **Firebase Hosting Admin**) | `main`-এ মার্জ হলে নিজে ডেপ্লয়; অথবা Actions → **Deploy web** → Run workflow |
+| ২. ডাটাবেস + ফাংশন → Supabase | secrets `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD` (+ ঐচ্ছিক: `FIREBASE_SERVICE_ACCOUNT_AUTH`, `RESEND_API_KEY`, `EMAIL_CODE_PEPPER`, `GEMINI_API_KEY`, `STEADFAST_*`) | Actions → **Deploy Supabase** → Run workflow → প্রজেক্ট ref দিন, নতুন খালি প্রজেক্ট হলে "migrate" টিক দিন |
+
+⚠️ Actions-এর "Run workflow" বোতাম শুধু **ডিফল্ট ব্রাঞ্চে (main)** থাকা workflow-এর জন্য আসে — তাই আগে এই ব্রাঞ্চ `main`-এ মার্জ করুন।
+⚠️ ওয়েব বিল্ড `.env.production` থেকে Supabase URL/anon key নেয় — ডেপ্লয়ের আগে সেটি আপনার চূড়ান্ত Supabase প্রজেক্টের মানে বদলান।
+
 ## কোথায় কী থাকবে
 
 ```
