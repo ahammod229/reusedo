@@ -5,7 +5,7 @@
 ```
 ব্রাউজার (React) / অ্যাপ (Flutter)
    │
-   ├─► Firebase Hosting ── ওয়েবসাইট (apps/web/dist)            reusedo-we.web.app → www.reusedo.com
+   ├─► Firebase Hosting ── ওয়েবসাইট (apps/web/dist)            reuse-do.web.app → www.reusedo.com
    ├─► Firebase Auth ───── সাইন-আপ, লগইন, Google, পাসওয়ার্ড রিসেট
    │        │  Firebase ID টোকেন
    │        ▼
@@ -48,7 +48,7 @@ Render আর লাগছে না।
 
 > ⚠️ **প্রজেক্ট মিলিয়ে নিন।** `.env.production`-এ Supabase URL এখনও পুরনো প্রজেক্টের (`hbqdyk…`), কিন্তু `.mcp.json` ও `supabase/config.toml` নতুন প্রজেক্টে (`ptufbl…`) যায়। যেটা ব্যবহার করবেন সেটার URL ও **anon key** `.env.production`-এ বসান।
 
-1. **Authentication → Sign In / Providers → Third-party Auth → Add provider → Firebase**, Project ID: `reusedo-we`।
+1. **Authentication → Sign In / Providers → Third-party Auth → Add provider → Firebase**, Project ID: `reuse-do`।
 2. **SQL Editor**-এ `supabase/migrations/20261014000000_serverless_core.sql` পুরোটা চালান (বা `supabase db push`)। এটি **নতুন/খালি** প্রজেক্টের জন্য; পুরনো Express-এর টেবিল থাকলে ইচ্ছা করেই ব্যর্থ হয়।
 3. **Storage**-এ `post-images` বাকেট মাইগ্রেশনেই তৈরি হয় — আছে কিনা দেখুন।
 4. **Database → Replication**-এ `messages` ও `notifications` Realtime-এ আছে কিনা দেখুন (মাইগ্রেশন যোগ করে)।
@@ -70,9 +70,9 @@ Render আর লাগছে না।
 
 ```bash
 npx supabase secrets set \
-  FIREBASE_PROJECT_ID=reusedo-we \
+  FIREBASE_PROJECT_ID=reuse-do \
   FIREBASE_SERVICE_ACCOUNT="$(cat service-account.json)" \
-  ALLOWED_ORIGINS="https://www.reusedo.com,https://reusedo.com,https://reusedo-we.web.app" \
+  ALLOWED_ORIGINS="https://www.reusedo.com,https://reusedo.com,https://reuse-do.web.app" \
   RESEND_API_KEY=... EMAIL_FROM="ReuseDo <no-reply@reusedo.com>" EMAIL_CODE_PEPPER=<লম্বা-র‍্যান্ডম> \
   GEMINI_API_KEY=... \
   STEADFAST_API_KEY=... STEADFAST_SECRET_KEY=...

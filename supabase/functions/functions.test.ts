@@ -7,7 +7,7 @@ import { codesMatch, hashCode, newCode } from "./email-code/index.ts";
 import { geminiBody, parseDraft } from "./ai-draft/index.ts";
 import { steadfastPayload } from "./admin-courier/index.ts";
 
-const PROJECT = "reusedo-we";
+const PROJECT = "reuse-do";
 const { publicKey, privateKey } = await generateKeyPair("RS256");
 const other = await generateKeyPair("RS256");
 const jwk = await exportJWK(publicKey);

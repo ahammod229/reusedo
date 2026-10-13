@@ -1,12 +1,12 @@
 {
   "projects": {
-    "default": "reusedo-we"
+    "default": "reuse-do"
   },
   "targets": {
-    "reusedo-we": {
+    "reuse-do": {
       "hosting": {
         "web": [
-          "reusedo-we"
+          "reuse-do"
         ]
       }
     }
