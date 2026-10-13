@@ -1,3 +1,4 @@
+import { useRealtimeSync } from "@/features/data/realtime";
 import { useAuthStore } from "@/features/auth";
 import { LangToggle } from "@/features/feed/LangToggle";
 import { useT } from "@/features/feed/i18n";
@@ -21,6 +22,7 @@ import { NotificationBadge } from "../components/NotificationBadge";
 import { MobileMenu } from "./MobileMenu";
 
 export function MainLayout() {
+  useRealtimeSync();
   const t = useT();
   const user = useAuthStore((state) => state.user);
   const ic = "h-5 w-5";

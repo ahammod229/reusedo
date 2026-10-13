@@ -125,6 +125,20 @@ export const mockSource: DataSource = {
     return wait(e, 120);
   },
 
+  async markChatRead(chatId) {
+    const c = chats.find((x) => x.id === chatId);
+    if (c) c.unread = 0;
+    return wait(undefined, 30);
+  },
+
+  async agreeCourier(exchangeId) {
+    const e = exchanges.find((x) => x.id === exchangeId);
+    if (!e) throw new Error("exchange_not_found");
+    // Demo: the other side has already agreed, so one tap sends it.
+    e.courierOk = { giver: true, receiver: true };
+    return wait("sent" as const, 200);
+  },
+
   async listNotifications() {
     return wait(notifications);
   },

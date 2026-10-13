@@ -208,6 +208,11 @@ select test.must_fail($$insert into public.courier_requests (exchange_id, item, 
 do $$ begin assert (select count(*) from public.courier_requests) = 0, 'outsider cannot see courier requests'; end $$;
 select test.must_fail(format($$select public.agree_courier(%L)$$, :'ex3'), 'not_allowed');
 
+:as_b
+select test.ok((select given_by_category ->> 'books' from public.public_profiles where username = 'alice') = '1', 'public profile shows what was given, by category');
+select test.ok((select thanks_received from public.public_profiles where username = 'alice') = 1, 'thanks are counted');
+select test.ok((select category from public.courier_requests) = 'stationery', 'courier request keeps the category');
+
 -- ── 7. reports + saved ──
 :as_b
 select public.report_post(:'p1_id', 'spam', 'বিজ্ঞাপন');

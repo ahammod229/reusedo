@@ -44,6 +44,10 @@ export class AuthService {
     return null;
   }
 
+  static async currentUid(): Promise<string | null> {
+    return auth.currentUser?.uid ?? null;
+  }
+
   /** Re-reads emailVerified from Firebase and refreshes the token the API checks. */
   static async refreshVerification(): Promise<boolean> {
     if (!auth.currentUser) return false;

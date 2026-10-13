@@ -1,5 +1,6 @@
 import { ThemeProvider } from "@/shared/components/ui";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/services/queryClient";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { Suspense, lazy } from "react";
 import { HelmetProvider } from "react-helmet-async";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router";
@@ -66,7 +67,6 @@ const CourierRequest = lazy(() => import("./pages").then((m) => ({ default: m.Co
 
 import { RequireArea } from "./features/admin/RequireArea";
 import { AuthProvider } from "./providers/AuthProvider";
-import { SocketProvider } from "./providers/SocketProvider";
 import { AdminRoute } from "./routes/AdminRoute";
 import { GuestRoute } from "./routes/GuestRoute";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
@@ -125,7 +125,6 @@ const AdminAudit = lazy(() =>
   import("./features/admin/screens").then((m) => ({ default: m.Audit })),
 );
 
-const queryClient = new QueryClient();
 
 function App() {
   return (
@@ -141,7 +140,6 @@ function App() {
                   </div>
                 }
               >
-                <SocketProvider>
                   <Routes>
                     {/* Main App Layout */}
                     <Route element={<MainLayout />}>
@@ -392,7 +390,6 @@ function App() {
                       <Route path="*" element={<NotFoundPage />} />
                     </Route>
                   </Routes>
-                </SocketProvider>
               </Suspense>
             </BrowserRouter>
           </AuthProvider>

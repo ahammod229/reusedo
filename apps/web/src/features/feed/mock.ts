@@ -450,6 +450,8 @@ export const MOCK_USERS: Record<string, MockUser> = {
 
 export interface MockConversation {
   id: string;
+  /** The post this chat is about (links the chat header to it). */
+  postId?: string;
   with: string;
   verified: boolean;
   postTitle: string;
@@ -511,6 +513,10 @@ export type ExchangeStatus = "requested" | "accepted" | "scheduled" | "completed
 
 export interface MockExchange {
   id: string;
+  postId?: string;
+  chatId?: string;
+  /** Who has agreed to courier delivery so far. */
+  courierOk?: { giver: boolean; receiver: boolean };
   title: string;
   category: import("./types").CategoryId;
   role: "giver" | "receiver";

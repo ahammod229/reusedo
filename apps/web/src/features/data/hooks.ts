@@ -44,7 +44,11 @@ export const useNotifications = () =>
   useQuery({ queryKey: keys.notifications, queryFn: () => source.listNotifications() });
 
 export const useUser = (username: string) =>
-  useQuery({ queryKey: keys.user(username), queryFn: () => source.getUser(username) });
+  useQuery({
+    queryKey: keys.user(username),
+    queryFn: () => source.getUser(username),
+    enabled: !!username,
+  });
 
 export const useCourierRequests = () =>
   useQuery({ queryKey: keys.courier, queryFn: () => source.listCourierRequests() });
@@ -79,6 +83,25 @@ export function useConfirmHandover() {
     mutationFn: (v: { exchangeId: string; code: string }) =>
       source.confirmHandover(v.exchangeId, v.code),
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.exchanges }),
+  });
+}
+
+export function useMarkChatRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (chatId: string) => source.markChatRead(chatId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.chats }),
+  });
+}
+
+export function useAgreeCourier() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (exchangeId: string) => source.agreeCourier(exchangeId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: keys.exchanges });
+      qc.invalidateQueries({ queryKey: keys.courier });
+    },
   });
 }
 

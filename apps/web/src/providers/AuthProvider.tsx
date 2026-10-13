@@ -1,11 +1,8 @@
-import { AuthService, auth, useAuthStore, useProfile } from "@/features/auth";
-import { apiClient, setupAuthInterceptor } from "@/services/api";
+import { auth, useAuthStore, useProfile } from "@/features/auth";
+import { resetSupabaseSession } from "@/features/auth/session";
 import { type User, onAuthStateChanged } from "firebase/auth";
 import type React from "react";
 import { createContext, useContext, useEffect } from "react";
-
-// Setup global Axios interceptor to always attach the latest Firebase token
-setupAuthInterceptor(() => AuthService.getIdToken());
 
 type AuthContextType = {
   isReady: boolean;
@@ -17,24 +14,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const { setAuth } = useAuthStore();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: User | null) => {
-      if (firebaseUser) {
-        setAuth(firebaseUser);
-        try {
-          // Sync session with backend to get Supabase profile
-          await apiClient.post("/auth/session");
-        } catch (error) {
-          console.error("Failed to sync session with backend", error);
-        }
-      } else {
-        setAuth(null);
-      }
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser: User | null) => {
+      if (!firebaseUser) resetSupabaseSession();
+      setAuth(firebaseUser);
     });
-
     return () => unsubscribe();
   }, [setAuth]);
 
-  // Backend profile (role, phone, district) — shared cache, also read by the route guards
+  // Profile (role, phone, district) — loading it also signs the person in to Supabase; the route guards read it too.
   const { isLoading: profileLoading } = useProfile();
 
   const isReady = useAuthStore((state) => state.status !== "loading") && !profileLoading;

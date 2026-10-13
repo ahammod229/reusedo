@@ -1,26 +1,23 @@
 import { AuthService } from "@/features/auth";
-import { apiClient } from "@/services/api";
+import { resetSupabaseSession } from "@/features/auth/session";
+import { queryClient } from "@/services/queryClient";
+import { FunctionError, callFunction, supabase } from "@/services/supabase";
 import { UI_PREVIEW } from "@/shared/uiPreview";
-import { isAxiosError } from "axios";
 
-// Email-code endpoints live on the API (apps/api/src/services/email-code.service.ts):
-// the code is hashed, expires in 10 minutes, allows 5 wrong tries and one resend a minute.
-// Dev shortcut: set VITE_USE_MOCK=true and 123456 is accepted without a backend.
+// The email code is handled by the `email-code` Edge Function (supabase/functions/email-code): the code is hashed,
+// expires in 10 minutes, allows 5 wrong tries and one resend a minute. On success it also marks the Firebase email
+// verified and adds the claim Supabase needs. Dev shortcut: VITE_USE_MOCK=true accepts 123456 without a backend.
 const MOCK = import.meta.env.DEV && (UI_PREVIEW || import.meta.env.VITE_USE_MOCK === "true");
 
 const fail = (e: unknown): never => {
-  if (isAxiosError(e)) {
-    const code = e.response?.data?.code as string | undefined;
-    if (code === "invalid_code") throw new Error("invalid_code");
-    if (code) throw new Error(code);
-  }
+  if (e instanceof FunctionError) throw new Error(e.code === "invalid_code" ? "invalid_code" : e.code);
   throw new Error("network");
 };
 
 export async function sendEmailCode(): Promise<void> {
   if (MOCK) return;
   try {
-    await apiClient.post("/auth/email-code/send");
+    await callFunction("email-code", { action: "send" });
   } catch (e) {
     fail(e);
   }
@@ -35,12 +32,14 @@ export async function verifyEmailCode(code: string): Promise<void> {
     return;
   }
   try {
-    await apiClient.post("/auth/email-code/verify", { code });
+    await callFunction("email-code", { action: "verify", code });
   } catch (e) {
     fail(e);
   }
-  // The server flipped emailVerified; pull a fresh token so later writes are accepted.
+  // The function flipped emailVerified and added the claim; pull a fresh token so Supabase accepts it.
+  resetSupabaseSession();
   await AuthService.refreshVerification();
+  await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
 }
 
 export async function saveVerificationProfile(data: {
@@ -50,18 +49,23 @@ export async function saveVerificationProfile(data: {
   area: string;
   landmark: string;
   phone: string;
-  /** Optional map pin, already rounded to ~100 m. */
-  pin?: [number, number];
+  /** Map pin picked during sign-up. It only helps choose the district; the exact point is deliberately not stored. */
+  pin?: unknown;
 }): Promise<void> {
   if (MOCK) return;
   try {
-    // Postal code is not collected yet, so the full address book entry is created later in Settings.
-    await apiClient.patch("/users/me", {
-      phone_number: data.phone,
-      district: data.district,
-      upazila: data.upazila,
-    });
-    await apiClient.post("/auth/session");
+    const { error } = await supabase()
+      .from("profiles")
+      .update({
+        phone_number: data.phone,
+        division: data.division,
+        district: data.district,
+        upazila: data.upazila,
+        area: data.area || data.upazila,
+      })
+      .eq("firebase_uid", (await AuthService.currentUid()) ?? "");
+    if (error) throw error;
+    await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
   } catch (e) {
     fail(e);
   }

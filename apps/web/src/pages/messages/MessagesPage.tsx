@@ -1,5 +1,6 @@
 import { QueryState } from "@/features/data/QueryState";
-import { useChats, useSendMessage } from "@/features/data/hooks";
+import { useChats, useMarkChatRead,
+  useSendMessage } from "@/features/data/hooks";
 import type { Chat } from "@/features/data/types";
 import { useTr } from "@/features/feed/i18n";
 import { Initial, Pill } from "@/features/feed/parts";
@@ -96,7 +97,13 @@ function Thread({ chat }: { chat: Chat }) {
   const tr = useTr();
   const navigate = useNavigate();
   const send$ = useSendMessage();
+  const markRead = useMarkChatRead();
   const msgs = chat.messages;
+  // Opening a chat reads it. Re-run when new messages arrive while it is open.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only the chat id and unread count matter
+  useEffect(() => {
+    if (chat.unread > 0) markRead.mutate(chat.id);
+  }, [chat.id, chat.unread]);
   const [text, setText] = useState("");
   const end = useRef<HTMLDivElement>(null);
 
@@ -137,7 +144,7 @@ function Thread({ chat }: { chat: Chat }) {
             {chat.verified && <BadgeCheck className="h-4 w-4 text-primary" />}
           </p>
           <Link
-            to="/post/1"
+            to={chat.postId ? `/post/${chat.postId}` : "/feed"}
             className="block truncate text-xs text-muted-foreground hover:underline"
           >
             {chat.postKind === "offer" ? "🎁" : "🙏"} {chat.postTitle}

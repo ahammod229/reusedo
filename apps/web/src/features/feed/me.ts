@@ -29,9 +29,5 @@ export const useMe = create<MeState>()(
   ),
 );
 
-/**
- * The signed-in user's username. The mock data's demo account is "rakib";
- * with the API this comes from `GET /api/users/me`.
- */
+/** Username of the demo account used by the sample data (local development only). */
 export const DEMO_USERNAME = "rakib";
-export const useMyUsername = () => DEMO_USERNAME;

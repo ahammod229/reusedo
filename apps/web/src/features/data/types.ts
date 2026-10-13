@@ -167,6 +167,8 @@ export interface DataSource {
 
   listChats(): Promise<Chat[]>;
   sendMessage(chatId: string, text: string): Promise<Chat>;
+  /** Opening a chat marks its messages read. */
+  markChatRead(chatId: string): Promise<void>;
 
   listExchanges(): Promise<Exchange[]>;
   advanceExchange(id: string): Promise<Exchange>;
@@ -186,6 +188,8 @@ export interface DataSource {
   reportPost(postId: string, reason: ReportReason, details: string): Promise<void>;
   sendThanks(exchangeId: string, text: string): Promise<void>;
 
+  /** One side agrees to courier delivery; when both have, the request goes to the admin queue. */
+  agreeCourier(exchangeId: string): Promise<"waiting" | "sent">;
   listCourierRequests(): Promise<CourierRequest[]>;
   decideCourierRequest(id: string, decision: "confirmed" | "rejected"): Promise<CourierRequest>;
 

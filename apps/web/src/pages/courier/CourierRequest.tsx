@@ -1,174 +1,157 @@
-import { useCheckoutConfig, useSubmitCourierPayment } from "@/features/data/hooks";
-import type { PaymentMethod } from "@/features/data/platformStore";
-import { useT, useTr } from "@/features/feed/i18n";
-import { isBdMobile } from "@/features/geo/bd";
-import { Field } from "@/pages/auth/components/Field";
+import { QueryState } from "@/features/data/QueryState";
+import { useAgreeCourier, useCourierRequests, useExchanges } from "@/features/data/hooks";
+import type { CourierRequest as CourierItem, Exchange } from "@/features/data/types";
+import { useNum, useT, useTr } from "@/features/feed/i18n";
+import { PageHeading } from "@/features/feed/parts";
+import { categoryOf } from "@/features/feed/types";
 import { Badge, Button, Card, cn } from "@/shared/components/ui";
-import { CheckCircle2, Circle, Truck } from "lucide-react";
-import { useState } from "react";
+import { CheckCircle2, Circle } from "lucide-react";
 import { Helmet } from "react-helmet-async";
+import { Link, useSearchParams } from "react-router";
 
-type Step = "agree" | "requested" | "ready" | "picked_up" | "in_transit" | "delivered";
-const STEPS: { id: Step; bn: string }[] = [
-  { id: "agree", bn: "সম্মতি" },
-  { id: "requested", bn: "অ্যাডমিন রিভিউ" },
-  { id: "ready", bn: "কুরিয়ার প্রস্তুত" },
-  { id: "picked_up", bn: "পিকআপ" },
-  { id: "in_transit", bn: "পথে" },
-  { id: "delivered", bn: "ডেলিভারি" },
-];
-
-// Demo state: in the real flow both flags come from the exchange record and
-// the step comes from the shipment status written by the admin confirm action.
+/**
+ * Courier delivery. Both people agree; the request then waits for an admin, who books the parcel with Steadfast.
+ * The courier fee is paid in cash by the receiver on delivery (no online payment).
+ */
 export function CourierRequest() {
   const t = useT();
   const tr = useTr();
-  const giver = true; // demo: giver has already agreed
-  const [receiver, setReceiver] = useState(false);
-  const [sent, setSent] = useState(false);
-  const { data: checkout } = useCheckoutConfig();
-  const pay = useSubmitCourierPayment();
-  const [method, setMethod] = useState<PaymentMethod | null>(null);
-  const [trx, setTrx] = useState("");
-  const [sender, setSender] = useState("");
-  const methods = (["cod", "bkash", "nagad"] as const).filter((m) => checkout?.methods[m]);
-  const chosen = method ?? methods[0] ?? null;
-  const wallet = chosen === "bkash" || chosen === "nagad";
-  const trxOk = /^[A-Z0-9]{8,12}$/.test(trx);
-  const payOk = !!chosen && (!wallet || (trxOk && isBdMobile(sender)));
-  const send = () => {
-    if (!chosen) return;
-    pay.mutate(
-      {
-        courierId: "c1",
-        item: "ক্লাস ৮-এর সব বই (সেট)",
-        payer: "ফাহিম রহমান",
-        phone: "01811-000002",
-        amount: 130,
-        method: chosen,
-        ...(wallet ? { trxId: trx, senderNumber: sender } : {}),
-      },
-      { onSuccess: () => setSent(true) },
-    );
-  };
-  const both = giver && receiver;
-  const current: Step = sent ? "requested" : "agree";
-  const idx = STEPS.findIndex((s) => s.id === current);
+  const [params] = useSearchParams();
+  const exchanges = useExchanges();
+  const requests = useCourierRequests();
+  const id = params.get("exchange");
+
+  const eligible = (exchanges.data ?? []).filter(
+    (e) => e.via === "courier" && ["accepted", "scheduled", "completed"].includes(e.status),
+  );
+  const chosen = id ? (exchanges.data ?? []).find((e) => e.id === id) : undefined;
 
   return (
     <div className="mx-auto w-full max-w-xl space-y-4 px-4 py-4">
       <Helmet>
         <title>ReuseDo — {t("courierTitle")}</title>
       </Helmet>
-      <div className="flex items-center gap-3">
-        <div className="rounded-full bg-primary/15 p-3 text-primary">
-          <Truck className="h-6 w-6" />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold">{t("courierTitle")}</h1>
-          <p className="text-sm text-muted-foreground">{t("courierHint")}</p>
-        </div>
-      </div>
+      <PageHeading title={t("courierTitle")} sub={t("courierHint")} />
+      <QueryState
+        isLoading={exchanges.isLoading || requests.isLoading}
+        error={exchanges.error ?? requests.error}
+        onRetry={() => {
+          exchanges.refetch();
+          requests.refetch();
+        }}
+        rows={2}
+      >
+        {chosen ? (
+          <Detail exchange={chosen} request={(requests.data ?? []).find((r) => r.exchangeId === chosen.id)} />
+        ) : eligible.length === 0 ? (
+          <Card className="p-6 text-center text-sm text-muted-foreground">
+            {tr(
+              "কুরিয়ারে নেওয়া কোনো আদান-প্রদান নেই। কোনো পোস্টে রিকোয়েস্ট করার সময় “কুরিয়ার” বেছে নিন।",
+              "No courier exchanges yet. Choose “Courier” when you request something.",
+            )}
+          </Card>
+        ) : (
+          <ul className="space-y-2">
+            {eligible.map((e) => (
+              <li key={e.id}>
+                <Link
+                  to={`/courier?exchange=${e.id}`}
+                  className="flex items-center gap-3 rounded-2xl border bg-card p-3 hover:bg-accent"
+                >
+                  <span className="text-2xl">{categoryOf(e.category).emoji}</span>
+                  <span className="min-w-0 flex-1 truncate font-semibold">{e.title}</span>
+                  <span className="text-xs text-muted-foreground">{e.other}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </QueryState>
+    </div>
+  );
+}
 
+type Step = "agree" | "review" | "ready";
+
+function Detail({ exchange, request }: { exchange: Exchange; request?: CourierItem }) {
+  const t = useT();
+  const tr = useTr();
+  const num = useNum();
+  const agree = useAgreeCourier();
+  const ok = exchange.courierOk ?? { giver: false, receiver: false };
+  const mine = exchange.role === "giver" ? ok.giver : ok.receiver;
+  const both = ok.giver && ok.receiver;
+
+  const step: Step = request?.status === "confirmed" ? "ready" : both ? "review" : "agree";
+  const steps: { id: Step; label: string }[] = [
+    { id: "agree", label: tr("সম্মতি", "Agreement") },
+    { id: "review", label: tr("অ্যাডমিন রিভিউ", "Admin review") },
+    { id: "ready", label: tr("কুরিয়ার প্রস্তুত", "Courier booked") },
+  ];
+  const idx = steps.findIndex((s) => s.id === step);
+  const canAgree = ["accepted", "scheduled"].includes(exchange.status);
+
+  return (
+    <div className="space-y-4">
       <Card className="space-y-1 p-4">
-        <div className="text-sm text-muted-foreground">জিনিস</div>
-        <div className="font-semibold">ক্লাস ৮-এর সব বই (সেট)</div>
+        <div className="text-sm text-muted-foreground">{tr("জিনিস", "Item")}</div>
+        <div className="font-semibold">{exchange.title}</div>
+        <div className="text-xs text-muted-foreground">
+          {exchange.role === "giver" ? tr("আপনি দিচ্ছেন", "You give") : tr("আপনি নিচ্ছেন", "You receive")} ·{" "}
+          {exchange.other}
+        </div>
       </Card>
 
       <Card className="space-y-3 p-4">
-        <Row label={t("giverAgree")} on={giver} />
-        <Row
-          label={t("receiverAgree")}
-          on={receiver}
-          action={!receiver ? () => setReceiver(true) : undefined}
-          actionLabel={t("agreeCourier")}
-        />
-        <div className="grid gap-2 border-t pt-3 text-sm sm:grid-cols-2">
-          <div>
-            <div className="text-muted-foreground">{t("pickup")}</div>মিরপুর ১০, ঢাকা
-          </div>
-          <div>
-            <div className="text-muted-foreground">{t("dropoff")}</div>জিন্দাবাজার, সিলেট
-          </div>
-        </div>
+        <Row label={t("giverAgree")} on={ok.giver} />
+        <Row label={t("receiverAgree")} on={ok.receiver} />
+        {!mine && canAgree && (
+          <Button
+            className="w-full"
+            disabled={agree.isPending}
+            onClick={() => agree.mutate(exchange.id)}
+          >
+            {t("agreeCourier")}
+          </Button>
+        )}
+        {mine && !both && (
+          <p className="text-sm text-muted-foreground">{t("waitingBoth")}</p>
+        )}
+        {agree.isError && (
+          <p role="alert" className="text-sm text-destructive">
+            {tr("পাঠানো যায়নি, আবার চেষ্টা করুন।", "Couldn't send. Try again.")}
+          </p>
+        )}
+
         <div className="flex items-center justify-between rounded-lg bg-warning-soft p-3 text-sm text-warning">
           <span>{t("charge")}</span>
-          <span className="text-lg font-bold">৳১৩০</span>
+          <span className="text-lg font-bold">
+            {request ? `৳${num(request.charge)}` : tr("৳৮০–১৩০", "৳80–130")}
+          </span>
         </div>
-        {both && !sent && chosen && (
-          <fieldset className="space-y-2 border-t pt-3">
-            <legend className="text-sm font-semibold">
-              {tr("কীভাবে চার্জ দেবেন", "How you'll pay")}
-            </legend>
-            <div className="grid grid-cols-3 gap-2">
-              {methods.map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  aria-pressed={chosen === m}
-                  onClick={() => setMethod(m)}
-                  className={cn(
-                    "rounded-xl border p-2.5 text-sm font-semibold",
-                    chosen === m ? "border-primary bg-primary/10 text-primary" : "hover:bg-accent",
-                  )}
-                >
-                  {m === "cod" ? tr("ডেলিভারিতে", "On delivery") : m === "bkash" ? "bKash" : "Nagad"}
-                </button>
-              ))}
-            </div>
-            {wallet && (
-              <div className="space-y-3 rounded-xl bg-muted p-3 text-sm">
-                <p>
-                  {tr("এই নম্বরে ৳১৩০ পাঠান", "Send ৳130 to")}{" "}
-                  <b className="font-mono">
-                    {chosen === "bkash" ? checkout?.bkashNumber : checkout?.nagadNumber}
-                  </b>
-                  {tr(
-                    ", তারপর নিচে তথ্য দিন। অ্যাডমিন মিলিয়ে দেখে গ্রহণ করবেন।",
-                    ", then fill in below. An admin verifies it.",
-                  )}
-                </p>
-                <Field
-                  label={tr("যে নম্বর থেকে পাঠিয়েছেন", "Number you sent from")}
-                  inputMode="tel"
-                  value={sender}
-                  onChange={(e) => setSender(e.target.value)}
-                  error={
-                    sender.length > 5 && !isBdMobile(sender)
-                      ? tr("সঠিক নম্বর দিন", "Enter a valid number")
-                      : undefined
-                  }
-                />
-                <Field
-                  label="TrxID"
-                  value={trx}
-                  maxLength={12}
-                  spellCheck={false}
-                  autoCapitalize="characters"
-                  onChange={(e) => setTrx(e.target.value.toUpperCase().replace(/\s/g, ""))}
-                  hint={tr("SMS-এ পাওয়া ৮–১২ অক্ষরের কোড", "The 8–12 character code from the SMS")}
-                  error={
-                    trx.length >= 8 && !trxOk
-                      ? tr("শুধু ইংরেজি অক্ষর ও সংখ্যা", "Letters and digits only")
-                      : undefined
-                  }
-                />
-              </div>
+        {!request && (
+          <p className="text-xs text-muted-foreground">
+            {tr(
+              "একই জেলায় ৳৮০, অন্য জেলায় ৳১৩০ — অ্যাডমিন কনফার্ম করলে চূড়ান্ত হবে।",
+              "৳80 within a district, ৳130 across districts — final once an admin confirms.",
             )}
-          </fieldset>
+          </p>
         )}
-        <Button
-          className="w-full"
-          disabled={!both || sent || !payOk || pay.isPending}
-          onClick={send}
-        >
-          {sent ? "রিকোয়েস্ট পাঠানো হয়েছে ✓" : both ? t("sendToAdmin") : t("waitingBoth")}
-        </Button>
+        {request?.status === "rejected" && (
+          <p role="alert" className="text-sm text-destructive">
+            {tr("অ্যাডমিন এই কুরিয়ার রিকোয়েস্ট গ্রহণ করেননি।", "An admin declined this courier request.")}
+          </p>
+        )}
+        {request?.tracking && (
+          <div className="rounded-lg bg-muted p-3 text-sm">
+            {t("tracking")}: <b className="font-mono">{request.tracking}</b>
+          </div>
+        )}
       </Card>
 
       <Card className="p-4">
         <ol className="space-y-3">
-          {STEPS.map((s, i) => (
+          {steps.map((s, i) => (
             <li
               key={s.id}
               className={cn("flex items-center gap-3 text-sm", i > idx && "text-muted-foreground")}
@@ -178,8 +161,8 @@ export function CourierRequest() {
               ) : (
                 <Circle className="h-5 w-5" />
               )}
-              {s.bn}
-              {i === idx && <Badge variant="secondary">এখন</Badge>}
+              {s.label}
+              {i === idx && <Badge variant="secondary">{tr("এখন", "Now")}</Badge>}
             </li>
           ))}
         </ol>
@@ -188,27 +171,15 @@ export function CourierRequest() {
   );
 }
 
-function Row({
-  label,
-  on,
-  action,
-  actionLabel,
-}: { label: string; on: boolean; action?: () => void; actionLabel?: string }) {
+function Row({ label, on }: { label: string; on: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-2 text-sm">
-      <span className="flex items-center gap-2">
-        {on ? (
-          <CheckCircle2 className="h-5 w-5 text-primary" />
-        ) : (
-          <Circle className="h-5 w-5 text-muted-foreground" />
-        )}
-        {label}
-      </span>
-      {action && (
-        <Button size="sm" variant="outline" onClick={action}>
-          {actionLabel}
-        </Button>
+    <div className="flex items-center gap-2 text-sm">
+      {on ? (
+        <CheckCircle2 className="h-5 w-5 text-primary" />
+      ) : (
+        <Circle className="h-5 w-5 text-muted-foreground" />
       )}
+      {label}
     </div>
   );
 }

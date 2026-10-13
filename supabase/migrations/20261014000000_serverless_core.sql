@@ -398,6 +398,7 @@ create table public.thanks (
   from_id uuid not null references public.profiles(id) on delete cascade,
   to_id uuid not null references public.profiles(id) on delete cascade,
   body text not null check (char_length(body) between 1 and 200),
+  item text not null default '',                -- the item's title, kept so a thank-you still reads well later
   created_at timestamptz not null default now()
 );
 alter table public.thanks enable row level security;
@@ -433,6 +434,7 @@ create table public.courier_requests (
   id uuid primary key default gen_random_uuid(),
   exchange_id uuid not null unique references public.exchanges(id) on delete cascade,
   item text not null,
+  category text not null default 'other',
   giver_name text not null, giver_phone text, giver_address text not null,
   receiver_name text not null, receiver_phone text, receiver_address text not null,
   weight_kg numeric not null default 2,
@@ -505,14 +507,20 @@ select p.id, p.username, p.display_name, p.avatar_url, p.bio, p.district, p.upaz
        p.edu_level,
        case when p.show_institution then p.institution end as institution,
        (p.phone_number is not null and p.district is not null) as verified,
-       s.given, s.received, s.thanks_received,
+       s.given, s.received, s.thanks_received, s.thanks_written, s.given_by_category,
        least(100, 30 + s.given * 4 + s.thanks_received * 2 + s.received)::int as trust
   from public.profiles p
   cross join lateral (
     select
       (select count(*) from public.exchanges e where e.giver_id = p.id and e.status = 'completed')::int as given,
       (select count(*) from public.exchanges e where e.receiver_id = p.id and e.status = 'completed')::int as received,
-      (select count(*) from public.thanks t where t.to_id = p.id)::int as thanks_received
+      (select count(*) from public.thanks t where t.to_id = p.id)::int as thanks_received,
+      (select count(*) from public.thanks t where t.from_id = p.id)::int as thanks_written,
+      -- {"books": 3, "clothes": 1}: lets the app estimate kg saved without exposing who got what
+      (select coalesce(jsonb_object_agg(c.category, c.n), '{}'::jsonb) from (
+         select po.category, count(*)::int as n
+           from public.exchanges e join public.posts po on po.id = e.post_id
+          where e.giver_id = p.id and e.status = 'completed' group by po.category) c) as given_by_category
   ) s;
 
 -- Where the caller lives, for distance. A function (not a join on profiles) so guests can browse the feed too.
@@ -674,8 +682,9 @@ declare e public.exchanges;
 begin
   select * into e from public.exchanges where id = p_id and receiver_id = public.my_pid() and status = 'completed';
   if not found then raise exception 'not_allowed' using errcode = '42501'; end if;
-  insert into public.thanks (exchange_id, from_id, to_id, body)
-  values (p_id, e.receiver_id, e.giver_id, left(coalesce(nullif(trim(p_text), ''), '🙏'), 200))
+  insert into public.thanks (exchange_id, from_id, to_id, body, item)
+  values (p_id, e.receiver_id, e.giver_id, left(coalesce(nullif(trim(p_text), ''), '🙏'), 200),
+          (select title from public.posts where id = e.post_id))
   on conflict (exchange_id) do nothing;
   perform public.notify(e.giver_id, 'review', 'আপনি একটি ধন্যবাদ পেয়েছেন 💌', 'You received a thank-you 💌', '/profile');
 end $$;
@@ -710,9 +719,9 @@ begin
   select * into r from public.profiles where id = e.receiver_id;
   select * into po from public.posts where id = e.post_id;
   if g.phone_number is null or r.phone_number is null then raise exception 'profile_incomplete'; end if;
-  insert into public.courier_requests (exchange_id, item, giver_name, giver_phone, giver_address,
+  insert into public.courier_requests (exchange_id, item, category, giver_name, giver_phone, giver_address,
                                        receiver_name, receiver_phone, receiver_address, charge)
-  values (p_id, po.title, g.display_name, g.phone_number,
+  values (p_id, po.title, po.category, g.display_name, g.phone_number,
           concat_ws(', ', g.area, g.upazila, g.district),
           r.display_name, r.phone_number, concat_ws(', ', r.area, r.upazila, r.district),
           case when g.district = r.district then 80 else 130 end);

@@ -5,7 +5,7 @@ import { Link } from "react-router";
 import { Photo } from "./Photo";
 import { PostTags, ReportDialog, StatusRibbon, useShare } from "./PostBits";
 import { useLang, useNum, useT } from "./i18n";
-import { useMyUsername } from "./me";
+import { useMyUsername } from "@/features/auth/useMyUsername";
 import { useSaved } from "./saved";
 import { type FeedPost, categoryOf } from "./types";
 

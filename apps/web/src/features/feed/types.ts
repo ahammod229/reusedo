@@ -40,6 +40,8 @@ export interface FeedPost {
   qty?: number;
   /** "given" posts stay visible for a while as social proof. */
   status: "available" | "reserved" | "given";
+  /** True for the signed-in person's own posts. */
+  mine?: boolean;
 }
 
 export type CategoryId =
@@ -108,6 +110,8 @@ export const categoryOf = (id: CategoryId) => CATEGORIES.find((c) => c.id === id
 
 export interface CourierRequestItem {
   id: string;
+  /** The exchange this courier request belongs to. */
+  exchangeId?: string;
   item: string;
   category: CategoryId;
   giver: { name: string; phone: string; address: string };

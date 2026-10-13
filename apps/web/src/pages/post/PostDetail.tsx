@@ -5,7 +5,7 @@ import { Photo } from "@/features/feed/Photo";
 import { PostTags, ReportDialog, StatusRibbon, useShare } from "@/features/feed/PostBits";
 import { PostCard } from "@/features/feed/PostCard";
 import { useLang, useNum, useTr } from "@/features/feed/i18n";
-import { useMyUsername } from "@/features/feed/me";
+import { useMyUsername } from "@/features/auth/useMyUsername";
 import { Initial, Pill, TrustRing } from "@/features/feed/parts";
 import { useSaved } from "@/features/feed/saved";
 import type { FeedPost } from "@/features/feed/types";

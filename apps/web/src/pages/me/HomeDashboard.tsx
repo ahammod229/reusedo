@@ -1,3 +1,4 @@
+import { useMyUsername } from "@/features/auth/useMyUsername";
 import { QueryState } from "@/features/data/QueryState";
 import { matchesFilters } from "@/features/data/filtering";
 import { useDashboard, useFeed, useUser } from "@/features/data/hooks";
@@ -45,7 +46,7 @@ function greeting(tr: (bn: string, en: string) => string) {
 export function HomeDashboard() {
   const tr = useTr();
   const { data: d, isLoading, error, refetch } = useDashboard();
-  const { data: me } = useUser("rakib");
+  const { data: me } = useUser(useMyUsername());
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-5 px-4 py-5">

@@ -178,7 +178,7 @@ export function ExchangesPage() {
                   )}
                   {e.status === "accepted" && e.via === "courier" && (
                     <Button asChild size="sm">
-                      <Link to="/courier">{tr("কুরিয়ার", "Courier")}</Link>
+                      <Link to={`/courier?exchange=${e.id}`}>{tr("কুরিয়ার", "Courier")}</Link>
                     </Button>
                   )}
                   {(e.status === "scheduled" ||
