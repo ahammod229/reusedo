@@ -258,6 +258,13 @@ do $$ begin assert (select count(*) from public.posts where title = 'ক্ল�
 :as_a
 do $$ begin assert (select count(*) from public.posts where title = 'ক্লাস ৮-এর সব বই') = 1, 'the owner still sees it'; end $$;
 
+-- ── 9b. server-only helpers are not callable from the browser ──
+:as_a
+select test.must_fail($$select public.bump_ai_usage('uidA')$$, 'permission denied');
+select test.must_fail($$select public.notify(public.my_pid(), 'message', 'a', 'b', '/')$$, 'permission denied');
+select test.must_fail($$select * from public.ai_usage$$, 'permission denied');
+select test.must_fail($$select * from public.email_verification_codes$$, 'permission denied');
+
 -- ── 10. storage + rate limit ──
 :as_a
 insert into storage.objects (bucket_id, name) values ('post-images', 'uidA/photo1.jpg');

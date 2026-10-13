@@ -1,0 +1,12 @@
+# Supabase project settings used by the CLI (`supabase functions deploy`, `supabase db push`).
+# project_id is the ref of the project you deploy to (Dashboard → Settings → General).
+project_id = "ptufblfubbkszzlkdxrs"
+
+# Browsers send Firebase ID tokens, not Supabase JWTs, so the platform's built-in JWT check is off.
+# Each function verifies the Firebase token itself (functions/_shared/firebase.ts).
+[functions.email-code]
+verify_jwt = false
+[functions.ai-draft]
+verify_jwt = false
+[functions.admin-courier]
+verify_jwt = false

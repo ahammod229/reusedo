@@ -479,6 +479,15 @@ create table public.ai_usage (
 );
 alter table public.ai_usage enable row level security;
 
+-- Daily AI-draft counter, called only by the ai-draft Edge Function (service role). Returns the new count.
+create function public.bump_ai_usage(p_uid text) returns int
+language sql security definer set search_path = public as $$
+  insert into public.ai_usage (firebase_uid, day, count) values (p_uid, current_date, 1)
+  on conflict (firebase_uid, day) do update set count = public.ai_usage.count + 1
+  returning count
+$$;
+revoke execute on function public.bump_ai_usage(text) from public, anon, authenticated;
+
 -- ───────────────────────── notification helper ─────────────────────────
 
 create function public.notify(p_to uuid, p_kind text, p_bn text, p_en text, p_route text) returns void
