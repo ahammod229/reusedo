@@ -142,7 +142,7 @@ export default function DonationMap() {
               className="rd-map h-[24rem] w-full sm:h-[28rem]"
             />
 
-            <div className="pointer-events-none absolute bottom-3 left-3 z-[500] space-y-1 rounded-xl bg-card/95 px-3 py-2 text-[11px] font-medium text-muted-foreground shadow-sm backdrop-blur">
+            <div className="pointer-events-none absolute bottom-3 left-3 z-[500] space-y-1 rounded-xl bg-card/95 px-3 py-2 text-xs font-medium text-muted-foreground shadow-sm backdrop-blur">
               <p className="flex items-center gap-1.5">
                 <span className="h-2.5 w-2.5 rounded-full bg-primary" />{" "}
                 {tr("বড় বৃত্ত = বেশি দাতা", "Bigger = more givers")}
@@ -284,7 +284,7 @@ function Stat({ value, label }: { value: string; label: string }) {
   return (
     <div className="rounded-xl bg-muted/70 px-3 py-1.5">
       <dd className="text-base font-extrabold leading-tight">{value}</dd>
-      <dt className="text-[11px] text-muted-foreground">{label}</dt>
+      <dt className="text-xs text-muted-foreground">{label}</dt>
     </div>
   );
 }

@@ -410,7 +410,7 @@ function ProfileView({ u, own }: { u: UserProfile; own: boolean }) {
                             style={{ width: `${(b.value / b.target) * 100}%` }}
                           />
                         </div>
-                        <p className="mt-1 text-[11px] leading-tight text-muted-foreground">
+                        <p className="mt-1 text-xs leading-tight text-muted-foreground">
                           {tr(b.howBn, b.howEn)}
                         </p>
                       </>

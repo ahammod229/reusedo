@@ -144,7 +144,7 @@ export function ExchangesPage() {
                       <li key={s} className="flex flex-1 items-center last:flex-none">
                         <span
                           className={cn(
-                            "flex h-6 w-6 items-center justify-center rounded-full border-2 text-[10px]",
+                            "flex h-6 w-6 items-center justify-center rounded-full border-2 text-xs",
                             i <= idx
                               ? "border-primary bg-primary text-primary-foreground"
                               : "border-border text-muted-foreground",

@@ -409,7 +409,7 @@ function Impact({ stats }: { stats: import("@/features/feed/gamify").ImpactStats
           </div>
         ))}
       </div>
-      <p className="mt-2 text-[11px] text-muted-foreground">
+      <p className="mt-2 text-xs text-muted-foreground">
         {tr("কেজির হিসাব আনুমানিক — জিনিসের ধরন দেখে।", "The kg figure is an estimate by item type.")}
       </p>
       <Button

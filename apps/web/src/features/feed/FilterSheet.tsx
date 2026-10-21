@@ -33,7 +33,7 @@ export function FilterButton({ count, onClick }: { count: number; onClick: () =>
       <SlidersHorizontal className="h-4 w-4" />
       <span className="hidden sm:inline">{tr("ফিল্টার", "Filters")}</span>
       {count > 0 && (
-        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-bold text-primary-foreground">
+        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-xs font-bold text-primary-foreground">
           {num(count)}
         </span>
       )}

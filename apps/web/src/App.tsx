@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Suspense, lazy } from "react";
 import { HelmetProvider } from "react-helmet-async";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router";
+import { PageLoading } from "./components/PageLoading";
 import { EmptyLayout } from "./layouts/EmptyLayout";
 import { MainLayout } from "./layouts/MainLayout";
 const ForgotPassword = lazy(() =>
@@ -144,13 +145,7 @@ function App() {
         <HelmetProvider>
           <AuthProvider>
             <BrowserRouter>
-              <Suspense
-                fallback={
-                  <div className="flex h-screen w-screen items-center justify-center">
-                    <div className="animate-pulse">Loading...</div>
-                  </div>
-                }
-              >
+              <Suspense fallback={<PageLoading />}>
                 <SocketProvider>
                   <Routes>
                     {/* Main App Layout */}

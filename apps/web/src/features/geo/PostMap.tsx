@@ -198,7 +198,7 @@ export default function PostMap({ posts, className }: { posts: FeedPost[]; class
           </span>
         </div>
         {zoom < AREA_ZOOM && posts.length > 0 && (
-          <p className="rounded-xl bg-card/95 px-3 py-1.5 text-[11px] font-medium text-muted-foreground shadow-sm backdrop-blur">
+          <p className="rounded-xl bg-card/95 px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm backdrop-blur">
             {tr("জেলায় চাপ দিন — এলাকা দেখাবে", "Tap a district to see areas")}
           </p>
         )}
@@ -278,7 +278,7 @@ export default function PostMap({ posts, className }: { posts: FeedPost[]; class
                       <span className="flex items-center gap-1.5">
                         <span
                           className={cn(
-                            "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold",
+                            "shrink-0 rounded-full px-1.5 py-0.5 text-xs font-bold",
                             p.kind === "offer"
                               ? "bg-offer-soft text-offer"
                               : "bg-need-soft text-need",
@@ -300,7 +300,7 @@ export default function PostMap({ posts, className }: { posts: FeedPost[]; class
           </ul>
         </section>
       ) : (
-        <p className="pointer-events-none absolute bottom-3 left-3 z-[500] flex max-w-[calc(100%-5rem)] items-center gap-1.5 rounded-xl bg-card/95 px-3 py-1.5 text-[11px] font-medium text-muted-foreground shadow-sm backdrop-blur">
+        <p className="pointer-events-none absolute bottom-3 left-3 z-[500] flex max-w-[calc(100%-5rem)] items-center gap-1.5 rounded-xl bg-card/95 px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm backdrop-blur">
           <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-primary" />
           {placed < posts.length
             ? tr(

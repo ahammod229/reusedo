@@ -179,7 +179,7 @@ function Thread({ chat }: { chat: Chat }) {
                 {m.text}
                 <span
                   className={cn(
-                    "mt-1 block text-right text-[11px]",
+                    "mt-1 block text-right text-xs",
                     m.from === "me" ? "text-primary-foreground/70" : "text-muted-foreground",
                   )}
                 >

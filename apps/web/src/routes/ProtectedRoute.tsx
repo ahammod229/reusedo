@@ -1,4 +1,5 @@
 import { isOnboarded, useAuthStore, useProfile } from "@/features/auth";
+import { PageLoading } from "@/components/PageLoading";
 import { UI_PREVIEW } from "@/shared/uiPreview";
 import { Navigate, Outlet, useLocation } from "react-router";
 import { useAuthReady } from "../providers/AuthProvider";
@@ -13,7 +14,7 @@ export const ProtectedRoute = () => {
   const { pathname } = useLocation();
 
   if (UI_PREVIEW) return <Outlet />;
-  if (!isReady || status === "loading") return <div>Loading Session...</div>;
+  if (!isReady || status === "loading") return <PageLoading />;
   if (status === "unauthenticated") return <Navigate to="/login" replace />;
 
   // Sign-up must finish in order: email code first, then phone + address.

@@ -92,7 +92,13 @@ export function Header({
         </form>
 
         <nav className="ml-auto flex items-center gap-1 sm:gap-2">
-          <Button asChild variant="ghost" size="icon" className="sm:hidden">
+          {/* Below 360px (small Android phones) there's no room; the feed has its own search. */}
+          <Button
+            asChild
+            variant="ghost"
+            size="icon"
+            className="hidden min-[360px]:inline-flex sm:hidden"
+          >
             <Link to="/search" aria-label={l.search}>
               <Search className="h-5 w-5" />
             </Link>
@@ -134,7 +140,7 @@ export function Header({
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button asChild size="sm" className="h-9 rounded-full px-4">
+            <Button asChild size="sm" className="h-9 rounded-full px-3 sm:px-4">
               <Link to="/login">{l.login}</Link>
             </Button>
           )}

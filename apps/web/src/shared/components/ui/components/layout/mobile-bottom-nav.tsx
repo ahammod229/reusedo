@@ -38,7 +38,7 @@ export function MobileBottomNav({ items }: MobileBottomNavProps) {
                 <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 ring-4 ring-background transition-transform active:scale-95">
                   {item.icon}
                 </span>
-                <span className="text-[11px] font-semibold leading-none text-primary">
+                <span className="text-xs font-semibold leading-none text-primary">
                   {item.title}
                 </span>
               </Link>
@@ -56,7 +56,7 @@ export function MobileBottomNav({ items }: MobileBottomNavProps) {
               )}
             >
               <div className="flex h-6 w-6 items-center justify-center">{item.icon}</div>
-              <span className="text-[11px] font-medium leading-none">{item.title}</span>
+              <span className="text-xs font-medium leading-none">{item.title}</span>
             </Link>
           );
         })}
