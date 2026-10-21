@@ -253,7 +253,7 @@ export const mockSource: DataSource = {
       "near",
     ).slice(0, 6);
     const needsNearby = sortPosts(
-      live.filter((p) => p.kind === "need" && p.distanceKm <= 10),
+      live.filter((p) => p.kind === "need" && (p.distanceKm ?? Number.POSITIVE_INFINITY) <= 10),
       "urgent",
     ).slice(0, 4);
     return wait({

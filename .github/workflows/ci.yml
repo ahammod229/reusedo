@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install pnpm
         uses: pnpm/action-setup@v3
         with:
@@ -34,3 +34,34 @@ jobs:
 
       - name: Build
         run: pnpm turbo build
+
+  api-tests:
+    # Integration tests against a real local Supabase (Postgres + PostgREST + Storage)
+    # with the migrations in supabase/migrations applied.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.75.0
+
+      - name: Start Supabase
+        run: supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor,mailpit,postgres-meta,realtime
+
+      - name: API tests
+        run: pnpm --filter api test

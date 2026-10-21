@@ -26,18 +26,17 @@
 9. **বিনামূল্যে ক্যাটাগরি-ভিত্তিক ড্রাইভ** — নতুন শিক্ষাবর্ষে "বই সপ্তাহ" (community goal আছে, তার সাথে জুড়বে)।
 10. **অফলাইন ফিড ক্যাশ** (PWA) — দুর্বল নেটে শেষ দেখা ফিড দেখায়।
 
-## API-তে যা বানাতে হবে (এই রাউন্ডের UI-র জন্য)
+## API ✅ (২০২৬-১০-২২)
 
-- `GET /api/stats/donation-map` — জেলা ধরে `{donors, items, fresh, recent[]}`। `recent`-এ শুধু যারা মানচিত্রে নাম দেখাতে সম্মত (`show_on_map`), শুধু প্রথম নাম; কোনো জেলায় ৩ জনের কম দাতা হলে নাম লুকান।
-- `GET /api/exchanges/:id/handover-code` — শুধু দাতা। ৪ অঙ্ক, `crypto.randomInt`, হ্যাশ করে রাখুন।
-- `POST /api/exchanges/:id/handover {code}` — শুধু গ্রহীতা; ৫ ভুলের পর লক; সঠিক হলে এক্সচেঞ্জ `completed`।
+এই রাউন্ডের তিনটি API তৈরি ও টেস্ট করা: `GET /api/stats/donation-map` (৩ জনের কম দাতার জেলায় নাম লুকানো, শুধু যারা সম্মত), `GET /api/exchanges/:id/handover-code` (শুধু দাতা, হ্যাশ করা), `POST /api/exchanges/:id/handover` (শুধু গ্রহীতা, ৫ ভুলে লক)। মানচিত্রে নাম দেখানোর সম্মতি: সেটিংস → "দানের মানচিত্রে আমার নাম"।
 
 ## চালু করার আগে (নিরাপত্তা চেকলিস্ট)
 
-- [ ] Supabase-এ `M16_email_verification.sql` চালান
-- [ ] Render-এ `RESEND_API_KEY`, `EMAIL_FROM`, `EMAIL_CODE_PEPPER`, `CLIENT_URL` সেট করুন (production-এ localhost CORS বন্ধ)
+- [ ] Supabase প্রজেক্টে স্কিমা দিন: `supabase link` তারপর `supabase db push` (`supabase/migrations`)
+- [ ] Render-এ `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `FIREBASE_*`, `SETTINGS_ENCRYPTION_KEY`, `EMAIL_CODE_PEPPER`, `RESEND_API_KEY`, `EMAIL_FROM`, `CLIENT_URL` সেট করুন (production-এ localhost CORS বন্ধ)
+- [ ] Steadfast-এর সাথে নিশ্চিত করুন: মার্চেন্ট API-তে অর্ডার-প্রতি পিকআপ ঠিকানা নেই — দাতার ঠিকানা এখন নোটে যায়; ব্যক্তি-থেকে-ব্যক্তি পিকআপ কীভাবে হবে জেনে নিন
 - [ ] Resend-এ নিজের ডোমেইন যাচাই (SPF/DKIM) — নইলে কোড স্প্যামে যাবে
 - [ ] `firebase.json`-এর CSP-তে `connect-src` এখন `https: wss:` — API ডোমেইন ঠিক হলে সেটি নির্দিষ্ট করে দিন
 - [ ] Firebase Console → Authentication → "Email enumeration protection" চালু রাখুন
-- [ ] Supabase RLS প্রতিটি টেবিলে চালু আছে কিনা পরীক্ষা করুন (API service-role ব্যবহার করে, কিন্তু অ্যাপ anon key-ও ব্যবহার করে)
+- [x] Supabase RLS প্রতিটি টেবিলে চালু, কোনো পলিসি নেই — ব্রাউজার আর anon key ব্যবহার করে না
 - [ ] OpenStreetMap-এর ফ্রি টাইল ভারী ট্রাফিকে নিষেধ — লঞ্চের আগে MapTiler/Stadia-এর কী নিন, `VITE_MAP_TILE_URL` দিন

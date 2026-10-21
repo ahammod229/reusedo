@@ -6,6 +6,9 @@ import type { FeedFilters } from "./types";
 
 const URGENCY_RANK = { urgent: 0, soon: 1, anytime: 2 } as const;
 
+/** Unknown distances (no map pin) sort after every known one. */
+const km = (p: FeedPost) => p.distanceKm ?? Number.POSITIVE_INFINITY;
+
 export function matchesFilters(p: FeedPost, f: FeedFilters, myDistrict = "ঢাকা") {
   const q = f.q?.trim().toLowerCase();
   if (f.user && p.author.username !== f.user) return false;
@@ -13,7 +16,7 @@ export function matchesFilters(p: FeedPost, f: FeedFilters, myDistrict = "ঢা
   if (f.category !== "all" && p.category !== f.category) return false;
   if (q && !`${p.title} ${p.description} ${p.edu?.detail ?? ""}`.toLowerCase().includes(q))
     return false;
-  if (f.scope === "area" && p.distanceKm > 5) return false;
+  if (f.scope === "area" && km(p) > 5) return false;
   if (f.scope === "district" && p.district !== myDistrict) return false;
   if (f.level && f.level !== "all" && p.edu?.level !== f.level) return false;
   if (f.conditions?.length && !f.conditions.includes(p.condition)) return false;
@@ -39,12 +42,13 @@ export function sortPosts(list: FeedPost[], sort: FeedFilters["sort"] = "near") 
       case "urgent":
         return (
           URGENCY_RANK[a.urgency ?? "anytime"] - URGENCY_RANK[b.urgency ?? "anytime"] ||
-          a.distanceKm - b.distanceKm
+          km(a) - km(b) ||
+          0
         );
       case "popular":
         return b.requests - a.requests;
       default:
-        return a.distanceKm - b.distanceKm;
+        return km(a) - km(b) || 0;
     }
   });
   return out;
