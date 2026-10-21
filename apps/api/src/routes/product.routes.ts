@@ -9,6 +9,9 @@ import { requireAuth } from "../middlewares/auth.middleware";
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } }); // 5MB limit
 
+// Anyone can see published items; drafts and moderated items stay with their owner (GET /me).
+const PUBLIC_STATUSES = new Set(["published"]);
+
 // Public routes
 router.get("/", async (req, res, next) => {
   try {
@@ -16,7 +19,7 @@ router.get("/", async (req, res, next) => {
     const products = await ProductRepository.getProducts({
       category_id: category_id as string,
       district: district as string,
-      status: status as string,
+      status: PUBLIC_STATUSES.has(status as string) ? (status as string) : "published",
     });
     res.json(products);
   } catch (error) {
@@ -24,23 +27,8 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-router.get("/:id", async (req, res, next) => {
-  try {
-    const product = await ProductRepository.getProductById(req.params.id);
-    if (!product) {
-      res.status(404).json({ message: "Product not found" });
-      return;
-    }
-    res.json(product);
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Protected routes (require auth)
-router.use(requireAuth);
-
-router.get("/me", async (req, res, next) => {
+// Must be registered before "/:id", or "me" is read as a product id.
+router.get("/me", requireAuth, async (req, res, next) => {
   try {
     const { status } = req.query;
     // req.user is set by requireAuth middleware
@@ -53,6 +41,22 @@ router.get("/me", async (req, res, next) => {
     next(error);
   }
 });
+
+router.get("/:id", async (req, res, next) => {
+  try {
+    const product = await ProductRepository.getProductById(req.params.id);
+    if (!product || !PUBLIC_STATUSES.has(product.status)) {
+      res.status(404).json({ message: "Product not found" });
+      return;
+    }
+    res.json(product);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Protected routes (require auth)
+router.use(requireAuth);
 
 router.post("/", async (req, res, next) => {
   try {

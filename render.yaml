@@ -2,8 +2,9 @@ services:
   - type: web
     name: binimoy-api
     env: node
-    buildCommand: pnpm install && pnpm run build --filter @reusedo/api
-    startCommand: pnpm run start --filter @reusedo/api
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter api run build
+    startCommand: pnpm --filter api run start
+    healthCheckPath: /health
     envVars:
       - key: PORT
         value: "8080"

@@ -5,6 +5,9 @@ import { requireAuth } from "../middlewares/auth.middleware";
 
 const router = Router();
 
+// Anyone can see live and fulfilled requests; drafts and moderated ones stay with their owner.
+const PUBLIC_STATUSES = new Set(["published", "fulfilled"]);
+
 // Public routes
 router.get("/", async (req, res, next) => {
   try {
@@ -12,7 +15,7 @@ router.get("/", async (req, res, next) => {
     const needs = await NeedRepository.getNeeds({
       category_id: category_id as string,
       district: district as string,
-      status: status as string,
+      status: PUBLIC_STATUSES.has(status as string) ? (status as string) : "published",
     });
     res.json(needs);
   } catch (error) {
@@ -23,7 +26,7 @@ router.get("/", async (req, res, next) => {
 router.get("/:id", async (req, res, next) => {
   try {
     const need = await NeedRepository.getNeedById(req.params.id);
-    if (!need) {
+    if (!need || !PUBLIC_STATUSES.has(need.status)) {
       res.status(404).json({ message: "Need request not found" });
       return;
     }
