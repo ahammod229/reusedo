@@ -3,7 +3,13 @@ import { z } from "zod";
 import { adminAuth } from "../config/firebase-admin";
 import { getSupabaseClient } from "../database/client";
 import { ah, badRequest, forbidden, must, notFound } from "../lib/http";
-import { type Profile, forgetProfile, me, requireAuth, requireAuthUnverified } from "../middlewares/auth.middleware";
+import {
+  type Profile,
+  forgetProfile,
+  me,
+  requireAuth,
+  requireAuthUnverified,
+} from "../middlewares/auth.middleware";
 
 const router = Router();
 
@@ -60,7 +66,9 @@ const toMe = (p: Profile, s: Settings | null) => ({
 async function sendMe(res: import("express").Response, uid: string) {
   const db = getSupabaseClient();
   const p = must(await db.from("profiles").select("*").eq("firebase_uid", uid).single()) as Profile;
-  const s = must(await db.from("user_settings").select("*").eq("user_id", p.id).maybeSingle()) as Settings | null;
+  const s = must(
+    await db.from("user_settings").select("*").eq("user_id", p.id).maybeSingle(),
+  ) as Settings | null;
   res.json({ success: true, data: toMe(p, s) });
 }
 
@@ -194,34 +202,34 @@ router.get(
         )
         .eq("username", req.params.username.toLowerCase())
         .maybeSingle(),
-    ) as
-      | (Pick<
-          Profile,
-          | "id"
-          | "username"
-          | "display_name"
-          | "avatar_url"
-          | "bio"
-          | "area"
-          | "district"
-          | "level"
-          | "institution"
-          | "show_institution"
-          | "is_verified"
-          | "email_verified_at"
-          | "phone_number"
-          | "trust_score"
-          | "status"
-          | "created_at"
-        >)
-      | null;
+    ) as Pick<
+      Profile,
+      | "id"
+      | "username"
+      | "display_name"
+      | "avatar_url"
+      | "bio"
+      | "area"
+      | "district"
+      | "level"
+      | "institution"
+      | "show_institution"
+      | "is_verified"
+      | "email_verified_at"
+      | "phone_number"
+      | "trust_score"
+      | "status"
+      | "created_at"
+    > | null;
     if (!p || p.status !== "active") throw notFound("user_not_found");
 
     const [stats, reviews, thanks] = await Promise.all([
       db.rpc("profile_stats", { p_user: p.id }).then(must),
       db
         .from("reviews")
-        .select("rating, comment, created_at, reviewer:profiles!reviews_reviewer_id_fkey (display_name)")
+        .select(
+          "rating, comment, created_at, reviewer:profiles!reviews_reviewer_id_fkey (display_name)",
+        )
         .eq("reviewee_id", p.id)
         .eq("flagged", false)
         .order("created_at", { ascending: false })
@@ -238,7 +246,12 @@ router.get(
         .then(must),
     ]);
 
-    type Review = { rating: number; comment: string; created_at: string; reviewer: { display_name: string } };
+    type Review = {
+      rating: number;
+      comment: string;
+      created_at: string;
+      reviewer: { display_name: string };
+    };
     type Thanks = {
       text: string;
       created_at: string;
@@ -291,9 +304,12 @@ router.post(
     must(
       await getSupabaseClient()
         .from("fcm_tokens")
-        .upsert({ user_id: me(req).id, token, device_info: req.get("user-agent")?.slice(0, 200) ?? null }, {
-          onConflict: "user_id,token",
-        }),
+        .upsert(
+          { user_id: me(req).id, token, device_info: req.get("user-agent")?.slice(0, 200) ?? null },
+          {
+            onConflict: "user_id,token",
+          },
+        ),
     );
     res.json({ success: true });
   }),

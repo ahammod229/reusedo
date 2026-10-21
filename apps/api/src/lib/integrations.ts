@@ -79,6 +79,13 @@ export const CATALOG: IntegrationDef[] = [
         default: "https://portal.packzy.com/api/v1",
         hint: "Steadfast মার্চেন্ট প্যানেলের API ডক থেকে মিলিয়ে নিন",
       },
+      {
+        key: "webhookToken",
+        label: "Webhook Bearer টোকেন",
+        secret: true,
+        optional: true,
+        hint: "Steadfast প্যানেলে webhook-এর Authorization হিসেবে একই টোকেন দিন",
+      },
     ],
     webhook: "/api/webhooks/steadfast",
   },
@@ -90,7 +97,13 @@ export const CATALOG: IntegrationDef[] = [
     docsUrl: "https://resend.com/docs",
     defaultEnabled: true,
     fields: [
-      { key: "provider", label: "প্রোভাইডার", secret: false, default: "Resend", options: ["Resend", "Brevo"] },
+      {
+        key: "provider",
+        label: "প্রোভাইডার",
+        secret: false,
+        default: "Resend",
+        options: ["Resend", "Brevo"],
+      },
       { key: "apiKey", label: "API কী", secret: true, placeholder: "re_…", env: "RESEND_API_KEY" },
       {
         key: "from",
@@ -110,7 +123,13 @@ export const CATALOG: IntegrationDef[] = [
     docsUrl: "https://firebase.google.com/docs/admin/setup",
     defaultEnabled: true,
     fields: [
-      { key: "projectId", label: "Project ID", secret: false, placeholder: "reusedo-xxxx", env: "FIREBASE_PROJECT_ID" },
+      {
+        key: "projectId",
+        label: "Project ID",
+        secret: false,
+        placeholder: "reusedo-xxxx",
+        env: "FIREBASE_PROJECT_ID",
+      },
       {
         key: "serviceAccount",
         label: "সার্ভিস অ্যাকাউন্ট JSON",
@@ -127,7 +146,13 @@ export const CATALOG: IntegrationDef[] = [
     docsUrl: "https://docs.barikoi.com",
     defaultEnabled: true,
     fields: [
-      { key: "provider", label: "প্রোভাইডার", secret: false, default: "Barikoi", options: ["Barikoi", "Google Maps"] },
+      {
+        key: "provider",
+        label: "প্রোভাইডার",
+        secret: false,
+        default: "Barikoi",
+        options: ["Barikoi", "Google Maps"],
+      },
       { key: "apiKey", label: "API কী", secret: true },
     ],
   },
@@ -205,7 +230,11 @@ function masterKey(): Buffer {
   const raw = process.env.SETTINGS_ENCRYPTION_KEY;
   const key = raw ? Buffer.from(raw, "base64") : null;
   if (!key || key.length !== 32) {
-    throw new HttpError(503, "encryption_key_missing", "SETTINGS_ENCRYPTION_KEY must be 32 bytes, base64");
+    throw new HttpError(
+      503,
+      "encryption_key_missing",
+      "SETTINGS_ENCRYPTION_KEY must be 32 bytes, base64",
+    );
   }
   return key;
 }
@@ -253,7 +282,11 @@ export async function integration(id: IntegrationId) {
         : stored
       : (f.env && process.env[f.env]) || f.default;
   }
-  return { enabled: row?.enabled ?? d.defaultEnabled, mode: row?.mode ?? (d.modes ? "sandbox" : undefined), values };
+  return {
+    enabled: row?.enabled ?? d.defaultEnabled,
+    mode: row?.mode ?? (d.modes ? "sandbox" : undefined),
+    values,
+  };
 }
 
 /** What Admin → APIs shows. Secrets never leave: only whether set, and the last 4. */
@@ -347,7 +380,10 @@ export async function saveIntegration(
 
 // --- live checks ------------------------------------------------------------
 
-async function probe(url: string, init: RequestInit = {}): Promise<{ ok: boolean; message: string }> {
+async function probe(
+  url: string,
+  init: RequestInit = {},
+): Promise<{ ok: boolean; message: string }> {
   const res = await fetch(url, { ...init, signal: AbortSignal.timeout(8000) });
   return { ok: res.ok, message: res.ok ? "OK" : `HTTP ${res.status}` };
 }
@@ -362,7 +398,9 @@ export async function testIntegration(id: IntegrationId) {
   try {
     if (missing.length) result = { ok: false, message: `বাকি: ${missing.join(", ")}` };
     else if (id === "gemini")
-      result = await probe(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(v.apiKey ?? "")}`);
+      result = await probe(
+        `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(v.apiKey ?? "")}`,
+      );
     else if (id === "steadfast")
       result = await probe(`${v.baseUrl}/get_balance`, {
         headers: { "Api-Key": v.apiKey ?? "", "Secret-Key": v.secretKey ?? "" },
@@ -370,19 +408,32 @@ export async function testIntegration(id: IntegrationId) {
     else if (id === "email")
       result =
         v.provider === "Brevo"
-          ? await probe("https://api.brevo.com/v3/account", { headers: { "api-key": v.apiKey ?? "" } })
-          : await probe("https://api.resend.com/domains", { headers: { Authorization: `Bearer ${v.apiKey}` } });
+          ? await probe("https://api.brevo.com/v3/account", {
+              headers: { "api-key": v.apiKey ?? "" },
+            })
+          : await probe("https://api.resend.com/domains", {
+              headers: { Authorization: `Bearer ${v.apiKey}` },
+            });
     else if (id === "maps")
       result =
         v.provider === "Google Maps"
-          ? await probe(`https://maps.googleapis.com/maps/api/geocode/json?address=Dhaka&key=${encodeURIComponent(v.apiKey ?? "")}`)
-          : await probe(`https://barikoi.xyz/v2/api/search/autocomplete?api_key=${encodeURIComponent(v.apiKey ?? "")}&q=dhaka`);
+          ? await probe(
+              `https://maps.googleapis.com/maps/api/geocode/json?address=Dhaka&key=${encodeURIComponent(v.apiKey ?? "")}`,
+            )
+          : await probe(
+              `https://barikoi.xyz/v2/api/search/autocomplete?api_key=${encodeURIComponent(v.apiKey ?? "")}&q=dhaka`,
+            );
     else if (id === "firebase") {
       if (v.serviceAccount) JSON.parse(v.serviceAccount);
-      result = { ok: true, message: v.serviceAccount ? "JSON ঠিক আছে" : "Project ID আছে (সার্ভিস অ্যাকাউন্ট ছাড়া)" };
+      result = {
+        ok: true,
+        message: v.serviceAccount ? "JSON ঠিক আছে" : "Project ID আছে (সার্ভিস অ্যাকাউন্ট ছাড়া)",
+      };
     } else if (id === "admanager") {
       const ad = await getSetting<{ networkCode: string }>("ad_network");
-      result = ad.networkCode ? { ok: true, message: `Network ${ad.networkCode}` } : { ok: false, message: "Network code বাকি" };
+      result = ad.networkCode
+        ? { ok: true, message: `Network ${ad.networkCode}` }
+        : { ok: false, message: "Network code বাকি" };
     } else {
       // Payment gateways and SMS need a merchant flow to test; confirm the keys are present.
       result = { ok: true, message: "কী আছে — স্বয়ংক্রিয় যাচাই নেই, প্রথম লেনদেনে দেখুন" };

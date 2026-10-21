@@ -3,7 +3,10 @@ import { vi } from "vitest";
 
 // Point the API at the local stack. `supabase status` gives the current local keys.
 if (!process.env.SUPABASE_URL) {
-  const env = execSync("supabase status -o env", { cwd: `${__dirname}/../../..`, encoding: "utf8" });
+  const env = execSync("supabase status -o env", {
+    cwd: `${__dirname}/../../..`,
+    encoding: "utf8",
+  });
   const get = (k: string) => env.match(new RegExp(`^${k}="?([^"\\n]+)"?`, "m"))?.[1];
   process.env.SUPABASE_URL = get("API_URL");
   process.env.SUPABASE_SERVICE_ROLE_KEY = get("SERVICE_ROLE_KEY");

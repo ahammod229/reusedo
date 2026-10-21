@@ -29,6 +29,7 @@ export interface Profile {
   trust_score: number;
   admin_role: "super_admin" | "admin" | "moderator" | null;
   status: "active" | "suspended";
+  last_active_at: string;
   created_at: string;
 }
 
@@ -66,7 +67,11 @@ async function loadOrCreate(token: {
   picture?: string;
 }): Promise<Profile> {
   const hit = cache.get(token.uid);
-  if (hit && Date.now() - hit.at < TTL_MS && (!token.email_verified || hit.profile.email_verified_at)) {
+  if (
+    hit &&
+    Date.now() - hit.at < TTL_MS &&
+    (!token.email_verified || hit.profile.email_verified_at)
+  ) {
     return hit.profile;
   }
 
@@ -81,7 +86,8 @@ async function loadOrCreate(token: {
       .select("enabled")
       .eq("key", "new_signups")
       .maybeSingle();
-    if (flag && !flag.enabled) throw new HttpError(403, "signups_closed", "New sign-ups are paused");
+    if (flag && !flag.enabled)
+      throw new HttpError(403, "signups_closed", "New sign-ups are paused");
 
     const base = slug(token.email?.split("@")[0] ?? "");
     const name = token.name?.trim() || token.email?.split("@")[0] || "User";
@@ -124,6 +130,16 @@ async function loadOrCreate(token: {
     ) as Profile;
   }
 
+  // "Active nearby this week" on Home counts this. Hourly is precise enough.
+  const seen = profile;
+  if (Date.now() - new Date(seen.last_active_at).getTime() > 3_600_000) {
+    void db
+      .from("profiles")
+      .update({ last_active_at: new Date().toISOString() })
+      .eq("id", seen.id)
+      .then(() => undefined);
+  }
+
   cache.set(token.uid, { profile, at: Date.now() });
   return profile;
 }
@@ -141,7 +157,9 @@ const authenticate =
     const token = bearer(req);
     if (!token) {
       if (opts.optional) return next();
-      return res.status(401).json({ success: false, code: "unauthorized", message: "Missing token" });
+      return res
+        .status(401)
+        .json({ success: false, code: "unauthorized", message: "Missing token" });
     }
 
     let decoded: Awaited<ReturnType<typeof adminAuth.verifyIdToken>>;
@@ -150,12 +168,19 @@ const authenticate =
     } catch {
       // A stale token on a public page shouldn't break the page.
       if (opts.optional) return next();
-      return res.status(401).json({ success: false, code: "unauthorized", message: "Invalid token" });
+      return res
+        .status(401)
+        .json({ success: false, code: "unauthorized", message: "Invalid token" });
     }
 
     try {
       const profile = await loadOrCreate(decoded);
-      req.user = { uid: decoded.uid, email: decoded.email, email_verified: decoded.email_verified, profile };
+      req.user = {
+        uid: decoded.uid,
+        email: decoded.email,
+        email_verified: decoded.email_verified,
+        profile,
+      };
 
       if (!SAFE_METHODS.has(req.method)) {
         if (profile.status === "suspended") {
@@ -167,7 +192,11 @@ const authenticate =
         if (opts.enforceVerifiedEmail && !decoded.email_verified) {
           return res
             .status(403)
-            .json({ success: false, code: "email_not_verified", message: "Verify your email first" });
+            .json({
+              success: false,
+              code: "email_not_verified",
+              message: "Verify your email first",
+            });
         }
       }
       next();

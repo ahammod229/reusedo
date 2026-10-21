@@ -213,6 +213,11 @@ create table public.exchanges (
   -- Pickup handover: the giver reads a 4-digit code aloud, the receiver types it.
   handover_code_hash text,
   handover_attempts integer not null default 0,
+  -- Courier: each side agrees and leaves a private address snapshot
+  -- ({ name, phone, district, upazila, area, line, agreedAt }). Never shown to the other side.
+  giver_courier jsonb,
+  receiver_courier jsonb,
+  courier_weight_kg numeric(5, 2) check (courier_weight_kg is null or courier_weight_kg > 0),
   completed_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -325,6 +330,9 @@ create table public.courier_requests (
   charge integer not null check (charge >= 0),
   status text not null default 'pending' check (status in ('pending', 'confirmed', 'rejected')),
   tracking text,
+  consignment_id text,
+  -- From Steadfast after confirmation.
+  delivery_status text check (delivery_status in ('in_review', 'picked_up', 'in_transit', 'delivered', 'returned', 'cancelled')),
   decided_by uuid references public.profiles (id) on delete set null,
   created_at timestamptz not null default now()
 );
@@ -565,6 +573,20 @@ returns void language sql as $$
   update public.posts set view_count = view_count + 1 where id = p_post
 $$;
 
+-- One impression/click per ad per browser session; the counter only moves on a new one.
+create or replace function public.track_ad(p_ad uuid, p_type text, p_session text)
+returns void language plpgsql as $$
+begin
+  insert into public.ad_events (ad_id, type, session_id) values (p_ad, p_type, p_session)
+  on conflict do nothing;
+  if found then
+    update public.ad_campaigns
+       set impressions = impressions + (p_type = 'impression')::int,
+           clicks = clicks + (p_type = 'click')::int
+     where id = p_ad;
+  end if;
+end $$;
+
 -- Per-district donation totals for the Home map. Never an address; names only for
 -- people who opted in, and only once a district has 3+ donors.
 create or replace function public.donation_map()
@@ -718,6 +740,57 @@ begin
   end if;
   return e;
 end $$;
+
+-- Admin dashboard numbers. Deltas are % change: users/posts week over week,
+-- completed exchanges month over month.
+create or replace function public.admin_stats()
+returns jsonb language sql stable as $$
+  with pct as (
+    select (a - b) * 100 / greatest(b, 1) as v, k from (
+      select 'users' as k,
+             (select count(*) from public.profiles where created_at > now() - interval '7 days') as a,
+             (select count(*) from public.profiles where created_at between now() - interval '14 days' and now() - interval '7 days') as b
+      union all
+      select 'posts',
+             (select count(*) from public.posts where created_at > now() - interval '7 days'),
+             (select count(*) from public.posts where created_at between now() - interval '14 days' and now() - interval '7 days')
+      union all
+      select 'exchanges',
+             (select count(*) from public.exchanges where status = 'completed' and completed_at > date_trunc('month', now())),
+             (select count(*) from public.exchanges where status = 'completed'
+                and completed_at between date_trunc('month', now()) - interval '1 month' and date_trunc('month', now()))
+    ) t
+  ),
+  days as (select generate_series(current_date - 13, current_date, interval '1 day')::date as d)
+  select jsonb_build_object(
+    'users', (select count(*) from public.profiles),
+    'usersDelta', (select v from pct where k = 'users'),
+    'activePosts', (select count(*) from public.posts where status in ('available', 'reserved')),
+    'postsDelta', (select v from pct where k = 'posts'),
+    'exchangesMonth', (select count(*) from public.exchanges where status = 'completed' and completed_at > date_trunc('month', now())),
+    'exchangesDelta', (select v from pct where k = 'exchanges'),
+    'pendingCourier', (select count(*) from public.courier_requests where status = 'pending'),
+    'openReports', (select count(*) from public.reports where status in ('open', 'investigating')),
+    'pendingVerifications', (select count(*) from public.verifications where status = 'pending'),
+    'pendingPayments', (select count(*) from public.payments where status = 'pending'),
+    'openRisk', (select count(*) from public.risk_cases where status in ('open', 'held')),
+    'series', (select jsonb_agg(jsonb_build_object(
+        'day', to_char(d, 'YYYY-MM-DD'),
+        'posts', (select count(*) from public.posts where created_at::date = d),
+        'exchanges', (select count(*) from public.exchanges where status = 'completed' and completed_at::date = d),
+        'signups', (select count(*) from public.profiles where created_at::date = d)) order by d) from days),
+    'byCategory', coalesce((select jsonb_agg(jsonb_build_object('category', category_id, 'count', n) order by n desc)
+        from (select category_id, count(*) n from public.posts where status in ('available', 'reserved', 'given') group by 1) c), '[]'),
+    'topDistricts', coalesce((select jsonb_agg(jsonb_build_object('district', district, 'count', n) order by n desc)
+        from (select district, count(*) n from public.posts where status in ('available', 'reserved', 'given')
+              group by 1 order by 2 desc limit 8) t), '[]'),
+    'ads', jsonb_build_object(
+        'impressions', (select coalesce(sum(impressions), 0) from public.ad_campaigns),
+        'clicks', (select coalesce(sum(clicks), 0) from public.ad_campaigns),
+        -- Direct ads are sold outside the app; AdX revenue needs the Ad Manager reporting API.
+        'estRevenue', 0)
+  )
+$$;
 
 -- ---------------------------------------------------------------------------
 -- Storage

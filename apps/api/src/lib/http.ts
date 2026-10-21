@@ -48,7 +48,12 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
   if (err instanceof ZodError) {
     return res
       .status(400)
-      .json({ success: false, code: "validation", message: "Validation error", details: err.issues });
+      .json({
+        success: false,
+        code: "validation",
+        message: "Validation error",
+        details: err.issues,
+      });
   }
   const pg = err as PgError;
   if (pg?.code && PG_STATUS[pg.code]) {
@@ -64,7 +69,9 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
     return res.status(400).json({ success: false, code: "upload_rejected", message: multer.code });
   }
   console.error(`[${req.method} ${req.originalUrl}]`, err);
-  return res.status(500).json({ success: false, code: "internal", message: "Internal Server Error" });
+  return res
+    .status(500)
+    .json({ success: false, code: "internal", message: "Internal Server Error" });
 }
 
 /** Throws the Supabase error if there is one, otherwise returns the data. */

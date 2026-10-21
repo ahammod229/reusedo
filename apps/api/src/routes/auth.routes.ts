@@ -10,7 +10,12 @@ router.post("/session", requireAuth, (req, res) => {
   const p = me(req);
   res.status(200).json({
     success: true,
-    data: { id: p.id, username: p.username, onboarded: !!(p.district && p.phone_number), adminRole: p.admin_role },
+    data: {
+      id: p.id,
+      username: p.username,
+      onboarded: !!(p.district && p.phone_number),
+      adminRole: p.admin_role,
+    },
   });
 });
 
@@ -23,7 +28,8 @@ router.post("/logout", requireAuth, (req, res) => {
 router.post("/email-code/send", requireAuth, async (req, res) => {
   try {
     const { uid, email, email_verified } = req.user ?? {};
-    if (!uid || !email) return res.status(400).json({ success: false, message: "No email on account" });
+    if (!uid || !email)
+      return res.status(400).json({ success: false, message: "No email on account" });
     if (email_verified) return res.status(200).json({ success: true, alreadyVerified: true });
     await emailCodeService.send(uid, email);
     res.status(200).json({ success: true });
@@ -46,7 +52,9 @@ router.post("/email-code/verify", requireAuth, async (req, res) => {
 
 function sendCodeError(res: import("express").Response, error: unknown) {
   if (error instanceof EmailCodeError) {
-    return res.status(error.status).json({ success: false, code: error.code, message: error.message });
+    return res
+      .status(error.status)
+      .json({ success: false, code: error.code, message: error.message });
   }
   console.error("Email code error:", error);
   return res.status(500).json({ success: false, message: "Could not process the code" });

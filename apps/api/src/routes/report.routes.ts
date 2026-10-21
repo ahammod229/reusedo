@@ -19,13 +19,15 @@ router.post(
   requireAuth,
   ah(async (req, res) => {
     const r = reportBody.parse(req.body);
-    const { error } = await getSupabaseClient().from("reports").insert({
-      reporter_id: me(req).id,
-      target_type: r.targetType,
-      target_id: r.targetId,
-      reason: r.reason,
-      details: r.details,
-    });
+    const { error } = await getSupabaseClient()
+      .from("reports")
+      .insert({
+        reporter_id: me(req).id,
+        target_type: r.targetType,
+        target_id: r.targetId,
+        reason: r.reason,
+        details: r.details,
+      });
     if (error && (error as { code?: string }).code !== "23505") must({ data: null, error });
     res.status(201).json({ success: true });
   }),

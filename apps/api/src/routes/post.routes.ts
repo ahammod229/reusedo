@@ -86,7 +86,9 @@ const feedQuery = z.object({
   conditions: z
     .string()
     .optional()
-    .transform((s) => (s ? s.split(",").filter((c) => (CONDITIONS as readonly string[]).includes(c)) : null)),
+    .transform((s) =>
+      s ? s.split(",").filter((c) => (CONDITIONS as readonly string[]).includes(c)) : null,
+    ),
   delivery: z.enum(["any", "pickup", "courier"]).default("any"),
   within: z.enum(["24h", "7d", "any"]).default("any"),
   verifiedOnly: bool,
@@ -168,7 +170,10 @@ router.get(
         .rpc("bump_view", { p_post: row.id })
         .then(() => undefined);
     }
-    res.json({ success: true, data: { ...toPost(row), mine: row.owner_id === req.user?.profile.id } });
+    res.json({
+      success: true,
+      data: { ...toPost(row), mine: row.owner_id === req.user?.profile.id },
+    });
   }),
 );
 
@@ -182,7 +187,10 @@ const newPost = z
     edu: z
       .object({ level: z.enum(LEVELS), detail: z.string().trim().max(120).optional() })
       .optional(),
-    delivery: z.array(z.enum(["pickup", "courier"])).min(1).max(2),
+    delivery: z
+      .array(z.enum(["pickup", "courier"]))
+      .min(1)
+      .max(2),
     urgency: z.enum(["urgent", "soon", "anytime"]).optional(),
     qty: z.number().int().min(1).max(999).optional(),
   })
@@ -202,23 +210,31 @@ router.post(
       throw badRequest("invalid_json");
     }
     const input = newPost.parse(raw);
-    if (input.kind === "need" && !(await flagOn("need_posts"))) throw forbidden("need_posts_disabled");
+    if (input.kind === "need" && !(await flagOn("need_posts")))
+      throw forbidden("need_posts_disabled");
     // Posts show the owner's area; without one the feed can't place them.
     if (!profile.district) throw badRequest("profile_incomplete", "Add your area before posting");
 
     const db = getSupabaseClient();
     const cat = must(
-      await db.from("categories").select("id").eq("id", input.category).eq("enabled", true).maybeSingle(),
+      await db
+        .from("categories")
+        .select("id")
+        .eq("id", input.category)
+        .eq("enabled", true)
+        .maybeSingle(),
     );
     if (!cat) throw badRequest("invalid_category");
 
     const files = (req.files as Express.Multer.File[] | undefined) ?? [];
     const { maxPhotos } = await getSetting<GeneralSettings>("general");
-    if (files.length > maxPhotos) throw badRequest("too_many_photos", `At most ${maxPhotos} photos`);
+    if (files.length > maxPhotos)
+      throw badRequest("too_many_photos", `At most ${maxPhotos} photos`);
     if (input.kind === "offer" && files.length === 0) throw badRequest("photo_required");
 
     const images = [];
-    for (const f of files) images.push(await uploadImage("post-images", profile.id, f, MAX_IMAGE_BYTES));
+    for (const f of files)
+      images.push(await uploadImage("post-images", profile.id, f, MAX_IMAGE_BYTES));
 
     const row = must(
       await db
@@ -321,7 +337,9 @@ router.post(
         : `${me(req).display_name} আপনার দরকারি ‘${post.title}’ দিতে চান`,
       "/exchanges",
     );
-    res.status(201).json({ success: true, data: { exchangeId: ex.id, conversationId: ex.conversation_id } });
+    res
+      .status(201)
+      .json({ success: true, data: { exchangeId: ex.id, conversationId: ex.conversation_id } });
   }),
 );
 

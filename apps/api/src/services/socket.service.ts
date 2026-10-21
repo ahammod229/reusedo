@@ -12,7 +12,9 @@ export class SocketService {
     const allowedOrigins = [
       process.env.CLIENT_URL,
       process.env.ADMIN_URL,
-      ...(process.env.NODE_ENV === "production" ? [] : ["http://localhost:5173", "http://localhost:5174"]),
+      ...(process.env.NODE_ENV === "production"
+        ? []
+        : ["http://localhost:5173", "http://localhost:5174"]),
     ].filter(Boolean) as string[];
 
     SocketService.io = new SocketIOServer(httpServer, {

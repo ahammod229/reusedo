@@ -4,14 +4,19 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 
 import { errorHandler } from "./lib/http";
+import { adminRouter } from "./routes/admin.routes";
+import { adsRouter } from "./routes/ads.routes";
+import { aiRouter } from "./routes/ai.routes";
 import authRoutes from "./routes/auth.routes";
 import { chatRouter } from "./routes/chat.routes";
+import { courierRouter } from "./routes/courier.routes";
 import { exchangeRouter } from "./routes/exchange.routes";
 import { homeRouter } from "./routes/home.routes";
 import { notificationRouter } from "./routes/notification.routes";
 import { postRouter } from "./routes/post.routes";
 import { reportRouter } from "./routes/report.routes";
 import { userRouter } from "./routes/user.routes";
+import { webhookRouter } from "./routes/webhook.routes";
 
 const app = express();
 
@@ -23,7 +28,9 @@ app.use(helmet());
 const allowedOrigins = [
   process.env.CLIENT_URL,
   process.env.ADMIN_URL,
-  ...(process.env.NODE_ENV === "production" ? [] : ["http://localhost:5173", "http://localhost:5174"]),
+  ...(process.env.NODE_ENV === "production"
+    ? []
+    : ["http://localhost:5173", "http://localhost:5174"]),
 ].filter(Boolean);
 
 class CorsError extends Error {}
@@ -48,12 +55,17 @@ const limiter = (windowMin: number, max: number) =>
     limit: max,
     standardHeaders: "draft-7",
     legacyHeaders: false,
+    // Integration tests send every request from one address.
+    skip: () => process.env.NODE_ENV === "test",
     message: { success: false, message: "Too many requests, please slow down." },
   });
 
 app.use("/api", limiter(15, 600));
 app.use("/api/auth", limiter(15, 60));
 app.use("/api/auth/email-code", limiter(15, 12));
+app.use("/api/ai", limiter(15, 20));
+app.use("/api/reports", limiter(15, 30));
+app.use("/api/ads", limiter(15, 300));
 
 // Routes
 app.use("/api/auth", authRoutes);
@@ -64,6 +76,11 @@ app.use("/api/exchanges", exchangeRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/notifications", notificationRouter);
 app.use("/api/reports", reportRouter);
+app.use("/api/courier", courierRouter);
+app.use("/api", adsRouter); // /ads, /payments/config
+app.use("/api/ai", aiRouter);
+app.use("/api/admin", adminRouter);
+app.use("/api/webhooks", webhookRouter);
 
 app.get("/health", (req: Request, res: Response) => {
   res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });

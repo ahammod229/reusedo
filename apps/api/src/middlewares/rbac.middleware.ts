@@ -9,9 +9,14 @@ export type AdminRole = "super_admin" | "admin" | "moderator";
 export const requireAdmin =
   (allowed: AdminRole[]) => (req: Request, res: Response, next: NextFunction) => {
     const role = req.user?.profile.admin_role;
-    if (!req.user) return res.status(401).json({ success: false, code: "unauthorized", message: "Unauthorized" });
+    if (!req.user)
+      return res
+        .status(401)
+        .json({ success: false, code: "unauthorized", message: "Unauthorized" });
     if (!role || !allowed.includes(role)) {
-      return res.status(403).json({ success: false, code: "forbidden", message: "Admin access required" });
+      return res
+        .status(403)
+        .json({ success: false, code: "forbidden", message: "Admin access required" });
     }
     next();
   };

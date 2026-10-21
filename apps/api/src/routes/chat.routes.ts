@@ -129,10 +129,18 @@ router.post(
     ) as MessageRow;
 
     for (const o of others) {
-      SocketService.emitNewMessage(req.params.id, { ...toMessage(m, o.user_id), conversationId: m.conversation_id });
+      SocketService.emitNewMessage(req.params.id, {
+        ...toMessage(m, o.user_id),
+        conversationId: m.conversation_id,
+      });
       // One notification per burst of messages, not one per message.
       if (o.unread_count === 0 && !o.muted) {
-        await notify(o.user_id, "message", `${me(req).display_name} আপনাকে মেসেজ পাঠিয়েছেন`, `/messages/${req.params.id}`);
+        await notify(
+          o.user_id,
+          "message",
+          `${me(req).display_name} আপনাকে মেসেজ পাঠিয়েছেন`,
+          `/messages/${req.params.id}`,
+        );
       }
     }
     res.status(201).json({ success: true, data: toMessage(m, myId) });

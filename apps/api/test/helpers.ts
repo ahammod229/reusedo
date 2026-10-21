@@ -14,7 +14,10 @@ export const token = (uid: string, opts: { verified?: boolean; name?: string } =
   })}`;
 
 let client: Client | null = null;
-export async function sql<T = Record<string, unknown>>(text: string, params: unknown[] = []): Promise<T[]> {
+export async function sql<T = Record<string, unknown>>(
+  text: string,
+  params: unknown[] = [],
+): Promise<T[]> {
   if (!client) {
     client = new Client({ connectionString: process.env.TEST_DB_URL });
     await client.connect();
@@ -27,8 +30,20 @@ export async function resetData() {
   // DELETE (not TRUNCATE … CASCADE): settings rows reference profiles with ON DELETE SET
   // NULL, and a cascading truncate would wipe the seeded settings along with the people.
   await sql("delete from profiles");
-  await sql("truncate blocklist, ad_events, ad_campaigns, audit_logs, integration_settings, email_verification_codes");
+  await sql(
+    "truncate blocklist, ad_events, ad_campaigns, audit_logs, integration_settings, email_verification_codes",
+  );
   await sql(`update feature_flags set enabled = key <> 'ads_enabled' and key <> 'chat_images'`);
+  await sql(`update cms_pages set status = 'draft', body = ''`);
+  await sql(
+    `update platform_settings set value = value || '{"aiDailyLimit": 15}' where key = 'general'`,
+  );
+  await sql(
+    `update platform_settings set value = value || '{"methods": {"cod": true, "bkash": false, "nagad": false}}' where key = 'payments'`,
+  );
+  await sql(
+    `update platform_settings set value = value || '{"adsEnabled": false}' where key = 'ad_network'`,
+  );
 }
 
 export async function closeDb() {

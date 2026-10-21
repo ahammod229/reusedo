@@ -18,7 +18,9 @@ export class EmailCodeError extends Error {
 
 // The hash is bound to the uid, so a leaked row can't be replayed for another account.
 const hash = (uid: string, code: string) =>
-  createHash("sha256").update(`${uid}:${code}:${process.env.EMAIL_CODE_PEPPER ?? ""}`).digest("hex");
+  createHash("sha256")
+    .update(`${uid}:${code}:${process.env.EMAIL_CODE_PEPPER ?? ""}`)
+    .digest("hex");
 
 async function deliver(email: string, code: string) {
   const key = process.env.RESEND_API_KEY;
@@ -50,7 +52,11 @@ export const emailCodeService = {
       .maybeSingle();
 
     if (existing && Date.now() - new Date(existing.last_sent_at).getTime() < RESEND_COOLDOWN_MS) {
-      throw new EmailCodeError("cooldown", 429, "Please wait a minute before asking for a new code");
+      throw new EmailCodeError(
+        "cooldown",
+        429,
+        "Please wait a minute before asking for a new code",
+      );
     }
 
     const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
@@ -81,7 +87,11 @@ export const emailCodeService = {
       throw new EmailCodeError("expired", 400, "Code expired — request a new one");
     }
     if (row.attempts >= MAX_ATTEMPTS) {
-      throw new EmailCodeError("too_many_attempts", 429, "Too many wrong attempts — request a new code");
+      throw new EmailCodeError(
+        "too_many_attempts",
+        429,
+        "Too many wrong attempts — request a new code",
+      );
     }
 
     const expected = Buffer.from(row.code_hash, "hex");
@@ -96,6 +106,9 @@ export const emailCodeService = {
 
     await adminAuth.updateUser(uid, { emailVerified: true });
     await db.from("email_verification_codes").delete().eq("firebase_uid", uid);
-    await db.from("profiles").update({ email_verified_at: new Date().toISOString() }).eq("firebase_uid", uid);
+    await db
+      .from("profiles")
+      .update({ email_verified_at: new Date().toISOString() })
+      .eq("firebase_uid", uid);
   },
 };

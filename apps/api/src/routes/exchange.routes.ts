@@ -64,10 +64,15 @@ export async function loadExchange(id: string, myId: string): Promise<ExchangeRo
   const parsed = uuid.safeParse(id);
   if (!parsed.success) throw notFound("exchange_not_found");
   const row = must(
-    await getSupabaseClient().from("exchanges").select(EXCHANGE_SELECT).eq("id", parsed.data).maybeSingle(),
+    await getSupabaseClient()
+      .from("exchanges")
+      .select(EXCHANGE_SELECT)
+      .eq("id", parsed.data)
+      .maybeSingle(),
   ) as unknown as ExchangeRow | null;
   // Not yours looks the same as not existing.
-  if (!row || (row.giver_id !== myId && row.receiver_id !== myId)) throw notFound("exchange_not_found");
+  if (!row || (row.giver_id !== myId && row.receiver_id !== myId))
+    throw notFound("exchange_not_found");
   return row;
 }
 
@@ -86,7 +91,10 @@ async function setStatus(e: ExchangeRow, status: ExchangeRow["status"], extra: o
 /** Completing hands the item over: the post becomes "given" and both trust scores update. */
 async function complete(e: ExchangeRow) {
   const db = getSupabaseClient();
-  await setStatus(e, "completed", { completed_at: new Date().toISOString(), handover_code_hash: null });
+  await setStatus(e, "completed", {
+    completed_at: new Date().toISOString(),
+    handover_code_hash: null,
+  });
   // A post with several items (qty > 1) stays open for the next person.
   if (!e.post.qty || e.post.qty <= 1) {
     must(
@@ -101,7 +109,12 @@ async function complete(e: ExchangeRow) {
     db.rpc("refresh_trust", { p_user: e.receiver_id }),
   ]);
   await notify(e.giver_id, "accepted", `‘${e.post.title}’ হস্তান্তর সম্পন্ন হয়েছে`, "/exchanges");
-  await notify(e.receiver_id, "accepted", `‘${e.post.title}’ পেয়েছেন — ধন্যবাদ জানাতে পারেন`, "/exchanges");
+  await notify(
+    e.receiver_id,
+    "accepted",
+    `‘${e.post.title}’ পেয়েছেন — ধন্যবাদ জানাতে পারেন`,
+    "/exchanges",
+  );
 }
 
 const reply = async (res: import("express").Response, id: string, myId: string) =>
@@ -136,8 +149,19 @@ router.post(
     if (e.status === "requested") {
       if (e.requested_by === myId) throw forbidden("not_your_decision");
       await setStatus(e, "accepted");
-      must(await db.from("posts").update({ status: "reserved" }).eq("id", e.post_id).eq("status", "available"));
-      await notify(e.requested_by, "accepted", `আপনার রিকোয়েস্ট গ্রহণ হয়েছে: ‘${e.post.title}’`, "/exchanges");
+      must(
+        await db
+          .from("posts")
+          .update({ status: "reserved" })
+          .eq("id", e.post_id)
+          .eq("status", "available"),
+      );
+      await notify(
+        e.requested_by,
+        "accepted",
+        `আপনার রিকোয়েস্ট গ্রহণ হয়েছে: ‘${e.post.title}’`,
+        "/exchanges",
+      );
     } else if (e.status === "accepted") {
       await setStatus(e, "scheduled");
     } else if (e.status === "scheduled" && e.via === "courier") {
@@ -176,7 +200,13 @@ export async function releasePost(postId: string) {
     .eq("post_id", postId)
     .in("status", ["accepted", "scheduled"]);
   if (!count) {
-    must(await db.from("posts").update({ status: "available" }).eq("id", postId).eq("status", "reserved"));
+    must(
+      await db
+        .from("posts")
+        .update({ status: "available" })
+        .eq("id", postId)
+        .eq("status", "reserved"),
+    );
   }
 }
 
@@ -256,10 +286,18 @@ router.post(
     must(
       await db
         .from("reviews")
-        .insert({ exchange_id: e.id, reviewer_id: myId, reviewee_id: other, rating: stars, comment: text }),
+        .insert({
+          exchange_id: e.id,
+          reviewer_id: myId,
+          reviewee_id: other,
+          rating: stars,
+          comment: text,
+        }),
     );
     if (receiver) {
-      must(await db.from("thanks").insert({ exchange_id: e.id, from_id: myId, to_id: other, text }));
+      must(
+        await db.from("thanks").insert({ exchange_id: e.id, from_id: myId, to_id: other, text }),
+      );
     }
     await db.rpc("refresh_trust", { p_user: other });
     const name = me(req).display_name;

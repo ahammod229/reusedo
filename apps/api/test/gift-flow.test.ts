@@ -15,8 +15,16 @@ let conversationId = "";
 
 beforeAll(async () => {
   await resetData();
-  giver = await onboard("giver1", { district: "ঢাকা", area: "মিরপুর ১০", pin: MIRPUR }, { name: "Rakib Hasan" });
-  receiver = await onboard("recv1", { district: "ঢাকা", area: "ধানমন্ডি", pin: DHANMONDI }, { name: "Fahim Rahman" });
+  giver = await onboard(
+    "giver1",
+    { district: "ঢাকা", area: "মিরপুর ১০", pin: MIRPUR },
+    { name: "Rakib Hasan" },
+  );
+  receiver = await onboard(
+    "recv1",
+    { district: "ঢাকা", area: "ধানমন্ডি", pin: DHANMONDI },
+    { name: "Fahim Rahman" },
+  );
 });
 afterAll(closeDb);
 
@@ -25,7 +33,15 @@ describe("posting", () => {
     const res = await api()
       .post("/api/posts")
       .set("Authorization", giver.auth)
-      .field("data", JSON.stringify({ kind: "offer", title: "ক্লাস ৮-এর বই", category: "books", delivery: ["pickup"] }))
+      .field(
+        "data",
+        JSON.stringify({
+          kind: "offer",
+          title: "ক্লাস ৮-এর বই",
+          category: "books",
+          delivery: ["pickup"],
+        }),
+      )
       .expect(400);
     expect(res.body.code).toBe("photo_required");
   });
@@ -50,7 +66,13 @@ describe("posting", () => {
       .expect(201);
     const p = res.body.data;
     postId = p.id;
-    expect(p).toMatchObject({ kind: "offer", district: "ঢাকা", area: "মিরপুর ১০", status: "available", requests: 0 });
+    expect(p).toMatchObject({
+      kind: "offer",
+      district: "ঢাকা",
+      area: "মিরপুর ১০",
+      status: "available",
+      requests: 0,
+    });
     expect(p.author.username).toBe(giver.me.username);
     expect(p.images).toHaveLength(1);
 
@@ -74,7 +96,9 @@ describe("feed", () => {
     const needs = await api().get("/api/feed?kind=need").expect(200);
     expect(needs.body.data).toHaveLength(0);
 
-    const q = await api().get(`/api/feed?q=${encodeURIComponent("বাংলা ভার্সন")}`).expect(200);
+    const q = await api()
+      .get(`/api/feed?q=${encodeURIComponent("বাংলা ভার্সন")}`)
+      .expect(200);
     expect(q.body.data).toHaveLength(1);
 
     const level = await api().get("/api/feed?level=hsc").expect(200);
@@ -82,14 +106,20 @@ describe("feed", () => {
   });
 
   it("gives signed-in viewers a distance, rounded", async () => {
-    const res = await api().get("/api/feed?scope=district").set("Authorization", receiver.auth).expect(200);
+    const res = await api()
+      .get("/api/feed?scope=district")
+      .set("Authorization", receiver.auth)
+      .expect(200);
     const p = res.body.data.find((x: { id: string }) => x.id === postId);
     expect(p.distanceKm).toBeGreaterThan(5);
     expect(p.distanceKm).toBeLessThan(10);
   });
 
   it("'my area' means within 5 km", async () => {
-    const res = await api().get("/api/feed?scope=area").set("Authorization", receiver.auth).expect(200);
+    const res = await api()
+      .get("/api/feed?scope=area")
+      .set("Authorization", receiver.auth)
+      .expect(200);
     expect(res.body.data.map((x: { id: string }) => x.id)).not.toContain(postId);
   });
 });
@@ -113,12 +143,20 @@ describe("request → accept → handover", () => {
     exchangeId = res.body.data.exchangeId;
     conversationId = res.body.data.conversationId;
 
-    const notes = await api().get("/api/notifications").set("Authorization", giver.auth).expect(200);
+    const notes = await api()
+      .get("/api/notifications")
+      .set("Authorization", giver.auth)
+      .expect(200);
     expect(notes.body.data[0]).toMatchObject({ kind: "request", unread: true, href: "/exchanges" });
 
     const chats = await api().get("/api/chat").set("Authorization", giver.auth).expect(200);
     const chat = chats.body.data[0];
-    expect(chat).toMatchObject({ id: conversationId, with: "Fahim Rahman", postTitle: "ক্লাস ৮-এর সব বই (সেট)", unread: 1 });
+    expect(chat).toMatchObject({
+      id: conversationId,
+      with: "Fahim Rahman",
+      postTitle: "ক্লাস ৮-এর সব বই (সেট)",
+      unread: 1,
+    });
     expect(chat.messages.map((m: { from: string }) => m.from)).toEqual(["system", "them"]);
   });
 
@@ -133,10 +171,21 @@ describe("request → accept → handover", () => {
 
   it("lets only the other side accept", async () => {
     const mine = await api().get("/api/exchanges").set("Authorization", receiver.auth).expect(200);
-    expect(mine.body.data[0]).toMatchObject({ role: "receiver", status: "requested", canAccept: false, conversationId });
+    expect(mine.body.data[0]).toMatchObject({
+      role: "receiver",
+      status: "requested",
+      canAccept: false,
+      conversationId,
+    });
 
-    await api().post(`/api/exchanges/${exchangeId}/advance`).set("Authorization", receiver.auth).expect(403);
-    const ok = await api().post(`/api/exchanges/${exchangeId}/advance`).set("Authorization", giver.auth).expect(200);
+    await api()
+      .post(`/api/exchanges/${exchangeId}/advance`)
+      .set("Authorization", receiver.auth)
+      .expect(403);
+    const ok = await api()
+      .post(`/api/exchanges/${exchangeId}/advance`)
+      .set("Authorization", giver.auth)
+      .expect(200);
     expect(ok.body.data.status).toBe("accepted");
 
     const post = await api().get(`/api/posts/${postId}`).expect(200);
@@ -145,7 +194,10 @@ describe("request → accept → handover", () => {
 
   it("hides exchanges from people who aren't in them", async () => {
     const stranger = await onboard("stranger1", { district: "সিলেট", area: "জিন্দাবাজার" });
-    await api().get(`/api/exchanges/${exchangeId}/handover-code`).set("Authorization", stranger.auth).expect(404);
+    await api()
+      .get(`/api/exchanges/${exchangeId}/handover-code`)
+      .set("Authorization", stranger.auth)
+      .expect(404);
     await api()
       .post(`/api/chat/${conversationId}/messages`)
       .set("Authorization", stranger.auth)
@@ -154,9 +206,16 @@ describe("request → accept → handover", () => {
   });
 
   it("completes with the giver's code; wrong codes are counted", async () => {
-    await api().get(`/api/exchanges/${exchangeId}/handover-code`).set("Authorization", receiver.auth).expect(403);
-    const code = (await api().get(`/api/exchanges/${exchangeId}/handover-code`).set("Authorization", giver.auth).expect(200))
-      .body.data.code as string;
+    await api()
+      .get(`/api/exchanges/${exchangeId}/handover-code`)
+      .set("Authorization", receiver.auth)
+      .expect(403);
+    const code = (
+      await api()
+        .get(`/api/exchanges/${exchangeId}/handover-code`)
+        .set("Authorization", giver.auth)
+        .expect(200)
+    ).body.data.code as string;
     expect(code).toMatch(/^\d{4}$/);
 
     const wrong = code === "1234" ? "4321" : "1234";
@@ -166,9 +225,10 @@ describe("request → accept → handover", () => {
       .send({ code: wrong })
       .expect(400);
     expect(bad.body.code).toBe("wrong_code");
-    const [row] = await sql<{ handover_attempts: number }>("select handover_attempts from exchanges where id = $1", [
-      exchangeId,
-    ]);
+    const [row] = await sql<{ handover_attempts: number }>(
+      "select handover_attempts from exchanges where id = $1",
+      [exchangeId],
+    );
     expect(row.handover_attempts).toBe(1);
 
     const done = await api()
@@ -202,7 +262,13 @@ describe("after the handover", () => {
     const profile = await api().get(`/api/users/${giver.me.username}`).expect(200);
     const p = profile.body.data;
     expect(p.thanks[0]).toMatchObject({ by: "Fahim Rahman", item: "ক্লাস ৮-এর সব বই (সেট)" });
-    expect(p.stats).toMatchObject({ given: 1, booksGiven: 1, thanksReceived: 1, localHelped: 1, givenByCategory: { books: 1 } });
+    expect(p.stats).toMatchObject({
+      given: 1,
+      booksGiven: 1,
+      thanksReceived: 1,
+      localHelped: 1,
+      givenByCategory: { books: 1 },
+    });
     expect(p.badges).toEqual(["email", "phone", "address"]);
     // 50 base + 10 verified + 5 per gift + 2 per thanks note.
     expect(p.trust).toBe(67);
@@ -219,12 +285,26 @@ describe("after the handover", () => {
     await sql("update profiles set show_on_map = true where firebase_uid = 'giver1'");
     const res = await api().get("/api/stats/donation-map").expect(200);
     expect(res.body.data).toMatchObject({ givenToday: 1, districtsActive: 1 });
-    expect(res.body.data.hubs[0]).toMatchObject({ district: "ঢাকা", donors: 1, items: 1, fresh: true, recent: [] });
+    expect(res.body.data.hubs[0]).toMatchObject({
+      district: "ঢাকা",
+      donors: 1,
+      items: 1,
+      fresh: true,
+      recent: [],
+    });
   });
 
   it("dashboard has nothing left to do for either side", async () => {
-    const res = await api().get("/api/me/dashboard").set("Authorization", receiver.auth).expect(200);
-    expect(res.body.data.todo).toEqual({ requestsToAnswer: 0, unreadMessages: 0, activeExchanges: 0, thanksToWrite: [] });
+    const res = await api()
+      .get("/api/me/dashboard")
+      .set("Authorization", receiver.auth)
+      .expect(200);
+    expect(res.body.data.todo).toEqual({
+      requestsToAnswer: 0,
+      unreadMessages: 0,
+      activeExchanges: 0,
+      thanksToWrite: [],
+    });
     expect(res.body.data.activeNearby).toBeGreaterThanOrEqual(2);
   });
 });
@@ -262,9 +342,15 @@ describe("moderation and safety", () => {
   });
 
   it("rejects invalid phone numbers and blocked ones", async () => {
-    const bad = await api().patch("/api/users/me").set("Authorization", giver.auth).send({ phone: "12345" }).expect(400);
+    const bad = await api()
+      .patch("/api/users/me")
+      .set("Authorization", giver.auth)
+      .send({ phone: "12345" })
+      .expect(400);
     expect(bad.body.code).toBe("validation");
-    await sql("insert into blocklist (type, value, reason) values ('phone', '01999999999', 'fraud')");
+    await sql(
+      "insert into blocklist (type, value, reason) values ('phone', '01999999999', 'fraud')",
+    );
     const blocked = await api()
       .patch("/api/users/me")
       .set("Authorization", giver.auth)

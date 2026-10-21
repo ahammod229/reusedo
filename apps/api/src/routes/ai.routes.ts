@@ -7,7 +7,10 @@ import { type GeneralSettings, flagOn, getSetting } from "../lib/settings";
 import { me, requireAuth } from "../middlewares/auth.middleware";
 
 const router = Router();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 1024 * 1024, files: 5 } });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 1024 * 1024, files: 5 },
+});
 
 const PROMPT = `You help people in Bangladesh give away used things for free.
 Look at the photos and write a short listing in Bangla (বাংলা):
@@ -27,23 +30,35 @@ router.post(
   ah(async (req, res) => {
     const files = (req.files as Express.Multer.File[] | undefined) ?? [];
     if (files.length === 0) throw badRequest("photo_required");
-    if (!(await flagOn("ai_draft"))) throw new HttpError(503, "ai_unavailable", "AI drafts are switched off");
+    if (!(await flagOn("ai_draft")))
+      throw new HttpError(503, "ai_unavailable", "AI drafts are switched off");
     const gemini = await integration("gemini");
-    if (!gemini.enabled || !gemini.values.apiKey) throw new HttpError(503, "ai_unavailable", "No Gemini key");
+    if (!gemini.enabled || !gemini.values.apiKey)
+      throw new HttpError(503, "ai_unavailable", "No Gemini key");
 
     // Per-person daily cap, counted before the call so retries can't get around it.
     const db = getSupabaseClient();
     const { aiDailyLimit } = await getSetting<GeneralSettings>("general");
     const today = new Date().toISOString().slice(0, 10);
     const usage = must(
-      await db.from("ai_usage").select("count").eq("user_id", me(req).id).eq("day", today).maybeSingle(),
+      await db
+        .from("ai_usage")
+        .select("count")
+        .eq("user_id", me(req).id)
+        .eq("day", today)
+        .maybeSingle(),
     ) as { count: number } | null;
-    if ((usage?.count ?? 0) >= aiDailyLimit) throw new HttpError(429, "ai_limit", "Daily AI limit reached");
-    must(await db.from("ai_usage").upsert({ user_id: me(req).id, day: today, count: (usage?.count ?? 0) + 1 }));
-
-    const categories = (must(await db.from("categories").select("id").eq("enabled", true)) as { id: string }[]).map(
-      (c) => c.id,
+    if ((usage?.count ?? 0) >= aiDailyLimit)
+      throw new HttpError(429, "ai_limit", "Daily AI limit reached");
+    must(
+      await db
+        .from("ai_usage")
+        .upsert({ user_id: me(req).id, day: today, count: (usage?.count ?? 0) + 1 }),
     );
+
+    const categories = (
+      must(await db.from("categories").select("id").eq("enabled", true)) as { id: string }[]
+    ).map((c) => c.id);
     const model = gemini.values.model || "gemini-2.5-flash";
     const r = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
@@ -56,7 +71,9 @@ router.post(
             {
               parts: [
                 { text: `${PROMPT}\nCategory ids: ${categories.join(", ")}` },
-                ...files.map((f) => ({ inline_data: { mime_type: f.mimetype, data: f.buffer.toString("base64") } })),
+                ...files.map((f) => ({
+                  inline_data: { mime_type: f.mimetype, data: f.buffer.toString("base64") },
+                })),
               ],
             },
           ],
@@ -80,14 +97,23 @@ router.post(
     if (r.status === 429) throw new HttpError(429, "ai_limit", "Gemini rate limit");
     if (!r.ok) throw new HttpError(502, "ai_failed", `Gemini responded ${r.status}`);
 
-    const body = (await r.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
-    let draft: { title: string; description: string; category: string; condition: string; prohibited: boolean };
+    const body = (await r.json()) as {
+      candidates?: { content?: { parts?: { text?: string }[] } }[];
+    };
+    let draft: {
+      title: string;
+      description: string;
+      category: string;
+      condition: string;
+      prohibited: boolean;
+    };
     try {
       draft = JSON.parse(body.candidates?.[0]?.content?.parts?.[0]?.text ?? "");
     } catch {
       throw new HttpError(502, "ai_failed", "Unreadable AI answer");
     }
-    if (draft.prohibited) throw new HttpError(422, "prohibited_item", "This item can't be given on ReuseDo");
+    if (draft.prohibited)
+      throw new HttpError(422, "prohibited_item", "This item can't be given on ReuseDo");
     res.json({
       success: true,
       data: {

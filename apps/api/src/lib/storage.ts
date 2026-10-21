@@ -2,7 +2,11 @@ import { randomUUID } from "node:crypto";
 import { getSupabaseClient } from "../database/client";
 import { badRequest } from "./http";
 
-const TYPES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+const TYPES: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
 
 /** Checks the real file signature, not the type the browser claimed. */
 function sniff(buf: Buffer): string | null {
@@ -43,7 +47,8 @@ export async function uploadImage(
 ): Promise<string> {
   const type = sniff(file.buffer);
   if (!type) throw badRequest("unsupported_image", "Only JPEG, PNG or WebP images");
-  if (file.size > maxBytes) throw badRequest("image_too_large", `Images must be under ${maxBytes} bytes`);
+  if (file.size > maxBytes)
+    throw badRequest("image_too_large", `Images must be under ${maxBytes} bytes`);
   const path = `${folder}/${randomUUID()}.${TYPES[type]}`;
   const db = getSupabaseClient();
   const { error } = await db.storage
