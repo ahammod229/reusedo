@@ -1,7 +1,8 @@
 import type { Server as HTTPServer } from "node:http";
 import { Server as SocketIOServer } from "socket.io";
 import { adminAuth } from "../config/firebase-admin";
-import { ChatRepository, UserRepository } from "../database";
+import { getSupabaseClient } from "../database/client";
+import { isParticipant } from "../lib/chat";
 
 // biome-ignore lint/complexity/noStaticOnlyClass: Service classes are used as namespaces
 export class SocketService {
@@ -11,8 +12,7 @@ export class SocketService {
     const allowedOrigins = [
       process.env.CLIENT_URL,
       process.env.ADMIN_URL,
-      "http://localhost:5173",
-      "http://localhost:5174"
+      ...(process.env.NODE_ENV === "production" ? [] : ["http://localhost:5173", "http://localhost:5174"]),
     ].filter(Boolean) as string[];
 
     SocketService.io = new SocketIOServer(httpServer, {
@@ -29,7 +29,11 @@ export class SocketService {
         const token = socket.handshake.auth?.token;
         if (typeof token !== "string") return next(new Error("unauthorized"));
         const decoded = await adminAuth.verifyIdToken(token);
-        const profile = await UserRepository.getProfileByUid(decoded.uid);
+        const { data: profile } = await getSupabaseClient()
+          .from("profiles")
+          .select("id")
+          .eq("firebase_uid", decoded.uid)
+          .maybeSingle();
         if (!profile) return next(new Error("unauthorized"));
         socket.data.userId = profile.id;
         next();
@@ -46,9 +50,9 @@ export class SocketService {
       socket.on("join_conversation", async (conversationId: unknown) => {
         if (typeof conversationId !== "string") return;
         try {
-          // Returns null unless this user is a participant of the conversation.
-          const conversation = await ChatRepository.getConversationById(conversationId, userId);
-          if (!conversation) return socket.emit("error_message", "not_allowed");
+          if (!(await isParticipant(conversationId, userId))) {
+            return socket.emit("error_message", "not_allowed");
+          }
           socket.join(`conversation_${conversationId}`);
         } catch {
           socket.emit("error_message", "not_allowed");

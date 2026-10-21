@@ -1,53 +1,21 @@
-import { AdminRepository } from "../database";
-import { UserRepository } from "../database";
-import type { AdminRole } from "../shared/validation";
 import type { NextFunction, Request, Response } from "express";
 
+export type AdminRole = "super_admin" | "admin" | "moderator";
+
 /**
- * Middleware to ensure the authenticated user has one of the required admin roles.
- * Note: requires `requireAuth` to be called first so `req.user` is populated.
+ * Only these roles may continue. Must run after `requireAuth`. This is the real
+ * protection; the admin UI hiding menus (features/admin/permissions.ts) is a convenience.
  */
-export const requireAdmin = (allowedRoles: AdminRole[]) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const user = req.user;
-      if (!user || !user.uid) {
-        res.status(401).json({ error: "Unauthorized" });
-        return;
-      }
-
-      // (Using service role internally)
-      const profile = await UserRepository.getProfileByUid(user.uid);
-      const isLegacyAdmin = (profile as { role?: string })?.role === "ADMIN";
-      const adminRole = (profile as { admin_role?: string }).admin_role || (isLegacyAdmin ? "super_admin" : null);
-
-      if (!profile || !adminRole) {
-        res.status(403).json({ error: "Forbidden: Admin access required" });
-        return;
-      }
-
-      // Check if role is allowed
-      if (!allowedRoles.includes(adminRole as AdminRole)) {
-        res.status(403).json({ error: "Forbidden: Insufficient permissions" });
-        return;
-      }
-
-      // Populate admin profile for audit logging downstream
-      req.adminProfile = profile;
-
-      next();
-    } catch (error) {
-      console.error("RBAC Middleware Error:", error);
-      res.status(500).json({ error: "Internal server error during authorization" });
+export const requireAdmin =
+  (allowed: AdminRole[]) => (req: Request, res: Response, next: NextFunction) => {
+    const role = req.user?.profile.admin_role;
+    if (!req.user) return res.status(401).json({ success: false, code: "unauthorized", message: "Unauthorized" });
+    if (!role || !allowed.includes(role)) {
+      return res.status(403).json({ success: false, code: "forbidden", message: "Admin access required" });
     }
+    next();
   };
-};
 
-// Types to extend Express Request
-declare global {
-  namespace Express {
-    interface Request {
-      adminProfile?: unknown;
-    }
-  }
-}
+export const ALL_ADMINS: AdminRole[] = ["super_admin", "admin", "moderator"];
+export const ADMINS: AdminRole[] = ["super_admin", "admin"];
+export const SUPER: AdminRole[] = ["super_admin"];

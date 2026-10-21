@@ -1,276 +1,177 @@
-import { ChatRepository } from "../database";
-import { getSupabaseClient } from "../database/client";
-import { CreateConversationSchema, SendMessageSchema } from "../shared/validation";
 import { Router } from "express";
-import multer from "multer";
-import { v4 as uuidv4 } from "uuid";
-import { requireAuth } from "../middlewares/auth.middleware";
+import { z } from "zod";
+import { getSupabaseClient } from "../database/client";
+import { isParticipant } from "../lib/chat";
+import { ah, forbidden, must, notFound } from "../lib/http";
+import { notify } from "../lib/notify";
+import { me, requireAuth } from "../middlewares/auth.middleware";
 import { SocketService } from "../services/socket.service";
 
 const router = Router();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } }); // 5MB limit
-
-// Ensure auth middleware is applied to all chat routes
 router.use(requireAuth);
 
-// -----------------------------------------------------------------------------
-// CONVERSATIONS
-// -----------------------------------------------------------------------------
+const MESSAGES_PER_CHAT = 100;
 
-// Get list of conversations for current user
-router.get("/conversations", async (req, res, next) => {
-  try {
-    const userId = req.user?.profile?.id as string;
-    const conversations = await ChatRepository.getConversations(userId);
-    res.json(conversations);
-  } catch (error) {
-    next(error);
-  }
+interface ParticipantRow {
+  conversation_id: string;
+  unread_count: number;
+  conversation: {
+    id: string;
+    last_message_at: string;
+    post: { id: string; title: string; kind: "offer" | "need" } | null;
+    participants: {
+      user_id: string;
+      profile: { display_name: string; username: string; is_verified: boolean };
+    }[];
+  };
+}
+
+interface MessageRow {
+  id: string;
+  conversation_id: string;
+  sender_id: string | null;
+  type: "text" | "image" | "system";
+  content: string;
+  created_at: string;
+}
+
+const toMessage = (m: MessageRow, myId: string) => ({
+  id: m.id,
+  from: m.sender_id === null ? "system" : m.sender_id === myId ? "me" : "them",
+  type: m.type,
+  text: m.content,
+  at: m.created_at,
 });
 
-// Create or get conversation
-router.post("/conversations", async (req, res, next) => {
-  try {
-    const userId = req.user?.profile?.id;
-    if (!userId) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
-    const validatedData = CreateConversationSchema.parse(req.body);
+// GET /api/chat — my conversations with their recent messages, latest first.
+router.get(
+  "/",
+  ah(async (req, res) => {
+    const myId = me(req).id;
+    const db = getSupabaseClient();
+    const rows = must(
+      await db
+        .from("conversation_participants")
+        .select(
+          `conversation_id, unread_count,
+           conversation:conversations!inner (id, last_message_at,
+             post:posts (id, title, kind),
+             participants:conversation_participants (user_id,
+               profile:profiles (display_name, username, is_verified)))`,
+        )
+        .eq("user_id", myId)
+        .eq("archived", false)
+        .order("conversation(last_message_at)", { ascending: false })
+        .limit(100),
+    ) as unknown as ParticipantRow[];
 
-    // Prevent talking to oneself unless strictly allowed (we'll allow it for now or rely on frontend validation)
-    if (validatedData.participant_id === userId) {
-      res.status(400).json({ error: "Cannot start a conversation with yourself." });
-      return;
-    }
-
-    const conversation = await ChatRepository.createOrGetConversation(userId, validatedData);
-    res.status(201).json(conversation);
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Get conversation details by ID
-router.get("/conversations/:id", async (req, res, next) => {
-  try {
-    const userId = req.user?.profile?.id as string;
-    const conversation = await ChatRepository.getConversationById(req.params.id, userId);
-
-    if (!conversation) {
-      res.status(404).json({ error: "Conversation not found or access denied." });
-      return;
-    }
-
-    res.json(conversation);
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Archive conversation
-router.post("/conversations/:id/archive", async (req, res, next) => {
-  try {
-    const userId = req.user?.profile?.id as string;
-    const archiveStatus = req.body.archived ?? true;
-
-    await ChatRepository.updateParticipantState(req.params.id, userId, { archived: archiveStatus });
-    res.json({ success: true, archived: archiveStatus });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Mute conversation
-router.post("/conversations/:id/mute", async (req, res, next) => {
-  try {
-    const userId = req.user?.profile?.id as string;
-    const muteStatus = req.body.muted ?? true;
-
-    await ChatRepository.updateParticipantState(req.params.id, userId, { muted: muteStatus });
-    res.json({ success: true, muted: muteStatus });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// -----------------------------------------------------------------------------
-// MESSAGES
-// -----------------------------------------------------------------------------
-
-// Get messages for a conversation
-router.get("/conversations/:id/messages", async (req, res, next) => {
-  try {
-    const userId = req.user?.profile?.id as string;
-
-    // Verify access
-    const conversation = await ChatRepository.getConversationById(req.params.id, userId);
-    if (!conversation) {
-      res.status(404).json({ error: "Conversation not found or access denied." });
-      return;
+    const ids = rows.map((r) => r.conversation_id);
+    const messages = ids.length
+      ? (must(
+          await db
+            .from("messages")
+            .select("id, conversation_id, sender_id, type, content, created_at")
+            .in("conversation_id", ids)
+            .order("created_at", { ascending: false })
+            .limit(ids.length * MESSAGES_PER_CHAT),
+        ) as MessageRow[])
+      : [];
+    const byChat = new Map<string, MessageRow[]>();
+    for (const m of messages) {
+      const list = byChat.get(m.conversation_id) ?? [];
+      if (list.length < MESSAGES_PER_CHAT) list.push(m);
+      byChat.set(m.conversation_id, list);
     }
 
-    const limit = Number.parseInt(req.query.limit as string) || 50;
-    const beforeTimestamp = req.query.before as string | undefined;
+    const data = rows
+      .map((r) => {
+        const other = r.conversation.participants.find((p) => p.user_id !== myId)?.profile;
+        const list = (byChat.get(r.conversation_id) ?? []).reverse();
+        const last = list[list.length - 1];
+        return {
+          id: r.conversation_id,
+          with: other?.display_name ?? "",
+          withUsername: other?.username ?? "",
+          verified: other?.is_verified ?? false,
+          postId: r.conversation.post?.id ?? null,
+          postTitle: r.conversation.post?.title ?? "",
+          postKind: r.conversation.post?.kind ?? "offer",
+          last: last ? toMessage(last, myId) : null,
+          lastAt: r.conversation.last_message_at,
+          unread: r.unread_count,
+          messages: list.map((m) => toMessage(m, myId)),
+        };
+      })
+      .sort((a, b) => b.lastAt.localeCompare(a.lastAt));
+    res.json({ success: true, data });
+  }),
+);
 
-    const messages = await ChatRepository.getMessages(req.params.id, limit, beforeTimestamp);
-    res.json(messages);
-  } catch (error) {
-    next(error);
-  }
-});
+// POST /api/chat/:id/messages { text }
+router.post(
+  "/:id/messages",
+  ah(async (req, res) => {
+    const myId = me(req).id;
+    const { text } = z.object({ text: z.string().trim().min(1).max(2000) }).parse(req.body);
+    if (!(await isParticipant(req.params.id, myId))) throw notFound("chat_not_found");
+    const db = getSupabaseClient();
 
-// Send a message
-router.post("/conversations/:id/messages", async (req, res, next) => {
-  try {
-    const userId = req.user?.profile?.id as string;
+    const others = must(
+      await db
+        .from("conversation_participants")
+        .select("user_id, unread_count, muted")
+        .eq("conversation_id", req.params.id)
+        .neq("user_id", myId),
+    ) as { user_id: string; unread_count: number; muted: boolean }[];
 
-    // Verify access
-    const conversation = await ChatRepository.getConversationById(req.params.id, userId);
-    if (!conversation) {
-      res.status(404).json({ error: "Conversation not found or access denied." });
-      return;
-    }
+    const m = must(
+      await db.rpc("send_message", { p_conversation: req.params.id, p_sender: myId, p_text: text }),
+    ) as MessageRow;
 
-    const validatedData = SendMessageSchema.parse(req.body);
-    const message = await ChatRepository.sendMessage(req.params.id, userId, validatedData);
-
-    // Emit real-time event to everyone in the conversation room
-    SocketService.emitNewMessage(req.params.id, message);
-
-    // Emit notification to other participants
-    for (const p of conversation.participants) {
-      if (p.user_id !== userId) {
-        SocketService.emitNotification(p.user_id, {
-          type: "new_message",
-          title: "New Message",
-          body: "You have a new message",
-          link: `/chat/${conversation.id}`,
-          created_at: new Date().toISOString()
-        });
+    for (const o of others) {
+      SocketService.emitNewMessage(req.params.id, { ...toMessage(m, o.user_id), conversationId: m.conversation_id });
+      // One notification per burst of messages, not one per message.
+      if (o.unread_count === 0 && !o.muted) {
+        await notify(o.user_id, "message", `${me(req).display_name} আপনাকে মেসেজ পাঠিয়েছেন`, `/messages/${req.params.id}`);
       }
     }
-     res.status(201).json(message);
-  } catch (error) {
-    next(error);
-  }
-});
+    res.status(201).json({ success: true, data: toMessage(m, myId) });
+  }),
+);
 
-// Mark messages as read
-router.patch("/conversations/:id/read", async (req, res, next) => {
-  try {
-    const userId = req.user?.profile?.id as string;
-    const { message_id } = req.body;
-
-    if (!message_id) {
-      res.status(400).json({ error: "message_id is required." });
-      return;
-    }
-
-    await ChatRepository.markMessagesAsRead(req.params.id, userId, message_id);
+// POST /api/chat/:id/read — clears my unread count.
+router.post(
+  "/:id/read",
+  ah(async (req, res) => {
+    const myId = me(req).id;
+    if (!(await isParticipant(req.params.id, myId))) throw notFound("chat_not_found");
+    must(
+      await getSupabaseClient()
+        .from("conversation_participants")
+        .update({ unread_count: 0, last_read_at: new Date().toISOString() })
+        .eq("conversation_id", req.params.id)
+        .eq("user_id", myId),
+    );
     res.json({ success: true });
-  } catch (error) {
-    next(error);
-  }
-});
+  }),
+);
 
-// Upload attachment
-router.post("/conversations/:id/attachments", upload.single("file"), async (req, res, next) => {
-  try {
-    const userId = req.user?.profile?.id as string;
-    const conversationId = req.params.id;
-
-    // Verify access
-    const conversation = await ChatRepository.getConversationById(conversationId, userId);
-    if (!conversation) {
-      res.status(404).json({ error: "Conversation not found or access denied." });
-      return;
-    }
-
-    const file = req.file;
-    if (!file) {
-      res.status(400).json({ error: "No file uploaded." });
-      return;
-    }
-
-    // Verify file type
-    if (!file.mimetype.startsWith("image/")) {
-      res.status(400).json({ error: "Only image files are allowed." });
-      return;
-    }
-
-    // Upload to Supabase Storage using service role key (or anon key if RLS allows)
-    const supabase = getSupabaseClient(true); // Need service role to bypass RLS if bucket is restricted
-    const fileExt = file.originalname.split(".").pop();
-    const fileName = `${conversationId}/${uuidv4()}.${fileExt}`;
-
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from("chat_attachments")
-      .upload(fileName, file.buffer, {
-        contentType: file.mimetype,
-        upsert: false,
-      });
-
-    if (uploadError) throw uploadError;
-
-    // Get public URL
-    const { data: urlData } = supabase.storage.from("chat_attachments").getPublicUrl(fileName);
-
-    // Create the message with the attachment URL
-    const messageData = {
-      type: "image" as const,
-      content: "Image attachment", // Fallback text
-      metadata: {
-        url: urlData.publicUrl,
-        filename: file.originalname,
-        size: file.size,
-        mimeType: file.mimetype,
-      },
-    };
-
-    const message = await ChatRepository.sendMessage(conversationId, userId, messageData);
-
-    // Emit real-time event to everyone in the conversation room
-    SocketService.emitNewMessage(conversationId, message);
-
-    res.status(201).json(message);
-  } catch (error) {
-    next(error);
-  }
-});
-
-// -----------------------------------------------------------------------------
-// REACTIONS
-// -----------------------------------------------------------------------------
-
-router.post("/messages/:id/reactions", async (req, res, next) => {
-  try {
-    const userId = req.user?.profile?.id as string;
-    const messageId = req.params.id;
-    const { emoji } = req.body;
-
-    if (!emoji) {
-      res.status(400).json({ error: "Emoji is required." });
-      return;
-    }
-
-    await ChatRepository.addReaction(messageId, userId, emoji);
-    res.status(201).json({ success: true });
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.delete("/messages/:id/reactions", async (req, res, next) => {
-  try {
-    const userId = req.user?.profile?.id as string;
-    const messageId = req.params.id;
-
-    await ChatRepository.removeReaction(messageId, userId);
+// POST /api/chat/:id/mute { muted }
+router.post(
+  "/:id/mute",
+  ah(async (req, res) => {
+    const myId = me(req).id;
+    const { muted } = z.object({ muted: z.boolean() }).parse(req.body);
+    if (!(await isParticipant(req.params.id, myId))) throw forbidden();
+    must(
+      await getSupabaseClient()
+        .from("conversation_participants")
+        .update({ muted })
+        .eq("conversation_id", req.params.id)
+        .eq("user_id", myId),
+    );
     res.json({ success: true });
-  } catch (error) {
-    next(error);
-  }
-});
+  }),
+);
 
-export default router;
+export const chatRouter = router;

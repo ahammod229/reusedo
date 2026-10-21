@@ -6,12 +6,16 @@ const initializeFirebaseAdmin = () => {
     return getApp();
   }
 
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+  // Verifying ID tokens only needs the project id (Google's public keys are fetched);
+  // the service account is required for writes such as setting emailVerified.
+  if (!privateKey) return initializeApp({ projectId: process.env.FIREBASE_PROJECT_ID });
+
   return initializeApp({
     credential: cert({
       projectId: process.env.FIREBASE_PROJECT_ID,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      // Handle escaped newlines in environment variable
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+      privateKey,
     }),
   });
 };
