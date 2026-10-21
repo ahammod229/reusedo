@@ -34,7 +34,7 @@ const MessagesPage = lazy(() =>
   import("./pages/messages/MessagesPage").then((m) => ({ default: m.MessagesPage })),
 );
 const ExchangesPage = lazy(() =>
-  import("./pages/exchanges2/ExchangesPage").then((m) => ({ default: m.ExchangesPage })),
+  import("./pages/exchanges/ExchangesPage").then((m) => ({ default: m.ExchangesPage })),
 );
 const ProfilePage = lazy(() =>
   import("./pages/me/ProfilePage").then((m) => ({ default: m.ProfilePage })),
@@ -189,7 +189,7 @@ function App() {
                         <Route path="/settings" element={<SettingsPage />} />
                       </Route>
 
-                      {/* Legacy URLs → new screens (old API-bound pages stay on disk, unrouted) */}
+                      {/* Legacy URLs → new screens */}
                       <Route path="/explore" element={<Navigate to="/feed" replace />} />
                       <Route
                         path="/products"

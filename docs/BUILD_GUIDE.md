@@ -121,7 +121,7 @@ Page ──► hooks.ts (TanStack Query) ──► source ──┬─► mockSo
 | আমার পোস্ট | `/my-posts` | `pages/discover/MyPostsPage` | `listFeed` (ফিল্টার) | `GET /products/me` ও needs-এর `me` রাউট | মালিকের ফিল্টার |
 | সেভ করা | `/saved` | `pages/discover/SavedPage` | লোকাল স্টোর | — | **NEW** সার্ভার-সাইড সেভ (অ্যাপের সাথে সিঙ্কের জন্য) |
 | চ্যাট | `/messages[/:id]` | `pages/messages/MessagesPage` | `listChats`, `sendMessage` | `/api/chat/conversations*` + Socket.io | রিয়েলটাইম সাবস্ক্রিপশন যোগ (§৫ ধাপ ৫) |
-| আদান-প্রদান | `/exchanges` | `pages/exchanges2/ExchangesPage` | `listExchanges`, `advanceExchange` | `/api/exchanges*` | ⚠️ **মডেল অমিল** — নিচে |
+| আদান-প্রদান | `/exchanges` | `pages/exchanges/ExchangesPage` | `listExchanges`, `advanceExchange` | `/api/exchanges*` | ⚠️ **মডেল অমিল** — নিচে |
 | কুরিয়ার (ইউজার) | `/courier` | `pages/courier/CourierRequest` | (যোগ হবে) | `/api/shipping` | **NEW** দুজনের সম্মতি → অ্যাডমিন রিকোয়েস্ট |
 | প্রোফাইল | `/profile`, `/users/:username` | `pages/me/ProfilePage` | `getUser` | `/api/users/me`, `/:username`, `/api/reviews` | ট্রাস্ট স্কোর `trust.service` থেকে |
 | প্রোফাইল এডিট | `/profile/edit` | `pages/discover/EditProfilePage` | (এখন `features/feed/me.ts`) | `PATCH /api/users/me` | অ্যাভাটার, পড়াশোনার স্তর, প্রতিষ্ঠান (+দেখাবে কিনা, ডিফল্ট বন্ধ), আগ্রহ |
@@ -257,7 +257,7 @@ Firebase Auth ডিফল্টে **লিংক** পাঠায়, কো�
 
 ### (ক) পুরোনো ব্যাকএন্ড-যুক্ত পেজের কী হবে?
 - রাউট এখন সব **নতুন পেজে**। পুরোনো URL (`/products`, `/needs`, `/my-products`, `/search/*`, `/dashboard/*` ইত্যাদি) **রিডাইরেক্ট** করে নতুন পেজে (`App.tsx`)। বুকমার্ক ভাঙবে না।
-- পুরোনো পেজ ফাইল (`pages/products`, `pages/needs`, `pages/chat`, `pages/exchanges`, `pages/dashboard` …) ডিস্কে আছে, রাউট নেই। এগুলো **রেফারেন্স** — ওখানকার API-কল (`services/api/services/*.service.ts`) `apiSource.ts` লেখার সময় কাজে লাগবে।
+- পুরোনো পেজ ফাইল (`pages/products`, `pages/needs`, `pages/chat`, `pages/dashboard` …) মুছে ফেলা হয়েছে; দরকার হলে git ইতিহাসে আছে, যেমন `git show 4d8a592:apps/web/src/pages/products/ProductForm.tsx`। API-কল (`services/api/services/*.service.ts`) এখনও আছে — `apiSource.ts` লেখার সময় কাজে লাগবে।
 - **সিদ্ধান্ত:** ব্যাকএন্ড সংযোগ শেষ হলে (§৫ ধাপ ১০ পর্যন্ত) পুরোনো পেজ ফোল্ডারগুলো মুছে ফেলুন। তার আগে নয়। কয়েকটি পেজে ইউনিক ফিচার আছে যা নতুনে নেই (মূল্য-অনুমান, মডেল/ব্র্যান্ড ফিল্ড, `PersonalAnalytics`) — PRD অনুযায়ী এগুলো এই ফেজে লাগবে না।
 
 ### (খ) আসল ছবি
