@@ -54,21 +54,19 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
+        // Only pin the libraries every page needs. Everything else (charts, maps, sockets,
+        // emoji, icons) is left to the bundler so it loads with the route that uses it.
+        // Match exact package folders: a bare "react" test also catches lucide-react,
+        // @radix-ui/react-*, emoji-picker-react, etc. and drags them into the first load.
         manualChunks(id) {
-          if (id.includes("node_modules")) {
-            if (id.includes("react") || id.includes("react-dom") || id.includes("react-router")) {
-              return "vendor-react";
-            }
-            if (id.includes("@supabase")) {
-              return "vendor-supabase";
-            }
-            if (id.includes("firebase")) {
-              return "vendor-firebase";
-            }
-            if (id.includes("lucide-react")) {
-              return "vendor-icons";
-            }
-            return "vendor";
+          if (/\/node_modules\/(react|react-dom|scheduler|react-router)\//.test(id)) {
+            return "vendor-react";
+          }
+          if (/\/node_modules\/(@firebase|firebase)\//.test(id)) {
+            return "vendor-firebase";
+          }
+          if (/\/node_modules\/@supabase\//.test(id)) {
+            return "vendor-supabase";
           }
         },
       },

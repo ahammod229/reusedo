@@ -5,11 +5,15 @@ import { HelmetProvider } from "react-helmet-async";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import { EmptyLayout } from "./layouts/EmptyLayout";
 import { MainLayout } from "./layouts/MainLayout";
-const ForgotPassword = lazy(() => import("./pages").then((m) => ({ default: m.ForgotPassword })));
-const VerifyEmail = lazy(() => import("./pages").then((m) => ({ default: m.VerifyEmail })));
-const Home = lazy(() => import("./pages").then((m) => ({ default: m.Home })));
-const Login = lazy(() => import("./pages").then((m) => ({ default: m.Login })));
-const Register = lazy(() => import("./pages").then((m) => ({ default: m.Register })));
+const ForgotPassword = lazy(() =>
+  import("./pages/auth/ForgotPassword").then((m) => ({ default: m.ForgotPassword })),
+);
+const VerifyEmail = lazy(() =>
+  import("./pages/auth/VerifyEmail").then((m) => ({ default: m.VerifyEmail })),
+);
+const Home = lazy(() => import("./pages/home").then((m) => ({ default: m.Home })));
+const Login = lazy(() => import("./pages/auth/Login").then((m) => ({ default: m.Login })));
+const Register = lazy(() => import("./pages/auth/Register").then((m) => ({ default: m.Register })));
 
 const SearchPage = lazy(() =>
   import("./pages/discover/SearchPage").then((m) => ({ default: m.SearchPage })),
@@ -56,13 +60,19 @@ const LegalPage = lazy(() =>
 const NotFoundPage = lazy(() =>
   import("./pages/static/StaticPages").then((m) => ({ default: m.NotFoundPage })),
 );
-const Onboarding = lazy(() => import("./pages").then((m) => ({ default: m.Onboarding })));
-const FeedPage = lazy(() => import("./pages").then((m) => ({ default: m.FeedPage })));
+const Onboarding = lazy(() =>
+  import("./pages/auth/Onboarding").then((m) => ({ default: m.Onboarding })),
+);
+const FeedPage = lazy(() => import("./pages/feed/FeedPage").then((m) => ({ default: m.FeedPage })));
 const HomeDashboard = lazy(() =>
   import("./pages/me/HomeDashboard").then((m) => ({ default: m.HomeDashboard })),
 );
-const QuickPost = lazy(() => import("./pages").then((m) => ({ default: m.QuickPost })));
-const CourierRequest = lazy(() => import("./pages").then((m) => ({ default: m.CourierRequest })));
+const QuickPost = lazy(() =>
+  import("./pages/feed/QuickPost").then((m) => ({ default: m.QuickPost })),
+);
+const CourierRequest = lazy(() =>
+  import("./pages/courier/CourierRequest").then((m) => ({ default: m.CourierRequest })),
+);
 
 import { RequireArea } from "./features/admin/RequireArea";
 import { AuthProvider } from "./providers/AuthProvider";
