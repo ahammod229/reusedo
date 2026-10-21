@@ -7,7 +7,7 @@ import { useAlerts } from "@/features/feed/alerts";
 import { toParams } from "@/features/feed/feedParams";
 import { levelOf } from "@/features/feed/gamify";
 import { makeImpactCard, shareOrSaveImage } from "@/features/feed/impactCard";
-import { useLang, useNum, useTr } from "@/features/feed/i18n";
+import { useLang, useNum, useTr, useKm } from "@/features/feed/i18n";
 import { useMe } from "@/features/feed/me";
 import { categoryOf, eduOf } from "@/features/feed/types";
 import { Button, cn } from "@/shared/components/ui";
@@ -299,8 +299,7 @@ function ForYou({ posts }: { posts: import("@/features/feed/types").FeedPost[] }
 
 function NeedsNearby({ posts }: { posts: import("@/features/feed/types").FeedPost[] }) {
   const tr = useTr();
-  const num = useNum();
-  const lang = useLang((s) => s.lang);
+  const km = useKm();
   return (
     <Card
       title={
@@ -331,8 +330,8 @@ function NeedsNearby({ posts }: { posts: import("@/features/feed/types").FeedPos
                     {p.title}
                   </Link>
                   <p className="truncate text-xs text-muted-foreground">
-                    {p.author.name} · {p.area} · {num(p.distanceKm.toFixed(1))}{" "}
-                    {lang === "bn" ? "কিমি" : "km"}
+                    {p.author.name} · {p.area}
+                    {km(p.distanceKm) && ` · ${km(p.distanceKm)}`}
                   </p>
                   <div className="mt-1">
                     <PostTags post={p} compact />

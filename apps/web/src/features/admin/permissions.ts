@@ -1,4 +1,4 @@
-import { useAuthStore } from "@/features/auth";
+import { useProfile } from "@/features/auth";
 import { UI_PREVIEW } from "@/shared/uiPreview";
 import type { AdminRole } from "./data/types";
 
@@ -24,11 +24,11 @@ export const ACCESS: Record<string, AdminRole[]> = {
   audit: ["super_admin", "admin"],
 };
 
-/** Current admin's role. UI preview acts as super_admin; otherwise read it from the signed-in user. */
+/** Current admin's role. UI preview acts as super_admin; otherwise it comes from the profile. */
 export function useAdminRole(): AdminRole {
-  const user = useAuthStore((s) => s.user) as { adminRole?: AdminRole } | null;
+  const { data } = useProfile();
   if (UI_PREVIEW) return "super_admin";
-  return user?.adminRole ?? "moderator"; // least privilege when unknown
+  return data?.adminRole ?? "moderator"; // least privilege when unknown
 }
 
 export const can = (role: AdminRole, area: keyof typeof ACCESS) => ACCESS[area].includes(role);

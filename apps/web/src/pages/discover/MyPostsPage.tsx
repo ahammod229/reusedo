@@ -1,5 +1,5 @@
 import { QueryState } from "@/features/data/QueryState";
-import { useFeed } from "@/features/data/hooks";
+import { useMyPosts, useSetMyPostStatus } from "@/features/data/hooks";
 import { Photo } from "@/features/feed/Photo";
 import { useNum, useTr } from "@/features/feed/i18n";
 import { PageHeading, Pill } from "@/features/feed/parts";
@@ -9,20 +9,14 @@ import { useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router";
 
-// "Me" is the mock user until the auth user id is available from the API.
-const ME = "রাকিব হাসান";
-
 export function MyPostsPage() {
   const tr = useTr();
   const num = useNum();
   const [tab, setTab] = useState<"offer" | "need">("offer");
-  const {
-    data: all = [],
-    isLoading,
-    error,
-    refetch,
-  } = useFeed({ kind: "all", category: "all", scope: "country" });
-  const mine = all.filter((p) => p.author.name === ME && p.kind === tab);
+  const { data: all = [], isLoading, error, refetch } = useMyPosts();
+  const mine = all.filter((p) => p.kind === tab);
+  const setStatus = useSetMyPostStatus();
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   return (
     <div className="mx-auto w-full max-w-2xl space-y-4 px-4 py-5">
@@ -79,15 +73,49 @@ export function MyPostsPage() {
                     {p.title}
                   </Link>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    <Pill tone="success">{tr("চালু", "Active")}</Pill>
+                    {p.status === "available" ? (
+                      <Pill tone="success">{tr("চালু", "Active")}</Pill>
+                    ) : p.status === "reserved" ? (
+                      <Pill tone="warning">{tr("রিজার্ভড", "Reserved")}</Pill>
+                    ) : (
+                      <Pill>{tr("দেওয়া হয়েছে", "Given")}</Pill>
+                    )}
                     <span>
                       {num(p.requests)} {tr("রিকোয়েস্ট", "requests")}
                     </span>
                     <span>{p.postedAt}</span>
                   </div>
-                  <div className="mt-2 flex gap-2">
+                  <div className="mt-2 flex flex-wrap gap-2">
                     <Button asChild size="sm" variant="outline">
                       <Link to="/exchanges">{tr("রিকোয়েস্ট দেখুন", "View requests")}</Link>
+                    </Button>
+                    {p.status !== "given" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={setStatus.isPending}
+                        onClick={() => setStatus.mutate({ id: p.id, status: "given" })}
+                      >
+                        {p.kind === "offer"
+                          ? tr("দেওয়া হয়ে গেছে", "Mark as given")
+                          : tr("পেয়ে গেছি", "Mark as received")}
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className={cn(confirmDelete === p.id && "text-destructive")}
+                      disabled={setStatus.isPending}
+                      onClick={() => {
+                        // Two taps: the first asks, the second deletes.
+                        if (confirmDelete !== p.id) return setConfirmDelete(p.id);
+                        setStatus.mutate({ id: p.id, status: "deleted" });
+                        setConfirmDelete(null);
+                      }}
+                    >
+                      {confirmDelete === p.id
+                        ? tr("নিশ্চিত? মুছুন", "Sure? Delete")
+                        : tr("মুছুন", "Delete")}
                     </Button>
                   </div>
                 </div>

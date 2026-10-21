@@ -518,6 +518,14 @@ export interface MockExchange {
   status: ExchangeStatus;
   via: "pickup" | "courier";
   updated: string;
+  postId?: string;
+  otherUsername?: string;
+  /** The chat for this exchange. */
+  conversationId: string | null;
+  /** The side that didn't send the request decides on it. */
+  canAccept: boolean;
+  /** I already wrote my thank-you note (receiver) or review (giver). */
+  thanked: boolean;
 }
 
 export const MOCK_EXCHANGES: MockExchange[] = [
@@ -530,6 +538,9 @@ export const MOCK_EXCHANGES: MockExchange[] = [
     status: "accepted",
     via: "courier",
     updated: "আজ ১০:২৪",
+    conversationId: "c1",
+    canAccept: false,
+    thanked: false,
   },
   {
     id: "e2",
@@ -540,6 +551,9 @@ export const MOCK_EXCHANGES: MockExchange[] = [
     status: "scheduled",
     via: "pickup",
     updated: "গতকাল",
+    conversationId: "c2",
+    canAccept: false,
+    thanked: false,
   },
   {
     id: "e3",
@@ -550,6 +564,9 @@ export const MOCK_EXCHANGES: MockExchange[] = [
     status: "requested",
     via: "pickup",
     updated: "২ দিন আগে",
+    conversationId: "c3",
+    canAccept: true,
+    thanked: false,
   },
   {
     id: "e4",
@@ -560,6 +577,9 @@ export const MOCK_EXCHANGES: MockExchange[] = [
     status: "completed",
     via: "courier",
     updated: "গত সপ্তাহ",
+    conversationId: null,
+    canAccept: false,
+    thanked: false,
   },
   {
     id: "e6",
@@ -570,6 +590,9 @@ export const MOCK_EXCHANGES: MockExchange[] = [
     status: "scheduled",
     via: "pickup",
     updated: "আজ ০৯:১০",
+    conversationId: null,
+    canAccept: false,
+    thanked: false,
   },
   {
     id: "e5",
@@ -580,6 +603,9 @@ export const MOCK_EXCHANGES: MockExchange[] = [
     status: "cancelled",
     via: "pickup",
     updated: "গত মাস",
+    conversationId: null,
+    canAccept: false,
+    thanked: false,
   },
 ];
 

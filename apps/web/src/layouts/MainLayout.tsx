@@ -1,4 +1,5 @@
-import { useAuthStore } from "@/features/auth";
+import { AuthService, useAuthStore, useProfile } from "@/features/auth";
+import { useQueryClient } from "@tanstack/react-query";
 import { LangToggle } from "@/features/feed/LangToggle";
 import { useT } from "@/features/feed/i18n";
 import { Button, Footer, Header, MobileBottomNav, Sidebar } from "@/shared/components/ui";
@@ -16,13 +17,16 @@ import {
   User as UserIcon,
 } from "lucide-react";
 import { useState } from "react";
-import { Link, Outlet } from "react-router";
+import { Link, Outlet, useNavigate } from "react-router";
 import { NotificationBadge } from "../components/NotificationBadge";
 import { MobileMenu } from "./MobileMenu";
 
 export function MainLayout() {
   const t = useT();
   const user = useAuthStore((state) => state.user);
+  const { data: profile } = useProfile();
+  const qc = useQueryClient();
+  const navigate = useNavigate();
   const ic = "h-5 w-5";
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -53,14 +57,17 @@ export function MainLayout() {
         user={
           user
             ? {
-                // biome-ignore lint/suspicious/noExplicitAny: user type from auth store
-                name: (user as any).display_name || (user as any).displayName || "User",
+                name: profile?.name || user.displayName || "User",
                 email: user.email || "",
-                // biome-ignore lint/suspicious/noExplicitAny: user type from auth store
-                avatar: (user as any).avatar_url,
+                avatar: profile?.avatarUrl ?? user.photoURL ?? undefined,
               }
             : null
         }
+        onLogout={async () => {
+          await AuthService.logout();
+          qc.clear();
+          navigate("/login", { replace: true });
+        }}
         labels={{
           menu: t("menu"),
           search: t("searchPlaceholder"),

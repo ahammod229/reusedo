@@ -96,6 +96,8 @@ const feedQuery = z.object({
   urgentOnly: bool,
   showGiven: bool,
   sort: z.enum(["near", "new", "urgent", "popular"]).default("near"),
+  /** One person's public posts (their profile page). */
+  user: z.string().max(40).optional(),
   limit: z.coerce.number().int().min(1).max(200).default(60),
   offset: z.coerce.number().int().min(0).default(0),
 });
@@ -110,7 +112,18 @@ router.get(
   optionalAuth,
   ah(async (req, res) => {
     const f = feedQuery.parse(req.query);
+    let owner: string | null = null;
+    if (f.user) {
+      const { data } = await getSupabaseClient()
+        .from("profiles")
+        .select("id")
+        .eq("username", f.user.toLowerCase())
+        .maybeSingle();
+      if (!data) return res.json({ success: true, data: [] });
+      owner = data.id;
+    }
     const rows = await runFeed({
+      p_owner: owner,
       p_viewer: req.user?.profile.id ?? null,
       p_kind: f.kind,
       p_category: f.category,
@@ -170,9 +183,28 @@ router.get(
         .rpc("bump_view", { p_post: row.id })
         .then(() => undefined);
     }
+    // My open request on this post, so the page shows "Request sent" and links the chat.
+    let myRequest: { exchangeId: string; conversationId: string | null; status: string } | null =
+      null;
+    if (req.user && row.owner_id !== req.user.profile.id) {
+      const { data } = await getSupabaseClient()
+        .from("exchanges")
+        .select("id, conversation_id, status")
+        .eq("post_id", row.id)
+        .eq("requested_by", req.user.profile.id)
+        .neq("status", "cancelled")
+        .maybeSingle();
+      if (data) {
+        myRequest = {
+          exchangeId: data.id,
+          conversationId: data.conversation_id,
+          status: data.status,
+        };
+      }
+    }
     res.json({
       success: true,
-      data: { ...toPost(row), mine: row.owner_id === req.user?.profile.id },
+      data: { ...toPost(row), mine: row.owner_id === req.user?.profile.id, myRequest },
     });
   }),
 );

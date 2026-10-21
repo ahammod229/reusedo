@@ -236,3 +236,13 @@ export function useT() {
   const lang = useLang((s) => s.lang);
   return (key: TKey): string => dict[lang][key];
 }
+
+/** "3.2 কিমি" / "12 km", or null when the distance isn't known (no map pin on one side). */
+export function useKm() {
+  const num = useNum();
+  const lang = useLang((s) => s.lang);
+  return (d: number | null): string | null =>
+    d === null
+      ? null
+      : `${num(d < 10 ? d.toFixed(1) : Math.round(d))} ${lang === "bn" ? "কিমি" : "km"}`;
+}

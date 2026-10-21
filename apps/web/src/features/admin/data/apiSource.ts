@@ -1,60 +1,123 @@
+import { longDate, relTime } from "@/features/data/time";
+import { apiClient, isAxiosError } from "@/services/api";
 import type { AdminSource } from "./types";
 
-// Existing endpoints are noted; "NEW" means apps/api still needs the route.
-// Roles in apps/api: super_admin | admin | moderator (requireAdmin([...])).
-const todo = (what: string) => async (): Promise<never> => {
-  throw new Error(`Admin API not connected yet: ${what}`);
-};
+// /api/admin/* (apps/api/src/routes/admin.routes.ts). Roles are checked on the server for
+// every call; the admin UI hiding screens is only a convenience. Errors arrive as
+// Error(code), e.g. "risk_not_approved", "steadfast_not_configured".
+
+async function call<T>(p: Promise<{ data: { data?: T } }>): Promise<T> {
+  try {
+    return (await p).data.data as T;
+  } catch (e) {
+    if (isAxiosError(e)) {
+      if (!e.response) throw new Error("network");
+      throw new Error((e.response.data as { code?: string })?.code ?? `http_${e.response.status}`);
+    }
+    throw e;
+  }
+}
+
+const get = <T>(url: string) => call<T>(apiClient.get(`/admin${url}`));
+const send = (method: "post" | "put" | "patch" | "delete", url: string, body?: unknown) =>
+  call<void>(
+    method === "delete"
+      ? apiClient.delete(`/admin${url}`, { data: body })
+      : apiClient[method](`/admin${url}`, body),
+  ).then(() => undefined);
+
+/** Rewrites ISO timestamps in the given fields to the short labels the screens show. */
+function dated<T extends object>(rows: T[], fields: (keyof T)[], fmt = longDate): T[] {
+  return rows.map((r) => {
+    const out = { ...r };
+    for (const f of fields) {
+      const v = out[f];
+      if (typeof v === "string" && v) (out as Record<keyof T, unknown>)[f] = fmt(v);
+    }
+    return out;
+  });
+}
+
+type Of<K extends keyof AdminSource> = Awaited<ReturnType<AdminSource[K]>>;
 
 export const adminApi: AdminSource = {
-  stats: todo("GET /api/admin/dashboard/metrics (extend: series, byCategory, topDistricts, ads)"),
-  listUsers: todo("GET /api/admin/users"),
-  setUserStatus: todo("PATCH /api/admin/users/:id/status"),
-  listPosts: todo("GET /api/admin/products + /api/admin/needs (merge into one list)"),
-  setPostStatus: todo(
-    "PATCH /api/admin/products/:id/status | /needs/:id/status; DELETE for 'deleted'",
-  ),
-  listExchanges: todo("GET /api/admin/exchanges"),
-  cancelExchange: todo("PATCH /api/admin/exchanges/:id/status (cancelled)"),
-  listReports: todo("GET /api/reports (admin scope)"),
-  setReportStatus: todo("NEW PATCH /api/admin/reports/:id (status, hideTarget)"),
-  listVerifications: todo("NEW GET /api/admin/verifications (flagged accounts only)"),
-  decideVerification: todo("PATCH /api/verifications/:id/status"),
-  listReviews: todo("NEW GET /api/admin/reviews"),
-  deleteReview: todo("NEW DELETE /api/admin/reviews/:id"),
-  listCategories: todo("GET /api/categories (+ NEW admin write routes)"),
-  saveCategory: todo("NEW POST|PATCH /api/admin/categories"),
-  listPages: todo("GET /api/admin/cms"),
-  savePage: todo("POST|PATCH /api/admin/cms"),
-  getSettings: todo("GET /api/admin/settings"),
-  saveSettings: todo("PATCH /api/admin/settings (super_admin)"),
-  listFlags: todo("GET /api/admin/feature-flags"),
-  setFlag: todo("PATCH /api/admin/feature-flags/:key (super_admin)"),
-  listAudit: todo("GET /api/admin/audit-logs"),
+  stats: () => get("/stats"),
 
-  // Integrations: secrets stored AES-256-GCM encrypted (key from SETTINGS_ENCRYPTION_KEY env),
-  // never returned — responses carry only { set, last4 }. super_admin only.
-  listIntegrations: todo("NEW GET /api/admin/integrations"),
-  saveIntegration: todo("NEW PATCH /api/admin/integrations/:id (super_admin, re-auth)"),
-  testIntegration: todo("NEW POST /api/admin/integrations/:id/test (server calls the provider)"),
+  listUsers: async () => dated(await get<Of<"listUsers">>("/users"), ["joined"]),
+  setUserStatus: (id, status) => send("patch", `/users/${id}/status`, { status }),
 
-  listPayments: todo("NEW GET /api/admin/payments"),
-  decidePayment: todo(
-    "NEW PATCH /api/admin/payments/:id (verified|rejected|refunded|cod_collected)",
-  ),
-  getPaymentSettings: todo("NEW GET /api/admin/payment-settings"),
-  savePaymentSettings: todo("NEW PATCH /api/admin/payment-settings"),
+  listPosts: async () => dated(await get<Of<"listPosts">>("/posts"), ["created"], relTime),
+  setPostStatus: (id, status) => send("patch", `/posts/${id}/status`, { status }),
 
-  listRiskCases: todo("NEW GET /api/admin/risk (score computed server-side on request create)"),
-  decideRisk: todo("NEW PATCH /api/admin/risk/:id (approved|held|rejected, blockPhone)"),
-  lookupPhone: todo("NEW GET /api/admin/risk/phone/:phone (own history + courier history)"),
-  listBlocklist: todo("NEW GET /api/admin/blocklist"),
-  addBlock: todo("NEW POST /api/admin/blocklist"),
-  removeBlock: todo("NEW DELETE /api/admin/blocklist/:id"),
+  listExchanges: async () =>
+    dated(await get<Of<"listExchanges">>("/exchanges"), ["updated"], relTime),
+  cancelExchange: (id) => send("post", `/exchanges/${id}/cancel`),
 
-  listAds: todo("NEW GET /api/admin/ads"),
-  saveAd: todo("NEW POST|PATCH /api/admin/ads (image via signed upload)"),
-  deleteAd: todo("NEW DELETE /api/admin/ads/:id"),
-  getAdNetwork: todo("NEW GET /api/admin/ad-network"),
-  saveAdNetwork: todo("NEW PATCH /api/admin/ad-network"),
+  listReports: async () => dated(await get<Of<"listReports">>("/reports"), ["created"], relTime),
+  setReportStatus: (id, status, hideTarget) =>
+    send("patch", `/reports/${id}`, { status, hideTarget }),
+
+  listVerifications: async () =>
+    dated(await get<Of<"listVerifications">>("/verifications"), ["created"], relTime),
+  decideVerification: (id, status) => send("patch", `/verifications/${id}`, { status }),
+
+  listReviews: async () => dated(await get<Of<"listReviews">>("/reviews"), ["created"], relTime),
+  deleteReview: (id) => send("delete", `/reviews/${id}`),
+
+  listCategories: () => get("/categories"),
+  saveCategory: (c) =>
+    send("put", `/categories/${encodeURIComponent(c.id)}`, {
+      bn: c.bn,
+      en: c.en,
+      emoji: c.emoji,
+      enabled: c.enabled,
+    }),
+
+  listPages: async () => dated(await get<Of<"listPages">>("/pages"), ["updated"], relTime),
+  savePage: (p) =>
+    send("put", `/pages/${encodeURIComponent(p.slug)}`, {
+      title: p.title,
+      body: p.body,
+      status: p.status,
+    }),
+
+  getSettings: () => get("/settings"),
+  saveSettings: (s) => send("put", "/settings", s),
+
+  listFlags: () => get("/flags"),
+  setFlag: (key, enabled) => send("patch", `/flags/${encodeURIComponent(key)}`, { enabled }),
+
+  listAudit: async () => dated(await get<Of<"listAudit">>("/audit"), ["when"], relTime),
+
+  listIntegrations: async () => {
+    const list = await get<Of<"listIntegrations">>("/integrations");
+    return list.map((i) =>
+      i.lastCheck ? { ...i, lastCheck: { ...i.lastCheck, at: relTime(i.lastCheck.at) } } : i,
+    );
+  },
+  saveIntegration: ({ id, ...u }) => send("patch", `/integrations/${id}`, u),
+  testIntegration: async (id) => {
+    const r = await call<Of<"testIntegration">>(apiClient.post(`/admin/integrations/${id}/test`));
+    return { ...r, at: relTime(r.at) };
+  },
+
+  listPayments: async () => dated(await get<Of<"listPayments">>("/payments"), ["created"], relTime),
+  decidePayment: (id, status, note) => send("patch", `/payments/${id}`, { status, note }),
+  getPaymentSettings: () => get("/payment-settings"),
+  savePaymentSettings: (s) => send("put", "/payment-settings", s),
+
+  listRiskCases: async () => dated(await get<Of<"listRiskCases">>("/risk"), ["created"], relTime),
+  decideRisk: (id, status, opts = {}) => send("patch", `/risk/${id}`, { status, ...opts }),
+  lookupPhone: (phone) => get(`/risk/phone/${encodeURIComponent(phone)}`),
+  listBlocklist: async () => dated(await get<Of<"listBlocklist">>("/blocklist"), ["added"]),
+  addBlock: (b) => send("post", "/blocklist", b),
+  removeBlock: (id) => send("delete", `/blocklist/${id}`),
+
+  listAds: () => get("/ads"),
+  // Ads created in the UI carry a temporary id; the server treats non-UUIDs as new.
+  saveAd: ({ id, impressions: _i, clicks: _c, ...a }) =>
+    send("put", `/ads/${encodeURIComponent(id)}`, { ...a, image: a.image ?? "", end: a.end ?? "" }),
+  deleteAd: (id) => send("delete", `/ads/${id}`),
+  getAdNetwork: () => get("/ad-network"),
+  saveAdNetwork: (s) => send("put", "/ad-network", s),
 };

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { getSupabaseClient } from "../database/client";
 import { ah, must } from "../lib/http";
+import { userLimit } from "../lib/limits";
 import { me, requireAuth } from "../middlewares/auth.middleware";
 
 const router = Router();
@@ -17,6 +18,7 @@ const reportBody = z.object({
 router.post(
   "/",
   requireAuth,
+  userLimit(15, 30),
   ah(async (req, res) => {
     const r = reportBody.parse(req.body);
     const { error } = await getSupabaseClient()

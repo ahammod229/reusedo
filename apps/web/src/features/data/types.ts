@@ -50,16 +50,51 @@ export interface CheckoutConfig {
   nagadNumber: string;
 }
 
-export interface CourierPaymentInput {
-  courierId: string;
+/** One courier delivery as both sides see it (each sees only their own full address). */
+export interface CourierView {
+  exchangeId: string;
   item: string;
-  payer: string;
-  phone: string;
-  amount: number;
-  method: PaymentMethod;
-  trxId?: string;
-  senderNumber?: string;
+  category: import("@/features/feed/types").CategoryId;
+  role: "giver" | "receiver";
+  giverAgreed: boolean;
+  receiverAgreed: boolean;
+  myAddress: CourierAddress | null;
+  pickupArea: string | null;
+  dropoffArea: string | null;
+  weightKg: number | null;
+  zone: "insideDhaka" | "dhakaSuburb" | "outsideDhaka" | null;
+  /** From the admin's rate card, computed on the server. */
+  charge: number | null;
+  request: {
+    id: string;
+    status: "pending" | "confirmed" | "rejected";
+    tracking: string | null;
+    delivery:
+      | "in_review"
+      | "picked_up"
+      | "in_transit"
+      | "delivered"
+      | "returned"
+      | "cancelled"
+      | null;
+    charge: number;
+    payment: { method: PaymentMethod; status: Payment["status"] } | null;
+  } | null;
+  checkout: CheckoutConfig;
 }
+
+export interface CourierAddress {
+  name: string;
+  phone: string;
+  district: string;
+  upazila: string;
+  area: string;
+  line: string;
+}
+
+export type CourierPaymentInput =
+  | { method: "cod" }
+  | { method: "bkash" | "nagad"; trxId: string; senderNumber: string };
 
 export type SortBy = "near" | "new" | "urgent" | "popular";
 
@@ -79,6 +114,8 @@ export interface FeedFilters {
   /** Given-away posts are hidden unless asked for. */
   showGiven?: boolean;
   sort?: SortBy;
+  /** Only this person's posts (profile page). */
+  user?: string;
 }
 
 export interface AiDraft {
@@ -161,12 +198,17 @@ export interface DonationMapData {
 
 export interface DataSource {
   listFeed(filters: FeedFilters): Promise<FeedPost[]>;
+  /** My own live and given posts. */
+  listMyPosts(): Promise<FeedPost[]>;
   getPost(id: string): Promise<FeedPost | null>;
   publishPost(input: NewPostInput): Promise<FeedPost>;
+  /** Owner only: mark given, put back, or delete. */
+  setMyPostStatus(id: string, status: "available" | "given" | "deleted"): Promise<void>;
   aiDraft(photos: File[]): Promise<AiDraft>;
 
   listChats(): Promise<Chat[]>;
   sendMessage(chatId: string, text: string): Promise<Chat>;
+  markChatRead(chatId: string): Promise<void>;
 
   listExchanges(): Promise<Exchange[]>;
   advanceExchange(id: string): Promise<Exchange>;
@@ -182,9 +224,18 @@ export interface DataSource {
   getDashboard(): Promise<Dashboard>;
   getDonationMap(): Promise<DonationMapData>;
   /** "I want this" / "I have this" on a post. */
-  requestItem(postId: string, input: { message: string; via: Delivery }): Promise<void>;
+  requestItem(
+    postId: string,
+    input: { message: string; via: Delivery },
+  ): Promise<{ exchangeId: string; conversationId: string | null }>;
   reportPost(postId: string, reason: ReportReason, details: string): Promise<void>;
-  sendThanks(exchangeId: string, text: string): Promise<void>;
+  /** Receiver: thank-you note + stars for the giver. Giver: stars + note for the receiver. */
+  sendThanks(exchangeId: string, text: string, stars: number): Promise<void>;
+
+  /** Courier for one exchange: both agree (with a private address), then the receiver requests. */
+  getCourier(exchangeId: string): Promise<CourierView>;
+  agreeCourier(exchangeId: string, address: CourierAddress, weightKg?: number): Promise<void>;
+  requestCourier(exchangeId: string, payment: CourierPaymentInput): Promise<void>;
 
   listCourierRequests(): Promise<CourierRequest[]>;
   decideCourierRequest(id: string, decision: "confirmed" | "rejected"): Promise<CourierRequest>;
@@ -196,6 +247,6 @@ export interface DataSource {
   ): Promise<AdConfig>;
   trackAd(id: string, event: "impression" | "click"): Promise<void>;
 
-  getCheckoutConfig(): Promise<CheckoutConfig>;
-  submitCourierPayment(input: CourierPaymentInput): Promise<Payment>;
+  /** A published CMS page (terms, privacy, about, help); null while it's still a draft. */
+  getPage(slug: string): Promise<{ title: string; body: string; updatedAt: string } | null>;
 }

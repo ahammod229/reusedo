@@ -284,15 +284,13 @@ router.post(
     const db = getSupabaseClient();
 
     must(
-      await db
-        .from("reviews")
-        .insert({
-          exchange_id: e.id,
-          reviewer_id: myId,
-          reviewee_id: other,
-          rating: stars,
-          comment: text,
-        }),
+      await db.from("reviews").insert({
+        exchange_id: e.id,
+        reviewer_id: myId,
+        reviewee_id: other,
+        rating: stars,
+        comment: text,
+      }),
     );
     if (receiver) {
       must(

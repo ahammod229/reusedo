@@ -1,4 +1,6 @@
 import { AuthService, useAuthStore } from "@/features/auth";
+import { USE_MOCK } from "@/features/data/mode";
+import { useQueryClient } from "@tanstack/react-query";
 import type React from "react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { type Socket, io } from "socket.io-client";
@@ -22,45 +24,44 @@ const socketOrigin = () => {
   }
 };
 
+/** One connection per signed-in user; pushes from the server refresh the affected lists. */
 export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const user = useAuthStore((state) => state.user);
+  const uid = useAuthStore((state) => state.user?.uid);
+  const qc = useQueryClient();
 
   useEffect(() => {
-    if (!user) {
-      if (socket) {
-        socket.disconnect();
-        setSocket(null);
-        setIsConnected(false);
-      }
-      return;
-    }
-
-    if (socket) return;
+    // Mock data has no server to listen to.
+    if (!uid || USE_MOCK) return;
 
     // The server verifies this Firebase token on every connect; it ignores any user id we might send.
-    const newSocket = io(socketOrigin(), {
+    const s = io(socketOrigin(), {
       transports: ["websocket", "polling"],
       auth: (cb) => {
         AuthService.getIdToken().then((token) => cb({ token }));
       },
     });
-
-    newSocket.on("connect", () => {
-      setIsConnected(true);
+    s.on("connect", () => setIsConnected(true));
+    s.on("disconnect", () => setIsConnected(false));
+    s.on("new_message", () => {
+      qc.invalidateQueries({ queryKey: ["chats"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
     });
-
-    newSocket.on("disconnect", () => {
-      setIsConnected(false);
+    s.on("new_notification", () => {
+      qc.invalidateQueries({ queryKey: ["notifications"] });
+      qc.invalidateQueries({ queryKey: ["exchanges"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["courier-view"] });
     });
-
-    setSocket(newSocket);
+    setSocket(s);
 
     return () => {
-      newSocket.disconnect();
+      s.disconnect();
+      setSocket(null);
+      setIsConnected(false);
     };
-  }, [user, socket]);
+  }, [uid, qc]);
 
   return (
     <SocketContext.Provider value={{ socket, isConnected }}>{children}</SocketContext.Provider>

@@ -2,7 +2,6 @@ import { QueryState } from "@/features/data/QueryState";
 import { useAdvanceExchange, useExchanges, useSendThanks } from "@/features/data/hooks";
 import type { Exchange, ExchangeStatus } from "@/features/data/types";
 import { useTr } from "@/features/feed/i18n";
-import { useMe } from "@/features/feed/me";
 import { PageHeading, Pill } from "@/features/feed/parts";
 import { categoryOf } from "@/features/feed/types";
 import {
@@ -27,7 +26,6 @@ export function ExchangesPage() {
   const [tab, setTab] = useState<"active" | "done" | "all">("active");
   const { data: items = [], isLoading, error, refetch } = useExchanges();
   const advanceMut = useAdvanceExchange();
-  const thanked = useMe((s) => s.thanked);
   const [thanking, setThanking] = useState<Exchange | null>(null);
   const [handover, setHandover] = useState<Exchange | null>(null);
 
@@ -167,18 +165,18 @@ export function ExchangesPage() {
 
                 <div className="mt-4 flex gap-2">
                   <Button asChild variant="outline" size="sm">
-                    <Link to="/messages/c1">
+                    <Link to={e.conversationId ? `/messages/${e.conversationId}` : "/messages"}>
                       <MessageCircle className="mr-1.5 h-4 w-4" /> {tr("চ্যাট", "Chat")}
                     </Link>
                   </Button>
-                  {e.role === "giver" && e.status === "requested" && (
+                  {e.canAccept && (
                     <Button size="sm" onClick={() => advance(e.id)}>
                       {tr("গ্রহণ করুন", "Accept")}
                     </Button>
                   )}
                   {e.status === "accepted" && e.via === "courier" && (
                     <Button asChild size="sm">
-                      <Link to="/courier">{tr("কুরিয়ার", "Courier")}</Link>
+                      <Link to={`/courier?exchange=${e.id}`}>{tr("কুরিয়ার", "Courier")}</Link>
                     </Button>
                   )}
                   {(e.status === "scheduled" ||
@@ -190,7 +188,7 @@ export function ExchangesPage() {
                     </Button>
                   )}
                   {e.status === "completed" &&
-                    (thanked.includes(e.id) ? (
+                    (e.thanked ? (
                       <span className="inline-flex items-center gap-1 text-sm font-medium text-success">
                         <Check className="h-4 w-4" />
                         {e.role === "receiver"
@@ -226,7 +224,6 @@ export function ExchangesPage() {
 function ThanksDialog({ e, onClose }: { e: Exchange; onClose: () => void }) {
   const tr = useTr();
   const send = useSendThanks();
-  const me = useMe();
   const [stars, setStars] = useState(5);
   const [text, setText] = useState("");
   const receiver = e.role === "receiver";
@@ -297,18 +294,17 @@ function ThanksDialog({ e, onClose }: { e: Exchange; onClose: () => void }) {
           placeholder={tr("আপনার কথা লিখুন…", "Write a few words…")}
           className="w-full rounded-xl border bg-background px-3 py-2 text-base outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
         />
+        {send.isError && (
+          <p role="alert" className="text-sm font-medium text-destructive">
+            {tr("পাঠানো যায়নি, আবার চেষ্টা করুন।", "Couldn't send — please try again.")}
+          </p>
+        )}
         <Button
           size="lg"
           disabled={!ok || send.isPending}
-          onClick={() => {
-            if (receiver)
-              send.mutate({ exchangeId: e.id, text: text.trim() }, { onSuccess: onClose });
-            else {
-              // Review API isn't wired yet; remember it locally so the button doesn't reappear.
-              me.set({ thanked: [...me.thanked, e.id] });
-              onClose();
-            }
-          }}
+          onClick={() =>
+            send.mutate({ exchangeId: e.id, text: text.trim(), stars }, { onSuccess: onClose })
+          }
         >
           {receiver ? tr("ধন্যবাদ পাঠান", "Send thanks") : tr("রিভিউ দিন", "Submit review")}
         </Button>

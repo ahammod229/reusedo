@@ -1,4 +1,5 @@
 import { AuthService, auth, useAuthStore, useProfile } from "@/features/auth";
+import { syncMeFromProfile } from "@/features/feed/me";
 import { apiClient, setupAuthInterceptor } from "@/services/api";
 import { type User, onAuthStateChanged } from "firebase/auth";
 import type React from "react";
@@ -35,7 +36,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [setAuth]);
 
   // Backend profile (role, phone, district) — shared cache, also read by the route guards
-  const { isLoading: profileLoading } = useProfile();
+  const { data: profile, isLoading: profileLoading } = useProfile();
+
+  // Home and Edit profile read study info from the local store; keep it in step.
+  useEffect(() => {
+    if (profile) syncMeFromProfile(profile);
+  }, [profile]);
 
   const isReady = useAuthStore((state) => state.status !== "loading") && !profileLoading;
 

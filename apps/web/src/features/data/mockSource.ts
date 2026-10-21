@@ -9,8 +9,16 @@ import {
 } from "@/features/feed/mock";
 import type { FeedPost } from "@/features/feed/types";
 import { matchesFilters, sortPosts } from "./filtering";
-import { adState, safeAdUrl, store } from "./platformStore";
-import type { Dashboard, DataSource, ExchangeStatus, PublicAd, UserProfile } from "./types";
+import { adState, courierCharge, safeAdUrl, store } from "./platformStore";
+import type {
+  CourierAddress,
+  CourierView,
+  Dashboard,
+  DataSource,
+  ExchangeStatus,
+  PublicAd,
+  UserProfile,
+} from "./types";
 
 // In-memory copies so mutations behave like a real backend during UI review.
 const posts = structuredClone(MOCK_POSTS);
@@ -38,6 +46,18 @@ const WHEN_EN: Record<string, string> = {
   "৩ দিন আগে": "3 days ago",
 };
 
+type CourierMock = {
+  giver?: CourierAddress;
+  receiver?: CourierAddress;
+  weightKg?: number;
+  request?: CourierView["request"];
+};
+const couriers = new Map<string, CourierMock>();
+const courierState = (id: string) => {
+  if (!couriers.has(id)) couriers.set(id, {});
+  return couriers.get(id) as CourierMock;
+};
+
 // Sample-only: the real code is random, stored hashed, and never derivable from the id.
 const mockHandoverCode = (id: string) =>
   String([...id].reduce((n, c) => (n * 31 + c.charCodeAt(0)) % 9000, 7) + 1000);
@@ -50,6 +70,16 @@ export const mockSource: DataSource = {
         f.sort,
       ),
     );
+  },
+  async listMyPosts() {
+    return wait(posts.filter((p) => p.author.username === "rakib"));
+  },
+  async setMyPostStatus(id, status) {
+    const i = posts.findIndex((p) => p.id === id);
+    if (i < 0) throw new Error("post_not_found");
+    if (status === "deleted") posts.splice(i, 1);
+    else posts[i].status = status;
+    return wait(undefined, 80);
   },
   async getPost(id) {
     return wait(posts.find((p) => p.id === id) ?? null);
@@ -101,6 +131,12 @@ export const mockSource: DataSource = {
     c.last = text;
     c.when = "এখন";
     return wait(c, 80);
+  },
+
+  async markChatRead(chatId) {
+    const c = chats.find((x) => x.id === chatId);
+    if (c) c.unread = 0;
+    return wait(undefined, 40);
   },
 
   async listExchanges() {
@@ -229,9 +265,7 @@ export const mockSource: DataSource = {
           (e) => e.status === "accepted" || e.status === "scheduled",
         ).length,
         thanksToWrite: exchanges
-          .filter(
-            (e) => e.role === "receiver" && e.status === "completed" && !me.thanked.includes(e.id),
-          )
+          .filter((e) => e.role === "receiver" && e.status === "completed" && !e.thanked)
           .map((e) => ({ exchangeId: e.id, item: e.title, to: e.other })),
       },
       forYou,
@@ -253,7 +287,7 @@ export const mockSource: DataSource = {
     const p = posts.find((x) => x.id === postId);
     if (!p) throw new Error("post_not_found");
     p.requests += 1;
-    return wait(undefined, 200);
+    return wait({ exchangeId: "e1", conversationId: "c1" }, 200);
   },
   async reportPost() {
     return wait(undefined, 200);
@@ -261,7 +295,8 @@ export const mockSource: DataSource = {
   async sendThanks(exchangeId, text) {
     const e = exchanges.find((x) => x.id === exchangeId);
     if (!e) throw new Error("exchange_not_found");
-    useMe.getState().set({ thanked: [...useMe.getState().thanked, exchangeId] });
+    e.thanked = true;
+    if (e.role === "giver") return wait(undefined, 200);
     // In the mock the giver's profile is the demo profile, so the note shows up there.
     MOCK_USERS.rakib.thanks.unshift({ by: "আপনি", item: e.title, text, when: "এইমাত্র" });
     return wait(undefined, 200);
@@ -326,23 +361,86 @@ export const mockSource: DataSource = {
     if (a) a[event === "click" ? "clicks" : "impressions"] += 1;
   },
 
-  async getCheckoutConfig() {
+  async getCourier(exchangeId) {
+    const e = exchanges.find((x) => x.id === exchangeId);
+    if (!e) throw new Error("exchange_not_found");
+    const c = courierState(exchangeId);
     const p = store.paymentSettings;
-    return wait(
-      { methods: p.methods, bkashNumber: p.bkashNumber, nagadNumber: p.nagadNumber },
-      120,
-    );
-  },
-  async submitCourierPayment(input) {
-    const used = input.trxId && store.payments.some((p) => p.trxId === input.trxId);
-    const payment = {
-      id: `pay${Date.now()}`,
-      ...input,
-      status: input.method === "cod" ? ("cod_due" as const) : ("pending" as const),
-      flags: used ? ["এই TrxID আরেকটি পেমেন্টে আগেই দেওয়া হয়েছে"] : [],
-      created: "এইমাত্র",
+    const zone =
+      c.giver && c.receiver
+        ? c.giver.district === "ঢাকা" && c.receiver.district === "ঢাকা"
+          ? "insideDhaka"
+          : "outsideDhaka"
+        : null;
+    const view: CourierView = {
+      exchangeId,
+      item: e.title,
+      category: e.category,
+      role: e.role,
+      giverAgreed: !!c.giver,
+      receiverAgreed: !!c.receiver,
+      myAddress: (e.role === "giver" ? c.giver : c.receiver) ?? null,
+      pickupArea: c.giver ? `${c.giver.area}, ${c.giver.district}` : null,
+      dropoffArea: c.receiver ? `${c.receiver.area}, ${c.receiver.district}` : null,
+      weightKg: c.weightKg ?? null,
+      zone,
+      charge: zone && c.weightKg ? courierCharge(zone, c.weightKg) : null,
+      request: c.request ?? null,
+      checkout: { methods: p.methods, bkashNumber: p.bkashNumber, nagadNumber: p.nagadNumber },
     };
-    store.payments.unshift(payment);
-    return wait(payment, 200);
+    return wait(view, 120);
+  },
+  async agreeCourier(exchangeId, address, weightKg) {
+    const e = exchanges.find((x) => x.id === exchangeId);
+    if (!e) throw new Error("exchange_not_found");
+    const c = courierState(exchangeId);
+    if (e.role === "giver") {
+      c.giver = address;
+      c.weightKg = weightKg;
+      // Demo: the other side agrees at once so the whole flow can be tried alone.
+      c.receiver ??= { ...address, name: e.other, district: "সিলেট", area: "জিন্দাবাজার" };
+    } else {
+      c.receiver = address;
+      c.giver ??= { ...address, name: e.other, district: "ঢাকা", area: "মিরপুর ১০" };
+      c.weightKg ??= 1;
+    }
+    return wait(undefined, 150);
+  },
+  async requestCourier(exchangeId, payment) {
+    const e = exchanges.find((x) => x.id === exchangeId);
+    if (!e) throw new Error("exchange_not_found");
+    const view = await this.getCourier(exchangeId);
+    const charge = view.charge ?? 0;
+    const trxId = payment.method === "cod" ? undefined : payment.trxId;
+    const used = trxId && store.payments.some((p) => p.trxId === trxId);
+    if (used) throw new Error("trx_used");
+    const status = payment.method === "cod" ? ("cod_due" as const) : ("pending" as const);
+    store.payments.unshift({
+      id: `pay${Date.now()}`,
+      courierId: exchangeId,
+      item: e.title,
+      payer: "আপনি",
+      phone: view.myAddress?.phone ?? "",
+      amount: charge,
+      method: payment.method,
+      trxId,
+      senderNumber: payment.method === "cod" ? undefined : payment.senderNumber,
+      status,
+      flags: [],
+      created: "এইমাত্র",
+    });
+    courierState(exchangeId).request = {
+      id: `cr${Date.now()}`,
+      status: "pending",
+      tracking: null,
+      delivery: null,
+      charge,
+      payment: { method: payment.method, status },
+    };
+    return wait(undefined, 200);
+  },
+  async getPage() {
+    // The static pages keep their built-in drafts in mock mode.
+    return wait(null, 60);
   },
 };

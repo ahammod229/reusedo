@@ -1,4 +1,4 @@
-import { USE_MOCK } from "@/features/data/source";
+import { USE_MOCK } from "@/features/data/mode";
 import { adminApi } from "./apiSource";
 import { adminMock } from "./mockSource";
 import type { AdminSource } from "./types";

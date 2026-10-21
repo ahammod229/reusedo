@@ -129,7 +129,8 @@ router.post(
     ) as MessageRow;
 
     for (const o of others) {
-      SocketService.emitNewMessage(req.params.id, {
+      // To each person's own room: the chat list and an open thread both refresh.
+      SocketService.emitToUser(o.user_id, "new_message", {
         ...toMessage(m, o.user_id),
         conversationId: m.conversation_id,
       });

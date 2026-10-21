@@ -190,13 +190,11 @@ const authenticate =
         }
         // Accounts must confirm their email code before they can change anything.
         if (opts.enforceVerifiedEmail && !decoded.email_verified) {
-          return res
-            .status(403)
-            .json({
-              success: false,
-              code: "email_not_verified",
-              message: "Verify your email first",
-            });
+          return res.status(403).json({
+            success: false,
+            code: "email_not_verified",
+            message: "Verify your email first",
+          });
         }
       }
       next();

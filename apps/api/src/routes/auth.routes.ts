@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { userLimit } from "../lib/limits";
 import { me, requireAuthUnverified as requireAuth } from "../middlewares/auth.middleware";
 import { EmailCodeError, emailCodeService } from "../services/email-code.service";
 
@@ -25,7 +26,10 @@ router.post("/logout", requireAuth, (req, res) => {
   res.status(200).json({ success: true, message: "Logged out successfully" });
 });
 
-router.post("/email-code/send", requireAuth, async (req, res) => {
+// Per person: the service also enforces a 1-minute resend gap and 5 wrong tries.
+const codeLimit = userLimit(15, 10);
+
+router.post("/email-code/send", requireAuth, codeLimit, async (req, res) => {
   try {
     const { uid, email, email_verified } = req.user ?? {};
     if (!uid || !email)
@@ -38,7 +42,7 @@ router.post("/email-code/send", requireAuth, async (req, res) => {
   }
 });
 
-router.post("/email-code/verify", requireAuth, async (req, res) => {
+router.post("/email-code/verify", requireAuth, codeLimit, async (req, res) => {
   try {
     const code = typeof req.body?.code === "string" ? req.body.code.trim() : "";
     const uid = req.user?.uid;

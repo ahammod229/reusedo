@@ -4,6 +4,7 @@ import { useShare } from "@/features/feed/PostBits";
 import { PostCard } from "@/features/feed/PostCard";
 import { useLang, useTr } from "@/features/feed/i18n";
 import { compressImage } from "@/features/feed/image";
+import { useProfile } from "@/features/auth";
 import { useMe } from "@/features/feed/me";
 import {
   CATEGORIES,
@@ -61,6 +62,7 @@ export function QuickPost() {
   const tr = useTr();
   const lang = useLang((s) => s.lang);
   const myLevel = useMe((s) => s.level);
+  const { data: profile } = useProfile();
   const [params] = useSearchParams();
   const [kind, setKind] = useState<PostKind>(params.get("kind") === "need" ? "need" : "offer");
   const [files, setFiles] = useState<File[]>([]);
@@ -149,9 +151,9 @@ export function QuickPost() {
     description: f.description,
     category: f.category,
     condition: f.condition,
-    area: "মিরপুর ১০",
-    district: "ঢাকা",
-    distanceKm: 0,
+    area: profile?.area ?? "মিরপুর ১০",
+    district: profile?.district ?? "ঢাকা",
+    distanceKm: null,
     author: { name: tr("আপনি", "You"), username: "me", verified: true, trust: 90 },
     images: previews,
     postedAt: tr("এইমাত্র", "just now"),

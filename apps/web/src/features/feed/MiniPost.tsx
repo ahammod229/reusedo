@@ -2,14 +2,12 @@ import { cn } from "@/shared/components/ui";
 import { Link } from "react-router";
 import { Photo } from "./Photo";
 import { PostTags } from "./PostBits";
-import { useLang, useNum } from "./i18n";
+import { useKm } from "./i18n";
 import type { FeedPost } from "./types";
 
 /** Compact tile for horizontal rails (Home "for you"). */
 export function MiniPost({ post, className }: { post: FeedPost; className?: string }) {
-  const num = useNum();
-  const lang = useLang((s) => s.lang);
-  const km = post.distanceKm < 10 ? post.distanceKm.toFixed(1) : Math.round(post.distanceKm);
+  const km = useKm()(post.distanceKm);
   return (
     <Link
       to={`/post/${post.id}`}
@@ -25,7 +23,8 @@ export function MiniPost({ post, className }: { post: FeedPost; className?: stri
         </p>
         <PostTags post={post} compact />
         <p className="mt-auto text-xs text-muted-foreground">
-          {post.area} · {num(km)} {lang === "bn" ? "কিমি" : "km"}
+          {post.area}
+          {km && ` · ${km}`}
         </p>
       </div>
     </Link>

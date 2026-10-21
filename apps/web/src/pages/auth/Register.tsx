@@ -1,5 +1,7 @@
 import { AuthService, authErrorText, isSilentAuthError } from "@/features/auth";
+import { USE_MOCK } from "@/features/data/mode";
 import { useT, useTr } from "@/features/feed/i18n";
+import { apiClient } from "@/services/api";
 import { Button } from "@/shared/components/ui";
 import { type RegisterInput, registerSchema } from "@/shared/validation";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,6 +30,11 @@ export const Register = () => {
     setError(null);
     try {
       await AuthService.register(data);
+      // Firebase signs the new account in before the display name is set, so the
+      // profile was created without it; save the name the person typed.
+      if (!USE_MOCK) {
+        await apiClient.patch("/users/me", { name: data.displayName }).catch(() => undefined);
+      }
       navigate("/verify-email");
     } catch (err) {
       setError(authErrorText(err, tr));

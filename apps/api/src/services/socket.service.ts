@@ -81,6 +81,11 @@ export class SocketService {
     }
   }
 
+  /** Any event to one person's open tabs and devices. */
+  static emitToUser(userId: string, event: string, data: unknown) {
+    if (SocketService.io) SocketService.io.to(userId).emit(event, data);
+  }
+
   // Helper to send notification to a specific user
   static emitNotification(userId: string, notification: unknown) {
     if (SocketService.io) {

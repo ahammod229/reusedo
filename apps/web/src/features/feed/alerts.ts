@@ -1,3 +1,4 @@
+import { USE_MOCK } from "@/features/data/mode";
 import type { FeedFilters } from "@/features/data/types";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
@@ -20,14 +21,17 @@ interface AlertsState {
 export const useAlerts = create<AlertsState>()(
   persist(
     (set) => ({
-      list: [
-        {
-          id: "seed-1",
-          label: "SSC বই",
-          filters: { kind: "all", category: "books", scope: "country", level: "ssc" },
-          createdHoursAgo: 72,
-        },
-      ],
+      // A sample alert so the mock demo isn't empty; real accounts start with none.
+      list: USE_MOCK
+        ? [
+            {
+              id: "seed-1",
+              label: "SSC বই",
+              filters: { kind: "all", category: "books", scope: "country", level: "ssc" },
+              createdHoursAgo: 72,
+            },
+          ]
+        : [],
       add: (a) =>
         set((s) => ({
           list: [{ ...a, id: `al${Date.now()}`, createdHoursAgo: 0 }, ...s.list].slice(0, 10),

@@ -1,17 +1,10 @@
 import { QueryState } from "@/features/data/QueryState";
-import { useChats, useSendMessage } from "@/features/data/hooks";
+import { useChats, useMarkChatRead, useSendMessage } from "@/features/data/hooks";
 import type { Chat } from "@/features/data/types";
 import { useTr } from "@/features/feed/i18n";
 import { Initial, Pill } from "@/features/feed/parts";
 import { Button, cn } from "@/shared/components/ui";
-import {
-  ArrowLeft,
-  BadgeCheck,
-  Image as ImageIcon,
-  MessageCircle,
-  Send,
-  Truck,
-} from "lucide-react";
+import { ArrowLeft, BadgeCheck, MessageCircle, Send, Truck } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link, useNavigate, useParams } from "react-router";
@@ -96,8 +89,15 @@ function Thread({ chat }: { chat: Chat }) {
   const tr = useTr();
   const navigate = useNavigate();
   const send$ = useSendMessage();
+  const markRead = useMarkChatRead();
   const msgs = chat.messages;
   const [text, setText] = useState("");
+
+  // Opening a conversation reads it; new messages that arrive while it's open too.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only when this chat's unread count changes
+  useEffect(() => {
+    if (chat.unread > 0) markRead.mutate(chat.id);
+  }, [chat.id, chat.unread]);
   const end = useRef<HTMLDivElement>(null);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: scroll to the newest message whenever the count changes
@@ -231,9 +231,6 @@ function Thread({ chat }: { chat: Chat }) {
             send();
           }}
         >
-          <Button type="button" variant="ghost" size="icon" aria-label={tr("ছবি", "Photo")}>
-            <ImageIcon className="h-5 w-5" />
-          </Button>
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}

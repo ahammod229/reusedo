@@ -189,7 +189,7 @@ UI-র মডেল: `requested → accepted → scheduled → completed | cance
 2. **ক্যাটাগরি** — `/api/categories` (UI-র `CATEGORIES` ধ্রুবক সরিয়ে সার্ভার থেকে; আইডি মিলিয়ে নিন)।
 3. **ফিড ও পোস্ট** — `listFeed`, `getPost`, `publishPost` + ছবি আপলোড (§৬.খ)।
 4. **রিকোয়েস্ট/এক্সচেঞ্জ** — §৪-এর মডেল সিদ্ধান্তের পর `listExchanges`, রিকোয়েস্ট পাঠানো (PostDetail-এর ডায়ালগ এখন শুধু লোকাল)।
-5. **চ্যাট** — `listChats`/`sendMessage` + Socket.io (`SocketProvider`, `useChatRealtime` আগে থেকে আছে — `invalidateQueries(chats)` কল করুন নতুন মেসেজে)।
+5. **চ্যাট** — `listChats`/`sendMessage` + Socket.io (`SocketProvider` নতুন মেসেজ/নোটিফিকেশনে নিজেই `chats`/`notifications` রিফ্রেশ করে)।
 6. **নোটিফিকেশন + FCM** — `useFCM` আছে।
 7. **AI ড্রাফট** (§৫.খ)।
 8. **কুরিয়ার + Steadfast** (§৫.গ)।

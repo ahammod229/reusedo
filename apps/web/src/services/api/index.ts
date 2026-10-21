@@ -18,9 +18,8 @@ export const apiClient: AxiosInstance = axios.create({
       (import.meta as unknown as { env: Record<string, string> }).env?.VITE_API_URL,
       "VITE_API_URL",
     ) || "http://localhost:8080/api",
-  headers: {
-    "Content-Type": "application/json",
-  },
+  // No fixed Content-Type: axios sends JSON for objects and the right multipart boundary
+  // for FormData. A fixed "application/json" made axios turn photo uploads into JSON.
   timeout: 10000,
   withCredentials: true,
 });
@@ -36,15 +35,3 @@ export const setupAuthInterceptor = (getToken: () => Promise<string | null>) => 
 };
 
 export * from "axios";
-export * from "./services/user.service";
-export * from "./services/product.service";
-export * from "./services/need.service";
-export * from "./services/offer.service";
-export * from "./services/exchange.service";
-export * from "./services/chat.service";
-export * from "./services/notification.service";
-export * from "./services/trust.service";
-export * from "./services/search.service";
-export * from "./services/analytics.service";
-export * from "./services/admin.service";
-export * from "./services/shipping.service";

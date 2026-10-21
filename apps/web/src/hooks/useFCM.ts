@@ -1,5 +1,5 @@
 import { app } from "@/features/auth";
-import { NotificationService } from "@/services/api";
+import { apiClient } from "@/services/api";
 import { getMessaging, getToken, isSupported, onMessage } from "firebase/messaging";
 import { useEffect, useState } from "react";
 
@@ -78,7 +78,7 @@ export function useFCM() {
 
       if (token) {
         setFcmToken(token);
-        await NotificationService.registerFCMToken(token, navigator.userAgent);
+        await apiClient.post("/users/me/fcm-token", { token });
       }
     } catch (error) {
       console.error("Failed to register FCM token:", error);

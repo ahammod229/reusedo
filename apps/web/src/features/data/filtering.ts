@@ -8,6 +8,7 @@ const URGENCY_RANK = { urgent: 0, soon: 1, anytime: 2 } as const;
 
 export function matchesFilters(p: FeedPost, f: FeedFilters, myDistrict = "ঢাকা") {
   const q = f.q?.trim().toLowerCase();
+  if (f.user && p.author.username !== f.user) return false;
   if (f.kind !== "all" && p.kind !== f.kind) return false;
   if (f.category !== "all" && p.category !== f.category) return false;
   if (q && !`${p.title} ${p.description} ${p.edu?.detail ?? ""}`.toLowerCase().includes(q))

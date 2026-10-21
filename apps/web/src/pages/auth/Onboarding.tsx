@@ -1,5 +1,7 @@
 import { useLang, useNum, useT, useTr } from "@/features/feed/i18n";
-import { useMe } from "@/features/feed/me";
+import { profileKey } from "@/features/auth/useProfile";
+import { saveMe, useMe } from "@/features/feed/me";
+import { useQueryClient } from "@tanstack/react-query";
 import { CATEGORIES, type CategoryId, EDU_LEVELS, type EduLevel } from "@/features/feed/types";
 import { BD_DIVISIONS, isBdMobile, normalizePhone } from "@/features/geo/bd";
 import { DISTRICT_CENTERS, type LatLng, coarse, inBangladesh } from "@/features/geo/places";
@@ -20,6 +22,7 @@ export function Onboarding() {
   const t = useT();
   const tr = useTr();
   const me = useMe();
+  const qc = useQueryClient();
   const [about, setAbout] = useState<{
     level?: EduLevel;
     institution: string;
@@ -109,6 +112,8 @@ export function Onboarding() {
         phone: normalizePhone(f.phone),
         pin: pin ?? undefined,
       });
+      // The route guard reads this; without a refresh it would send people back here.
+      await qc.invalidateQueries({ queryKey: profileKey });
       setTouched(false);
       setStep(4);
     } catch (e) {
@@ -405,7 +410,8 @@ export function Onboarding() {
               size="lg"
               className="flex-1"
               onClick={() => {
-                me.set(about);
+                // Saving study info can fail quietly: it's optional and editable later.
+                saveMe(about, qc).catch(() => undefined);
                 setDone(true);
               }}
             >

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { Photo } from "./Photo";
 import { PostTags, ReportDialog, StatusRibbon, useShare } from "./PostBits";
-import { useLang, useNum, useT } from "./i18n";
+import { useLang, useNum, useT, useKm } from "./i18n";
 import { useMyUsername } from "./me";
 import { useSaved } from "./saved";
 import { type FeedPost, categoryOf } from "./types";
@@ -21,8 +21,7 @@ export function PostCard({ post }: { post: FeedPost }) {
   const isOffer = post.kind === "offer";
   const open = post.status === "available";
   const mine = post.author.username === useMyUsername();
-  const km = post.distanceKm < 10 ? post.distanceKm.toFixed(1) : Math.round(post.distanceKm);
-  const dist = `${num(km)} ${lang === "bn" ? "কিমি" : "km"}`;
+  const dist = useKm()(post.distanceKm);
   const href = `/post/${post.id}`;
 
   return (
@@ -48,7 +47,8 @@ export function PostCard({ post }: { post: FeedPost }) {
           <div className="flex items-center gap-1 truncate text-xs text-muted-foreground">
             <MapPin className="h-3 w-3 shrink-0" />
             <span className="truncate">
-              {post.area}, {post.district} · {dist} · {post.postedAt}
+              {post.area}, {post.district} · {dist ? `${dist} · ` : ""}
+              {post.postedAt}
             </span>
           </div>
         </div>

@@ -1,3 +1,5 @@
+import { usePage } from "@/features/data/hooks";
+import { longDate } from "@/features/data/time";
 import { useTr } from "@/features/feed/i18n";
 import { PageHeading } from "@/features/feed/parts";
 import { Button } from "@/shared/components/ui";
@@ -45,8 +47,8 @@ export function HelpPage() {
     [
       tr("আমার ঠিকানা কি সবাই দেখবে?", "Will everyone see my address?"),
       tr(
-        "না। পাবলিকে শুধু এলাকার নাম দেখায়। রিকোয়েস্ট গ্রহণের পর অপর পক্ষ পুরো ঠিকানা দেখতে পায়।",
-        "No. Only your area is public. The other person sees the full address after the request is accepted.",
+        "না। সবাই শুধু এলাকার নাম দেখে। নিজে গিয়ে নিলে কোথায় দেখা করবেন তা চ্যাটে ঠিক করুন; কুরিয়ারে পাঠালে পুরো ঠিকানা শুধু কুরিয়ার পায়।",
+        "No. Everyone sees only your area. For a pickup, agree where to meet in the chat; for a courier delivery, only the courier gets the full address.",
       ),
     ],
     [
@@ -134,6 +136,8 @@ export function ContactPage() {
 export function LegalPage({ kind }: { kind: "terms" | "privacy" }) {
   const tr = useTr();
   const terms = kind === "terms";
+  // Once an admin publishes the page in Admin → Content, that text replaces the draft below.
+  const { data: published } = usePage(kind);
   const sections: [string, string][] = terms
     ? [
         [
@@ -176,8 +180,8 @@ export function LegalPage({ kind }: { kind: "terms" | "privacy" }) {
         [
           tr("২. ঠিকানার গোপনীয়তা", "2. Address privacy"),
           tr(
-            "পাবলিকে শুধু এলাকা দেখানো হয়। পুরো ঠিকানা কেবল নিশ্চিত লেনদেনে অপর পক্ষ ও কুরিয়ার দেখে।",
-            "Only your area is public. The full address is shared only with the other party and courier in a confirmed exchange.",
+            "পাবলিকে শুধু এলাকা দেখানো হয়। পুরো ঠিকানা কেবল কুরিয়ার ডেলিভারিতে কুরিয়ারকে দেওয়া হয়, অপর পক্ষকে নয়।",
+            "Only your area is public. The full address is shared only with the courier for a courier delivery, never with the other person.",
           ),
         ],
         [
@@ -195,6 +199,16 @@ export function LegalPage({ kind }: { kind: "terms" | "privacy" }) {
           ),
         ],
       ];
+  if (published) {
+    return (
+      <Page title={published.title}>
+        <p className="text-sm text-muted-foreground">
+          {tr("সর্বশেষ হালনাগাদ", "Last updated")}: {longDate(published.updatedAt)}
+        </p>
+        <div className="whitespace-pre-line leading-relaxed">{published.body}</div>
+      </Page>
+    );
+  }
   return (
     <Page title={terms ? tr("শর্তাবলী", "Terms of use") : tr("প্রাইভেসি নীতি", "Privacy policy")}>
       <p className="rounded-xl bg-warning-soft px-4 py-3 text-sm text-warning">

@@ -5,7 +5,7 @@ import { useShare } from "@/features/feed/PostBits";
 import { PostCard } from "@/features/feed/PostCard";
 import { badgesOf, levelOf, replyLabel } from "@/features/feed/gamify";
 import { useLang, useNum, useTr } from "@/features/feed/i18n";
-import { DEMO_USERNAME, useMe } from "@/features/feed/me";
+import { useMe, useMyUsername } from "@/features/feed/me";
 import { Initial, Pill, Stars, TrustRing } from "@/features/feed/parts";
 import { eduOf } from "@/features/feed/types";
 import { Button, cn } from "@/shared/components/ui";
@@ -33,14 +33,15 @@ import { Link, useParams, useSearchParams } from "react-router";
 type Tab = "offers" | "needs" | "thanks" | "reviews";
 
 export function ProfilePage({ own = false }: { own?: boolean }) {
-  const { username = DEMO_USERNAME } = useParams();
-  const { data: u, isLoading, error, refetch } = useUser(own ? DEMO_USERNAME : username);
+  const myUsername = useMyUsername();
+  const { username = myUsername } = useParams();
+  const { data: u, isLoading, error, refetch } = useUser(own ? myUsername : username);
   const tr = useTr();
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-5">
-      <QueryState isLoading={isLoading} error={error} onRetry={refetch} rows={2}>
+      <QueryState isLoading={isLoading || !username} error={error} onRetry={refetch} rows={2}>
         {u ? (
-          <ProfileView u={u} own={own || username === DEMO_USERNAME} />
+          <ProfileView u={u} own={own || username === myUsername} />
         ) : (
           <p className="py-24 text-center text-muted-foreground">
             {tr("প্রোফাইল পাওয়া যায়নি", "Profile not found")}
@@ -67,8 +68,9 @@ function ProfileView({ u, own }: { u: UserProfile; own: boolean }) {
     category: "all",
     scope: "country",
     showGiven: true,
+    user: u.username,
   });
-  const posts = all.filter((p) => p.author.username === u.username);
+  const posts = all;
   const offers = posts.filter((p) => p.kind === "offer");
   const needs = posts.filter((p) => p.kind === "need");
 

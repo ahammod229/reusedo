@@ -1,6 +1,10 @@
 import { useLang, useTr } from "@/features/feed/i18n";
 import { compressImage } from "@/features/feed/image";
-import { useMe } from "@/features/feed/me";
+import { profileKey, useProfile } from "@/features/auth/useProfile";
+import { USE_MOCK } from "@/features/data/mode";
+import { saveMe, useMe } from "@/features/feed/me";
+import { apiClient } from "@/services/api";
+import { useQueryClient } from "@tanstack/react-query";
 import { PageHeading } from "@/features/feed/parts";
 import { CATEGORIES, EDU_LEVELS } from "@/features/feed/types";
 import { Button, Switch, cn } from "@/shared/components/ui";
@@ -20,11 +24,46 @@ export function EditProfilePage() {
     showInstitution: me.showInstitution,
     interests: me.interests,
   });
-  const [name, setName] = useState("রাকিব হাসান");
-  const [bio, setBio] = useState("পড়ার বই আর খাতা দিয়ে দিতে ভালো লাগে।");
+  const qc = useQueryClient();
+  const { data: profile } = useProfile();
+  const [name, setName] = useState(profile?.name ?? (USE_MOCK ? "রাকিব হাসান" : ""));
+  const [bio, setBio] = useState(profile?.bio ?? "");
   const [photo, setPhoto] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  // The profile may arrive after the first render; fill the form once.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only when the profile first loads
+  useEffect(() => {
+    if (!profile) return;
+    setName(profile.name);
+    setBio(profile.bio);
+  }, [profile?.id]);
+
+  const save = async () => {
+    setSaving(true);
+    setFailed(false);
+    try {
+      await saveMe(study, qc);
+      if (!USE_MOCK) {
+        await apiClient.patch("/users/me", { name: name.trim(), bio: bio.trim() });
+        if (photo) {
+          const form = new FormData();
+          form.append("photo", photo, photo.name || "avatar.jpg");
+          await apiClient.post("/users/me/avatar", form);
+        }
+        await qc.invalidateQueries({ queryKey: profileKey });
+        await qc.invalidateQueries({ queryKey: ["user"] });
+      }
+      setSaved(true);
+    } catch {
+      setFailed(true);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   useEffect(() => {
     if (!photo) return setPreview(null);
@@ -43,14 +82,17 @@ export function EditProfilePage() {
         className="space-y-5 rounded-3xl border bg-card p-5"
         onSubmit={(e) => {
           e.preventDefault();
-          me.set(study);
-          setSaved(true);
+          void save();
         }}
       >
         <div className="flex items-center gap-4">
           <span className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-primary/15 text-3xl font-bold text-primary">
-            {preview ? (
-              <img src={preview} alt="" className="h-full w-full object-cover" />
+            {preview || profile?.avatarUrl ? (
+              <img
+                src={preview ?? profile?.avatarUrl ?? ""}
+                alt=""
+                className="h-full w-full object-cover"
+              />
             ) : (
               name.charAt(0)
             )}
@@ -183,12 +225,17 @@ export function EditProfilePage() {
           </div>
         </fieldset>
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" size="lg">
+          <Button type="submit" size="lg" disabled={saving || name.trim().length < 2}>
             {tr("সংরক্ষণ", "Save")}
           </Button>
           <Button asChild variant="ghost" size="lg">
             <Link to="/profile">{tr("ফিরে যান", "Back")}</Link>
           </Button>
+          {failed && (
+            <p role="alert" className="text-sm font-medium text-destructive">
+              {tr("সংরক্ষণ হয়নি, আবার চেষ্টা করুন।", "Couldn't save — please try again.")}
+            </p>
+          )}
           {saved && (
             <output className="text-sm font-medium text-success">
               {tr("সংরক্ষিত ✓", "Saved ✓")}

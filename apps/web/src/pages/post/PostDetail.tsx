@@ -4,7 +4,7 @@ import { AdCard } from "@/features/feed/AdCard";
 import { Photo } from "@/features/feed/Photo";
 import { PostTags, ReportDialog, StatusRibbon, useShare } from "@/features/feed/PostBits";
 import { PostCard } from "@/features/feed/PostCard";
-import { useLang, useNum, useTr } from "@/features/feed/i18n";
+import { useLang, useNum, useTr, useKm } from "@/features/feed/i18n";
 import { useMyUsername } from "@/features/feed/me";
 import { Initial, Pill, TrustRing } from "@/features/feed/parts";
 import { useSaved } from "@/features/feed/saved";
@@ -58,6 +58,7 @@ export function PostDetail() {
 
 function PostDetailView({ post, all }: { post: FeedPost; all: FeedPost[] }) {
   const tr = useTr();
+  const kmOf = useKm();
   const num = useNum();
   const lang = useLang((s) => s.lang);
   const navigate = useNavigate();
@@ -75,7 +76,8 @@ function PostDetailView({ post, all }: { post: FeedPost; all: FeedPost[] }) {
     if (!o && params.has("request")) setParams({}, { replace: true });
   };
   const request = useRequestItem();
-  const sent = request.isSuccess;
+  const sent = request.isSuccess || !!post.myRequest;
+  const chatId = request.data?.conversationId ?? post.myRequest?.conversationId ?? null;
   const { share, copied } = useShare();
   const [reporting, setReporting] = useState(false);
   const [via, setVia] = useState<"pickup" | "courier">(post.delivery[0] ?? "pickup");
@@ -90,7 +92,7 @@ function PostDetailView({ post, all }: { post: FeedPost; all: FeedPost[] }) {
   }[post.condition];
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-4 pb-28 sm:pb-8">
+    <div className="mx-auto w-full max-w-5xl px-4 py-4 pb-32 sm:pb-8">
       <Helmet>
         <title>{post.title} — ReuseDo</title>
       </Helmet>
@@ -151,12 +153,11 @@ function PostDetailView({ post, all }: { post: FeedPost; all: FeedPost[] }) {
                 {post.area}, {post.district}
               </span>
               <span>{post.postedAt}</span>
-              <span>
-                {num(
-                  post.distanceKm < 10 ? post.distanceKm.toFixed(1) : Math.round(post.distanceKm),
-                )}{" "}
-                {tr("কিমি দূরে", "km away")}
-              </span>
+              {kmOf(post.distanceKm) && (
+                <span>
+                  {kmOf(post.distanceKm)} {tr("দূরে", "away")}
+                </span>
+              )}
             </p>
             <p className="whitespace-pre-line text-base leading-relaxed">{post.description}</p>
             <PostTags post={post} />
@@ -263,14 +264,16 @@ function PostDetailView({ post, all }: { post: FeedPost; all: FeedPost[] }) {
         />
       </div>
 
-      {/* Sticky action bar (above the mobile tab bar) */}
-      <div className="fixed inset-x-0 bottom-16 z-30 border-t bg-background/95 p-3 backdrop-blur sm:static sm:mt-6 sm:border-0 sm:bg-transparent sm:p-0 md:bottom-0">
+      {/* Sticky action bar, above the mobile tab bar and clear of its raised Post button */}
+      <div className="fixed inset-x-0 bottom-20 z-30 border-t bg-background/95 p-3 backdrop-blur sm:static sm:mt-6 sm:border-0 sm:bg-transparent sm:p-0 md:bottom-0">
         <div className="mx-auto flex max-w-5xl gap-2">
-          <Button asChild variant="outline" size="lg" className="px-4">
-            <Link to="/messages/c1" aria-label={tr("চ্যাট", "Chat")}>
-              <MessageCircle className="h-5 w-5" />
-            </Link>
-          </Button>
+          {chatId && (
+            <Button asChild variant="outline" size="lg" className="px-4">
+              <Link to={`/messages/${chatId}`} aria-label={tr("চ্যাট", "Chat")}>
+                <MessageCircle className="h-5 w-5" />
+              </Link>
+            </Button>
+          )}
           <Button
             size="lg"
             className={cn("flex-1", !isOffer && "bg-need text-white hover:bg-need/90")}

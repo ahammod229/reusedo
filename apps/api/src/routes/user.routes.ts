@@ -1,8 +1,10 @@
 import { Router } from "express";
+import multer from "multer";
 import { z } from "zod";
 import { adminAuth } from "../config/firebase-admin";
 import { getSupabaseClient } from "../database/client";
 import { ah, badRequest, forbidden, must, notFound } from "../lib/http";
+import { uploadImage } from "../lib/storage";
 import {
   type Profile,
   forgetProfile,
@@ -292,6 +294,26 @@ router.get(
         })),
       },
     });
+  }),
+);
+
+const avatarUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 1024 * 1024, files: 1 },
+});
+
+// POST /api/users/me/avatar — one square-ish photo, metadata stripped.
+router.post(
+  "/me/avatar",
+  requireAuth,
+  avatarUpload.single("photo"),
+  ah(async (req, res) => {
+    if (!req.file) throw badRequest("photo_required");
+    const p = me(req);
+    const url = await uploadImage("post-images", `avatars/${p.id}`, req.file, 1024 * 1024);
+    must(await getSupabaseClient().from("profiles").update({ avatar_url: url }).eq("id", p.id));
+    forgetProfile(p.firebase_uid);
+    res.json({ success: true, data: { avatarUrl: url } });
   }),
 );
 

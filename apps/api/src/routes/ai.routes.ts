@@ -3,6 +3,7 @@ import multer from "multer";
 import { getSupabaseClient } from "../database/client";
 import { HttpError, ah, badRequest, must } from "../lib/http";
 import { integration } from "../lib/integrations";
+import { userLimit } from "../lib/limits";
 import { type GeneralSettings, flagOn, getSetting } from "../lib/settings";
 import { me, requireAuth } from "../middlewares/auth.middleware";
 
@@ -26,6 +27,7 @@ Never write names, phone numbers, addresses or anything about people visible in 
 router.post(
   "/draft",
   requireAuth,
+  userLimit(15, 20),
   upload.array("photos"),
   ah(async (req, res) => {
     const files = (req.files as Express.Multer.File[] | undefined) ?? [];

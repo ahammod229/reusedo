@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AdPlacement } from "./platformStore";
 import { source } from "./source";
 import type {
+  CourierAddress,
   CourierPaymentInput,
   Delivery,
   FeedFilters,
@@ -19,11 +20,27 @@ export const keys = {
   courier: ["courier"] as const,
   ads: (p: AdPlacement, district?: string, category?: string) =>
     ["ads", p, district, category] as const,
-  checkout: ["checkout"] as const,
+  courierView: (exchangeId: string) => ["courier-view", exchangeId] as const,
+  myPosts: ["my-posts"] as const,
 };
 
 export const useFeed = (f: FeedFilters) =>
   useQuery({ queryKey: keys.feed(f), queryFn: () => source.listFeed(f) });
+
+export const useMyPosts = () =>
+  useQuery({ queryKey: keys.myPosts, queryFn: () => source.listMyPosts() });
+
+export function useSetMyPostStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: string; status: "available" | "given" | "deleted" }) =>
+      source.setMyPostStatus(v.id, v.status),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: keys.myPosts });
+      qc.invalidateQueries({ queryKey: ["feed"] });
+    },
+  });
+}
 
 export const usePost = (id: string) =>
   useQuery({ queryKey: keys.post(id), queryFn: () => source.getPost(id) });
@@ -44,7 +61,11 @@ export const useNotifications = () =>
   useQuery({ queryKey: keys.notifications, queryFn: () => source.listNotifications() });
 
 export const useUser = (username: string) =>
-  useQuery({ queryKey: keys.user(username), queryFn: () => source.getUser(username) });
+  useQuery({
+    queryKey: keys.user(username),
+    queryFn: () => source.getUser(username),
+    enabled: !!username,
+  });
 
 export const useCourierRequests = () =>
   useQuery({ queryKey: keys.courier, queryFn: () => source.listCourierRequests() });
@@ -53,6 +74,14 @@ export function useSendMessage() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (v: { chatId: string; text: string }) => source.sendMessage(v.chatId, v.text),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.chats }),
+  });
+}
+
+export function useMarkChatRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (chatId: string) => source.markChatRead(chatId),
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.chats }),
   });
 }
@@ -123,11 +152,39 @@ export const useAdConfig = (
 export const trackAd = (id: string, event: "impression" | "click") =>
   source.trackAd(id, event).catch(() => {}); // analytics must never break the page
 
-export const useCheckoutConfig = () =>
-  useQuery({ queryKey: keys.checkout, queryFn: () => source.getCheckoutConfig() });
+export const useCourier = (exchangeId: string | null) =>
+  useQuery({
+    queryKey: keys.courierView(exchangeId ?? ""),
+    queryFn: () => source.getCourier(exchangeId as string),
+    enabled: !!exchangeId,
+  });
 
-export const useSubmitCourierPayment = () =>
-  useMutation({ mutationFn: (v: CourierPaymentInput) => source.submitCourierPayment(v) });
+export function useAgreeCourier(exchangeId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { address: CourierAddress; weightKg?: number }) =>
+      source.agreeCourier(exchangeId, v.address, v.weightKg),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.courierView(exchangeId) }),
+  });
+}
+
+export function useRequestCourier(exchangeId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payment: CourierPaymentInput) => source.requestCourier(exchangeId, payment),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: keys.courierView(exchangeId) });
+      qc.invalidateQueries({ queryKey: keys.exchanges });
+    },
+  });
+}
+
+export const usePage = (slug: string) =>
+  useQuery({
+    queryKey: ["page", slug],
+    queryFn: () => source.getPage(slug),
+    staleTime: 5 * 60_000,
+  });
 
 export const useDashboard = () =>
   useQuery({ queryKey: ["dashboard"], queryFn: () => source.getDashboard() });
@@ -153,9 +210,10 @@ export const useReportPost = () =>
 export function useSendThanks() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (v: { exchangeId: string; text: string }) =>
-      source.sendThanks(v.exchangeId, v.text),
+    mutationFn: (v: { exchangeId: string; text: string; stars: number }) =>
+      source.sendThanks(v.exchangeId, v.text, v.stars),
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: keys.exchanges });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["user"] });
     },

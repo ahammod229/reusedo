@@ -1,7 +1,7 @@
 import { UI_PREVIEW } from "@/shared/uiPreview";
 /// <reference types="node" />
 import { getApp, getApps, initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { connectAuthEmulator, getAuth } from "firebase/auth";
 
 const getEnvVar = (viteKey: unknown, nodeKey?: string): string | undefined => {
   if (typeof viteKey === "string") return viteKey;
@@ -44,5 +44,11 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
+
+// Local development without a Firebase project: `firebase emulators:start --only auth`
+// and VITE_FIREBASE_AUTH_EMULATOR="http://127.0.0.1:9099" (the API then needs
+// FIREBASE_AUTH_EMULATOR_HOST="127.0.0.1:9099").
+const emulator = import.meta.env.VITE_FIREBASE_AUTH_EMULATOR as string | undefined;
+if (emulator && import.meta.env.DEV) connectAuthEmulator(auth, emulator, { disableWarnings: true });
 
 export { app, auth };

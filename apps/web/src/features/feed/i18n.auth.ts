@@ -2,7 +2,7 @@ export const authBn = {
   authBrandTitle: "যা আপনার দরকার নেই, তা কারও জন্য আশীর্বাদ",
   authBrandBody: "বই, খাতা, টেবিল, কাপড় — ফেলে না দিয়ে দিয়ে দিন। যার দরকার সে নিয়ে যাবে। পুরোটাই বিনামূল্যে।",
   authPoint1: "ছবি তুললেই পোস্ট রেডি",
-  authPoint2: "যাচাই করা মানুষের সাথে লেনদেন",
+  authPoint2: "যাচাই করা মানুষের সাথে দেওয়া-নেওয়া",
   authPoint3: "সারা বাংলাদেশে কুরিয়ার সুবিধা",
   loginTitle: "আবার স্বাগতম",
   loginSub: "আপনার অ্যাকাউন্টে ঢুকুন",
@@ -53,7 +53,7 @@ export const authBn = {
   landmark: "কাছের পরিচিত স্থান (ঐচ্ছিক)",
   selectOne: "বেছে নিন",
   addressPrivacy:
-    "আপনার সঠিক ঠিকানা পাবলিকে দেখানো হবে না — শুধু এলাকার নাম। লেনদেন নিশ্চিত হলে তবেই অপর পক্ষ পুরো ঠিকানা দেখবে।",
+    "আপনার সঠিক ঠিকানা কখনো দেখানো হয় না — অন্যরা শুধু এলাকার নাম দেখেন। কুরিয়ারে পাঠালে ঠিকানা শুধু কুরিয়ার পায়।",
   pinOnMap: "ম্যাপে পিন করুন (ঐচ্ছিক)",
   useMyLocation: "আমার লোকেশন ব্যবহার করুন",
   phoneLbl: "মোবাইল নম্বর",
@@ -74,7 +74,7 @@ export const authEn: Record<keyof typeof authBn, string> = {
   authBrandBody:
     "Books, notebooks, tables, clothes — give them away instead of throwing them out. Completely free.",
   authPoint1: "Snap a photo, post is ready",
-  authPoint2: "Trade with verified people",
+  authPoint2: "Give and get with verified people",
   authPoint3: "Courier available nationwide",
   loginTitle: "Welcome back",
   loginSub: "Log in to your account",
@@ -125,7 +125,7 @@ export const authEn: Record<keyof typeof authBn, string> = {
   landmark: "Nearby landmark (optional)",
   selectOne: "Select",
   addressPrivacy:
-    "Your exact address is never shown publicly — only your area. The other person sees it only after you both confirm.",
+    "Your exact address is never shown — others see only your area. For a courier delivery, only the courier gets the address.",
   pinOnMap: "Pin on map (optional)",
   useMyLocation: "Use my location",
   phoneLbl: "Mobile number",

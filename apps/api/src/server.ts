@@ -1,9 +1,9 @@
 import cors from "cors";
 import express, { type NextFunction, type Request, type Response } from "express";
 import helmet from "helmet";
-import rateLimit from "express-rate-limit";
 
 import { errorHandler } from "./lib/http";
+import { ipLimit } from "./lib/limits";
 import { adminRouter } from "./routes/admin.routes";
 import { adsRouter } from "./routes/ads.routes";
 import { aiRouter } from "./routes/ai.routes";
@@ -49,23 +49,10 @@ app.use(
 // Small JSON bodies only; uploads go through multer with its own limits.
 app.use(express.json({ limit: "100kb" }));
 
-const limiter = (windowMin: number, max: number) =>
-  rateLimit({
-    windowMs: windowMin * 60 * 1000,
-    limit: max,
-    standardHeaders: "draft-7",
-    legacyHeaders: false,
-    // Integration tests send every request from one address.
-    skip: () => process.env.NODE_ENV === "test",
-    message: { success: false, message: "Too many requests, please slow down." },
-  });
-
-app.use("/api", limiter(15, 600));
-app.use("/api/auth", limiter(15, 60));
-app.use("/api/auth/email-code", limiter(15, 12));
-app.use("/api/ai", limiter(15, 20));
-app.use("/api/reports", limiter(15, 30));
-app.use("/api/ads", limiter(15, 300));
+// Per-IP backstops only (shared mobile IPs); per-person limits sit on the routes.
+app.use("/api", ipLimit(15, 3000));
+app.use("/api/auth", ipLimit(15, 300));
+app.use("/api/ai", ipLimit(15, 100));
 
 // Routes
 app.use("/api/auth", authRoutes);

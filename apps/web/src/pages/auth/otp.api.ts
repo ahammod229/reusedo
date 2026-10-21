@@ -55,13 +55,15 @@ export async function saveVerificationProfile(data: {
 }): Promise<void> {
   if (MOCK) return;
   try {
-    // Postal code is not collected yet, so the full address book entry is created later in Settings.
+    // Only the area is kept on the profile; full addresses are asked for per courier delivery.
     await apiClient.patch("/users/me", {
-      phone_number: data.phone,
+      phone: data.phone,
+      division: data.division,
       district: data.district,
       upazila: data.upazila,
+      area: data.area || data.upazila,
+      ...(data.pin && { pin: data.pin }),
     });
-    await apiClient.post("/auth/session");
   } catch (e) {
     fail(e);
   }

@@ -44,11 +44,27 @@ export function CourierQueue() {
   const rows = data.filter((r) => f === "all" || r.status === f);
   const n = (s: CourierRequestItem["status"]) => data.filter((r) => r.status === s).length;
 
-  // Real flow (backend): confirm → create the Steadfast parcel, store tracking code, email both users.
+  // Confirm creates the Steadfast parcel on the server; the dialog stays open until it worked.
   const act = (decision: "confirmed" | "rejected") => {
-    if (sel) decide.mutate({ id: sel.id, decision });
-    setSel(null);
+    if (sel) decide.mutate({ id: sel.id, decision }, { onSuccess: () => setSel(null) });
   };
+  const failure = decide.error?.message;
+  const failureText =
+    failure === "steadfast_not_configured"
+      ? tr(
+          "Steadfast-এর কী সেট করা নেই — অ্যাডমিন → API-তে দিন।",
+          "Steadfast keys aren't set — add them in Admin → APIs.",
+        )
+      : failure === "steadfast_failed"
+        ? tr(
+            "Steadfast পার্সেলটি নেয়নি। কী ও ঠিকানা দেখে আবার চেষ্টা করুন।",
+            "Steadfast didn't accept the parcel. Check the keys and address, then retry.",
+          )
+        : failure === "risk_not_approved" || failure === "payment_not_verified"
+          ? tr("আগে ফ্রড চেক ও পেমেন্ট মিলিয়ে নিন।", "Approve the fraud check and payment first.")
+          : failure
+            ? tr("হয়নি, আবার চেষ্টা করুন।", "That didn't work — please try again.")
+            : null;
 
   return (
     <AdminPage
@@ -88,7 +104,9 @@ export function CourierQueue() {
                       {r.giver.address} <ArrowRight className="h-3.5 w-3.5" /> {r.receiver.address}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {num(r.weightKg)} {tr("কেজি", "kg")} · COD ৳{num(r.charge)} · {r.createdAt}
+                      {num(r.weightKg)} {tr("কেজি", "kg")} · {tr("চার্জ", "Charge")} ৳{num(r.charge)}
+                      {payOf(r.id) ? ` (${METHOD_LABEL[payOf(r.id)?.method ?? "cod"]})` : ""} ·{" "}
+                      {r.createdAt}
                     </p>
                   </div>
                   <Pill
@@ -124,7 +142,14 @@ export function CourierQueue() {
         )}
       </QueryState>
 
-      <Dialog open={!!sel} onOpenChange={(o) => !o && setSel(null)}>
+      <Dialog
+        open={!!sel}
+        onOpenChange={(o) => {
+          if (o) return;
+          setSel(null);
+          decide.reset();
+        }}
+      >
         <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
           {sel && (
             <>
@@ -138,17 +163,23 @@ export function CourierQueue() {
               <Party title={tr("পিকআপ (দাতা)", "Pickup (giver)")} p={sel.giver} />
               <Party title={tr("ডেলিভারি (গ্রহীতা)", "Delivery (receiver)")} p={sel.receiver} />
               <Blockers risk={riskOf(sel.id)} pay={payOf(sel.id)} />
+              {failureText && (
+                <p role="alert" className="text-sm font-medium text-destructive">
+                  {failureText}
+                </p>
+              )}
               <div className="flex gap-2">
                 <Button
                   variant="outline"
                   className="flex-1 text-destructive"
+                  disabled={decide.isPending}
                   onClick={() => act("rejected")}
                 >
                   {tr("বাতিল", "Reject")}
                 </Button>
                 <Button
                   className="flex-1"
-                  disabled={blockers(riskOf(sel.id), payOf(sel.id)).length > 0}
+                  disabled={decide.isPending || blockers(riskOf(sel.id), payOf(sel.id)).length > 0}
                   onClick={() => act("confirmed")}
                 >
                   {tr("কনফার্ম", "Confirm")}

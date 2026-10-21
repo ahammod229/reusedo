@@ -26,7 +26,8 @@ export interface FeedPost {
   condition: "new" | "good" | "used";
   area: string;
   district: string;
-  distanceKm: number;
+  /** Straight-line km from me; null when either side has no map pin. */
+  distanceKm: number | null;
   author: { name: string; username: string; verified: boolean; trust: number };
   images: string[];
   postedAt: string;
@@ -40,6 +41,8 @@ export interface FeedPost {
   qty?: number;
   /** "given" posts stay visible for a while as social proof. */
   status: "available" | "reserved" | "given";
+  /** Post page only: my open request on this post (to show "sent" and open its chat). */
+  myRequest?: { exchangeId: string; conversationId: string | null; status: string } | null;
 }
 
 export type CategoryId =

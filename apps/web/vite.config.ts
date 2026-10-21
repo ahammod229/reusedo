@@ -65,9 +65,6 @@ export default defineConfig({
           if (/\/node_modules\/(@firebase|firebase)\//.test(id)) {
             return "vendor-firebase";
           }
-          if (/\/node_modules\/@supabase\//.test(id)) {
-            return "vendor-supabase";
-          }
         },
       },
     },

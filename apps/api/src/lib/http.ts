@@ -46,14 +46,12 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
     return res.status(err.status).json({ success: false, code: err.code, message: err.message });
   }
   if (err instanceof ZodError) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        code: "validation",
-        message: "Validation error",
-        details: err.issues,
-      });
+    return res.status(400).json({
+      success: false,
+      code: "validation",
+      message: "Validation error",
+      details: err.issues,
+    });
   }
   const pg = err as PgError;
   if (pg?.code && PG_STATUS[pg.code]) {
