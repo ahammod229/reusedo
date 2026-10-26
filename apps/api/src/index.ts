@@ -1,3 +1,4 @@
+import { createServer } from "node:http";
 import { resolve } from "node:path";
 import { config } from "dotenv";
 
@@ -11,11 +12,14 @@ import { SocketService } from "./services/socket.service";
 
 const PORT = process.env.PORT || 8080;
 
-const server = app.listen(PORT, () => {
-  console.log(`[Reusedo API] Server running on port ${PORT}`);
-});
-
+const server = createServer(app);
 SocketService.initialize(server);
 
-// Vercel serves this server (HTTP and WebSocket upgrades) when it is the default export.
+// Vercel serves the exported server itself (HTTP and WebSocket upgrades); everywhere else we listen.
+if (!process.env.VERCEL) {
+  server.listen(PORT, () => {
+    console.log(`[Reusedo API] Server running on port ${PORT}`);
+  });
+}
+
 export default server;
