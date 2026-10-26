@@ -89,6 +89,23 @@ try {
       has_table_privilege('authenticated', 'public.categories', 'select') as authenticated_can_read,
       has_function_privilege('service_role', 'public.feed(uuid,text,text,text,text,text,text[],text,integer,boolean,boolean,boolean,boolean,text,uuid,uuid[],integer,integer)', 'execute') as service_role_can_run_feed`);
   console.log(`[migrate] postgrest: ${JSON.stringify(rest[0])}`);
+  const apiUrl = process.env.SUPABASE_URL || process.env.reusedo_SUPABASE_URL;
+  const apiKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.reusedo_SUPABASE_SERVICE_ROLE_KEY;
+  if (apiUrl && apiKey) {
+    const h = { apikey: apiKey, Authorization: `Bearer ${apiKey}` };
+    const one = await fetch(`${apiUrl}/rest/v1/categories?select=id&limit=1`, { headers: h });
+    console.log(`[migrate] rest categories: ${one.status} ${(await one.text()).slice(0, 300)}`);
+    const root = await fetch(`${apiUrl}/rest/v1/`, { headers: h });
+    const body = await root.text();
+    let paths = body.slice(0, 200);
+    try {
+      paths = Object.keys(JSON.parse(body).paths ?? {})
+        .slice(0, 12)
+        .join(" ");
+    } catch {}
+    console.log(`[migrate] rest root: ${root.status} ${paths}`);
+  }
 
   // The API reads through PostgREST, which caches the table list: make it look again.
   await db.query("notify pgrst, 'reload schema'");
