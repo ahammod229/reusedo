@@ -102,6 +102,16 @@ try {
       (select string_agg(distinct datname, ', ') from pg_stat_activity where usename = 'authenticator') as postgrest_reads,
       (select string_agg(datname, ', ') from pg_database where not datistemplate) as all_databases`);
   console.log(`[migrate] databases: ${JSON.stringify(dbs[0])}`);
+  // PostgREST lists a table only if its login role passes these checks (SchemaCache allTables).
+  const { rows: own } = await db.query(`select current_user as migrated_as,
+      (select tableowner from pg_tables where schemaname = 'public' and tablename = 'categories') as owner,
+      (select tableowner from pg_tables where schemaname = 'storage' and tablename = 'buckets') as storage_owner,
+      (select rolinherit from pg_roles where rolname = 'authenticator') as authenticator_inherits,
+      (select string_agg(b.rolname, ',') from pg_auth_members m join pg_roles a on a.oid = m.member
+         join pg_roles b on b.oid = m.roleid where a.rolname = 'authenticator') as authenticator_member_of,
+      pg_has_role('authenticator', (select tableowner from pg_tables where schemaname = 'public' and tablename = 'categories'), 'USAGE') as auth_usage_owner,
+      has_table_privilege('authenticator', 'public.categories', 'select') as auth_table_priv`);
+  console.log(`[migrate] ownership: ${JSON.stringify(own[0])}`);
 
   // The API reads through PostgREST, which caches the table list: make it look again.
   await db.query("notify pgrst, 'reload config'");
