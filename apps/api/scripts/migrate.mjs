@@ -80,6 +80,15 @@ try {
       `public tables: ${diag[0].tables}, service_role can read: ${diag[0].service_role_can_read}, ` +
       `authenticator: ${diag[0].authenticator_config ?? "(defaults)"}`,
   );
+  const { rows: rest } = await db.query(`select
+      (select string_agg(distinct coalesce(nullif(application_name, ''), usename::text) || ':' || state, ', ')
+         from pg_stat_activity where usename = 'authenticator') as postgrest_sessions,
+      (select string_agg(evtname, ', ') from pg_event_trigger) as event_triggers,
+      has_schema_privilege('anon', 'public', 'usage') as anon_schema_usage,
+      has_table_privilege('anon', 'public.categories', 'select') as anon_can_read,
+      has_table_privilege('authenticated', 'public.categories', 'select') as authenticated_can_read,
+      has_function_privilege('service_role', 'public.feed(uuid,text,text,text,text,text,text[],text,integer,boolean,boolean,boolean,boolean,text,uuid,uuid[],integer,integer)', 'execute') as service_role_can_run_feed`);
+  console.log(`[migrate] postgrest: ${JSON.stringify(rest[0])}`);
 
   // The API reads through PostgREST, which caches the table list: make it look again.
   await db.query("notify pgrst, 'reload schema'");
