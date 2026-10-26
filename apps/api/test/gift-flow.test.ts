@@ -77,7 +77,9 @@ describe("posting", () => {
     expect(p.images).toHaveLength(1);
 
     const stored = Buffer.from(await (await fetch(p.images[0])).arrayBuffer());
-    expect(stored.subarray(0, 2).toString("hex")).toBe("ffd8");
+    // Stored as WebP whatever was uploaded.
+    expect(p.images[0]).toMatch(/\.webp$/);
+    expect(stored.subarray(8, 12).toString()).toBe("WEBP");
     expect(stored.includes(Buffer.from("GPSDATA"))).toBe(false);
   });
 
@@ -103,6 +105,15 @@ describe("feed", () => {
 
     const level = await api().get("/api/feed?level=hsc").expect(200);
     expect(level.body.data).toHaveLength(0);
+  });
+
+  it("search works without AI (no Gemini key): plain matching, ai null", async () => {
+    const res = await api()
+      .get(`/api/search?q=${encodeURIComponent("বাংলা ভার্সন")}`)
+      .expect(200);
+    expect(res.body.data.ai).toBeNull();
+    expect(res.body.data.posts.map((p: { id: string }) => p.id)).toEqual([postId]);
+    await api().get("/api/search").expect(400);
   });
 
   it("gives signed-in viewers a distance, rounded", async () => {

@@ -1,15 +1,16 @@
 import { QueryState } from "@/features/data/QueryState";
 import { advancedCount, matchesFilters } from "@/features/data/filtering";
-import { useFeed } from "@/features/data/hooks";
+import { useFeed, useSearch } from "@/features/data/hooks";
 import { ActiveFilters, FilterButton, FilterSheet } from "@/features/feed/FilterSheet";
 import { PostCard } from "@/features/feed/PostCard";
 import { useFeedParams } from "@/features/feed/feedParams";
 import { useLang, useTr } from "@/features/feed/i18n";
 import { PageHeading } from "@/features/feed/parts";
 import { CATEGORIES } from "@/features/feed/types";
-import { Search, X } from "lucide-react";
+import { Search, Sparkles, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
+import { Link } from "react-router";
 
 const SUGGEST_BN = ["বই", "টেবিল", "কাপড়", "খাতা", "ল্যাপটপ"];
 const SUGGEST_EN = ["books", "table", "clothes", "notebook", "laptop"];
@@ -23,7 +24,13 @@ export function SearchPage() {
   const [text, setText] = useState(urlQ);
   useEffect(() => setText(urlQ), [urlQ]);
 
-  const { data: results = [], isLoading, error, refetch } = useFeed(filters);
+  // Typed searches go through AI search; category/filter browsing stays on the feed.
+  const browse = useFeed(filters);
+  const ai = useSearch(filters);
+  const { isLoading, error, refetch } = urlQ ? ai : browse;
+  const results = (urlQ ? ai.data?.posts : browse.data) ?? [];
+  const related = (urlQ && ai.data?.related) || [];
+  const understood = urlQ ? ai.data?.ai : null;
   const { data: everything = [] } = useFeed({
     kind: "all",
     category: "all",
@@ -124,10 +131,45 @@ export function SearchPage() {
             {urlQ && `“${urlQ}” — `}
             {tr(`${results.length}টি ফল`, `${results.length} results`)}
           </p>
+          {understood && (
+            <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3 text-sm">
+              <p className="flex items-center gap-1.5 font-semibold text-primary">
+                <Sparkles className="h-4 w-4 shrink-0" />
+                {understood.summary || tr("AI দিয়ে খোঁজা হয়েছে", "Searched with AI")}
+              </p>
+              <p className="mt-1 text-muted-foreground">
+                {tr("এই শব্দগুলোতেও খুঁজেছি: ", "Also searched for: ")}
+                {understood.terms.join(" · ")}
+              </p>
+            </div>
+          )}
           {results.length === 0 ? (
-            <div className="py-16 text-center text-muted-foreground">
-              <p className="mb-2 text-4xl">🔍</p>
-              {tr("কিছু পাওয়া যায়নি। অন্য শব্দে খুঁজুন।", "Nothing found. Try different words.")}
+            <div className="space-y-4">
+              <div className="py-10 text-center text-muted-foreground">
+                <p className="mb-2 text-4xl">🔍</p>
+                <p>
+                  {tr(
+                    "এখন কেউ এটা দিচ্ছে না। অন্য শব্দে খুঁজুন, অথবা যা দরকার তা পোস্ট করুন — কেউ দিতে পারলে জানাবে।",
+                    "Nobody is giving this right now. Try other words, or post what you need so givers can find you.",
+                  )}
+                </p>
+                <Link
+                  to="/post/new?kind=need"
+                  className="mt-4 inline-flex h-11 items-center rounded-full bg-primary px-5 font-semibold text-primary-foreground"
+                >
+                  {tr("‘আমার দরকার’ পোস্ট করুন", "Post what you need")}
+                </Link>
+              </div>
+              {related.length > 0 && (
+                <div className="space-y-4">
+                  <h2 className="text-sm font-bold text-muted-foreground">
+                    {tr("একই ধরনের যা আছে", "Similar things on offer")}
+                  </h2>
+                  {related.map((p) => (
+                    <PostCard key={p.id} post={p} />
+                  ))}
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-4">

@@ -27,6 +27,15 @@ export const keys = {
 export const useFeed = (f: FeedFilters) =>
   useQuery({ queryKey: keys.feed(f), queryFn: () => source.listFeed(f) });
 
+export const useSearch = (f: FeedFilters) =>
+  useQuery({
+    queryKey: ["search", f] as const,
+    queryFn: () => source.search(f),
+    enabled: !!f.q?.trim(),
+    // The same search a minute later gives the same answer; don't spend AI quota on it.
+    staleTime: 60_000,
+  });
+
 export const useMyPosts = () =>
   useQuery({ queryKey: keys.myPosts, queryFn: () => source.listMyPosts() });
 

@@ -77,7 +77,7 @@ const bool = z
   .transform((v) => v === true || v === "true" || v === "1")
   .optional();
 
-const feedQuery = z.object({
+export const feedQuery = z.object({
   kind: z.enum(["all", "offer", "need"]).default("all"),
   category: z.string().max(40).default("all"),
   scope: z.enum(["area", "district", "country"]).default("country"),
@@ -102,9 +102,32 @@ const feedQuery = z.object({
   offset: z.coerce.number().int().min(0).default(0),
 });
 
+export type FeedQuery = z.infer<typeof feedQuery>;
+
 export async function runFeed(params: Record<string, unknown>): Promise<FeedRow[]> {
   return must(await getSupabaseClient().rpc("feed", params)) as FeedRow[];
 }
+
+/** The feed() arguments for a parsed /feed query. */
+export const feedArgs = (f: FeedQuery, viewer: string | null, owner: string | null) => ({
+  p_owner: owner,
+  p_viewer: viewer,
+  p_kind: f.kind,
+  p_category: f.category,
+  p_scope: f.scope,
+  p_q: f.q ?? null,
+  p_level: f.level,
+  p_conditions: f.conditions,
+  p_delivery: f.delivery,
+  p_within_hours: f.within === "24h" ? 24 : f.within === "7d" ? 168 : null,
+  p_verified_only: f.verifiedOnly ?? false,
+  p_photo_only: f.photoOnly ?? false,
+  p_urgent_only: f.urgentOnly ?? false,
+  p_show_given: f.showGiven ?? false,
+  p_sort: f.sort,
+  p_limit: f.limit,
+  p_offset: f.offset,
+});
 
 // GET /api/feed — every filter of the web feed, applied in SQL.
 router.get(
@@ -122,25 +145,7 @@ router.get(
       if (!data) return res.json({ success: true, data: [] });
       owner = data.id;
     }
-    const rows = await runFeed({
-      p_owner: owner,
-      p_viewer: req.user?.profile.id ?? null,
-      p_kind: f.kind,
-      p_category: f.category,
-      p_scope: f.scope,
-      p_q: f.q ?? null,
-      p_level: f.level,
-      p_conditions: f.conditions,
-      p_delivery: f.delivery,
-      p_within_hours: f.within === "24h" ? 24 : f.within === "7d" ? 168 : null,
-      p_verified_only: f.verifiedOnly ?? false,
-      p_photo_only: f.photoOnly ?? false,
-      p_urgent_only: f.urgentOnly ?? false,
-      p_show_given: f.showGiven ?? false,
-      p_sort: f.sort,
-      p_limit: f.limit,
-      p_offset: f.offset,
-    });
+    const rows = await runFeed(feedArgs(f, req.user?.profile.id ?? null, owner));
     res.json({ success: true, data: rows.map(toPost) });
   }),
 );
@@ -264,9 +269,9 @@ router.post(
       throw badRequest("too_many_photos", `At most ${maxPhotos} photos`);
     if (input.kind === "offer" && files.length === 0) throw badRequest("photo_required");
 
-    const images = [];
-    for (const f of files)
-      images.push(await uploadImage("post-images", profile.id, f, MAX_IMAGE_BYTES));
+    const images = await Promise.all(
+      files.map((f) => uploadImage("post-images", profile.id, f, MAX_IMAGE_BYTES)),
+    );
 
     const row = must(
       await db

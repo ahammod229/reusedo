@@ -1,12 +1,7 @@
 import { randomUUID } from "node:crypto";
+import sharp from "sharp";
 import { getSupabaseClient } from "../database/client";
 import { badRequest } from "./http";
-
-const TYPES: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-};
 
 /** Checks the real file signature, not the type the browser claimed. */
 function sniff(buf: Buffer): string | null {
@@ -19,24 +14,29 @@ function sniff(buf: Buffer): string | null {
 }
 
 /**
- * Removes APP1 (EXIF/XMP) segments from a JPEG so a phone photo can't leak the
- * exact GPS position of someone's home. Other formats are passed through; the
- * web client re-encodes photos on a canvas, which drops metadata anyway.
+ * Every stored photo is WebP: about a third the size of the same JPEG at the same
+ * visible quality, and shown by every browser our users have. (AVIF is smaller
+ * still, but iPhones before iOS 16 can't show it and it is several times slower to
+ * encode on a serverless function.)
  */
-export function stripJpegMetadata(buf: Buffer): Buffer {
-  if (sniff(buf) !== "image/jpeg") return buf;
-  const parts: Buffer[] = [buf.subarray(0, 2)];
-  let i = 2;
-  while (i + 4 <= buf.length && buf[i] === 0xff) {
-    const marker = buf[i + 1];
-    // Start of scan: the rest is image data.
-    if (marker === 0xda) break;
-    const len = buf.readUInt16BE(i + 2);
-    if (marker !== 0xe1) parts.push(buf.subarray(i, i + 2 + len));
-    i += 2 + len;
+const WEBP = { quality: 80, effort: 5, smartSubsample: true } as const;
+
+/**
+ * Re-encodes an upload: turned upright from the camera's orientation tag, shrunk to
+ * fit `maxEdge` (never enlarged), saved as WebP. sharp writes no metadata unless
+ * asked, so EXIF/XMP — including a phone's GPS position of someone's home — is gone.
+ */
+export async function toWebp(buf: Buffer, maxEdge: number): Promise<Buffer> {
+  try {
+    // failOn "error": phone photos often carry small glitches libjpeg only warns about.
+    return await sharp(buf, { limitInputPixels: 50_000_000, failOn: "error" })
+      .rotate()
+      .resize({ width: maxEdge, height: maxEdge, fit: "inside", withoutEnlargement: true })
+      .webp(WEBP)
+      .toBuffer();
+  } catch {
+    throw badRequest("unsupported_image", "The image could not be read");
   }
-  parts.push(buf.subarray(i));
-  return Buffer.concat(parts);
 }
 
 export async function uploadImage(
@@ -44,16 +44,19 @@ export async function uploadImage(
   folder: string,
   file: { buffer: Buffer; size: number },
   maxBytes: number,
+  maxEdge = 1600,
 ): Promise<string> {
-  const type = sniff(file.buffer);
-  if (!type) throw badRequest("unsupported_image", "Only JPEG, PNG or WebP images");
+  if (!sniff(file.buffer)) throw badRequest("unsupported_image", "Only JPEG, PNG or WebP images");
   if (file.size > maxBytes)
     throw badRequest("image_too_large", `Images must be under ${maxBytes} bytes`);
-  const path = `${folder}/${randomUUID()}.${TYPES[type]}`;
+  const path = `${folder}/${randomUUID()}.webp`;
   const db = getSupabaseClient();
-  const { error } = await db.storage
-    .from(bucket)
-    .upload(path, stripJpegMetadata(file.buffer), { contentType: type, upsert: false });
+  const { error } = await db.storage.from(bucket).upload(path, await toWebp(file.buffer, maxEdge), {
+    contentType: "image/webp",
+    // The name is a fresh UUID, so the file never changes: let browsers and the CDN keep it.
+    cacheControl: "31536000",
+    upsert: false,
+  });
   if (error) throw error;
   return db.storage.from(bucket).getPublicUrl(path).data.publicUrl;
 }

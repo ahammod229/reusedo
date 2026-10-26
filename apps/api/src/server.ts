@@ -6,7 +6,7 @@ import { errorHandler } from "./lib/http";
 import { ipLimit } from "./lib/limits";
 import { adminRouter } from "./routes/admin.routes";
 import { adsRouter } from "./routes/ads.routes";
-import { aiRouter } from "./routes/ai.routes";
+import { aiRouter, searchRouter } from "./routes/ai.routes";
 import authRoutes from "./routes/auth.routes";
 import { chatRouter } from "./routes/chat.routes";
 import { courierRouter } from "./routes/courier.routes";
@@ -60,6 +60,8 @@ app.use(express.json({ limit: "100kb" }));
 app.use("/api", ipLimit(15, 3000));
 app.use("/api/auth", ipLimit(15, 300));
 app.use("/api/ai", ipLimit(15, 100));
+// Searches are cheap when cached, but a miss costs one Gemini call.
+app.use("/api/search", ipLimit(15, 300));
 
 // Routes
 app.use("/api/auth", authRoutes);
@@ -73,6 +75,7 @@ app.use("/api/reports", reportRouter);
 app.use("/api/courier", courierRouter);
 app.use("/api", adsRouter); // /ads, /payments/config
 app.use("/api/ai", aiRouter);
+app.use("/api/search", searchRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/webhooks", webhookRouter);
 

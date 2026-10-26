@@ -71,6 +71,17 @@ export const mockSource: DataSource = {
       ),
     );
   },
+  async search(f) {
+    // Demo data has no AI behind it: plain matching only.
+    return wait({
+      posts: sortPosts(
+        posts.filter((p) => matchesFilters(p, f)),
+        f.sort,
+      ),
+      related: [],
+      ai: null,
+    });
+  },
   async listMyPosts() {
     return wait(posts.filter((p) => p.author.username === "rakib"));
   },

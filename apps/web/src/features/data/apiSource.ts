@@ -11,6 +11,8 @@ import type {
   DataSource,
   DonationMapData,
   Exchange,
+  FeedFilters,
+  SearchResult,
   UserProfile,
 } from "./types";
 
@@ -144,25 +146,33 @@ type ApiCourierRequest = Omit<CourierRequest, "createdAt"> & { createdAt: string
 
 // --- the source ----------------------------------------------------------------
 
+const feedParams = (f: FeedFilters) => ({
+  kind: f.kind,
+  category: f.category,
+  scope: f.scope,
+  q: f.q || undefined,
+  level: f.level,
+  conditions: f.conditions?.length ? f.conditions.join(",") : undefined,
+  delivery: f.delivery,
+  within: f.within,
+  verifiedOnly: f.verifiedOnly || undefined,
+  photoOnly: f.photoOnly || undefined,
+  urgentOnly: f.urgentOnly || undefined,
+  showGiven: f.showGiven || undefined,
+  sort: f.sort,
+  user: f.user,
+});
+
 export const apiSource: DataSource = {
   async listFeed(f) {
-    const rows = await get<ApiPost[]>("/feed", {
-      kind: f.kind,
-      category: f.category,
-      scope: f.scope,
-      q: f.q || undefined,
-      level: f.level,
-      conditions: f.conditions?.length ? f.conditions.join(",") : undefined,
-      delivery: f.delivery,
-      within: f.within,
-      verifiedOnly: f.verifiedOnly || undefined,
-      photoOnly: f.photoOnly || undefined,
-      urgentOnly: f.urgentOnly || undefined,
-      showGiven: f.showGiven || undefined,
-      sort: f.sort,
-      user: f.user,
-    });
-    return rows.map(toPost);
+    return (await get<ApiPost[]>("/feed", feedParams(f))).map(toPost);
+  },
+  async search(f) {
+    const r = await get<{ posts: ApiPost[]; related: ApiPost[]; ai: SearchResult["ai"] }>(
+      "/search",
+      feedParams(f),
+    );
+    return { posts: r.posts.map(toPost), related: r.related.map(toPost), ai: r.ai };
   },
   async listMyPosts() {
     return (await get<ApiPost[]>("/posts/mine")).map(toPost);

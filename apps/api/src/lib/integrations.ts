@@ -48,7 +48,7 @@ export const CATALOG: IntegrationDef[] = [
     id: "gemini",
     name: "Google Gemini",
     group: "core",
-    purpose: "ছবি থেকে পোস্টের শিরোনাম, বিবরণ ও ক্যাটাগরি লেখে",
+    purpose: "ছবি থেকে পোস্টের শিরোনাম, বিবরণ ও ক্যাটাগরি লেখে; খোঁজার কথা বুঝে মিল খোঁজে",
     docsUrl: "https://ai.google.dev/gemini-api/docs",
     defaultEnabled: true,
     fields: [
@@ -59,6 +59,13 @@ export const CATALOG: IntegrationDef[] = [
         secret: false,
         default: "gemini-2.5-flash",
         hint: "Google AI Studio-তে যে মডেল নাম দেখায় সেটাই দিন",
+      },
+      {
+        key: "searchModel",
+        label: "খোঁজার মডেল",
+        secret: false,
+        default: "gemini-2.5-flash-lite",
+        hint: "AI খোঁজ প্রতিবার চলে, তাই দ্রুত ও বেশি ফ্রি কোটার মডেল ভালো",
       },
     ],
   },

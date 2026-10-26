@@ -196,8 +196,18 @@ export interface DonationMapData {
   districtsActive: number;
 }
 
+export interface SearchResult {
+  posts: FeedPost[];
+  /** Same-category posts, shown when nothing matched by name. */
+  related: FeedPost[];
+  /** How the AI read the search; null when plain matching answered. */
+  ai: { terms: string[]; category: string; summary: string } | null;
+}
+
 export interface DataSource {
   listFeed(filters: FeedFilters): Promise<FeedPost[]>;
+  /** Feed filters plus `q`, read by AI so other words and languages match too. */
+  search(filters: FeedFilters): Promise<SearchResult>;
   /** My own live and given posts. */
   listMyPosts(): Promise<FeedPost[]>;
   getPost(id: string): Promise<FeedPost | null>;

@@ -310,7 +310,7 @@ router.post(
   ah(async (req, res) => {
     if (!req.file) throw badRequest("photo_required");
     const p = me(req);
-    const url = await uploadImage("post-images", `avatars/${p.id}`, req.file, 1024 * 1024);
+    const url = await uploadImage("post-images", `avatars/${p.id}`, req.file, 1024 * 1024, 512);
     must(await getSupabaseClient().from("profiles").update({ avatar_url: url }).eq("id", p.id));
     forgetProfile(p.firebase_uid);
     res.json({ success: true, data: { avatarUrl: url } });
