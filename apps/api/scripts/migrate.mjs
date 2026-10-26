@@ -69,6 +69,8 @@ try {
       break;
     }
   }
+  // The API reads through PostgREST, which caches the table list: make it look again.
+  await db.query("notify pgrst, 'reload schema'");
   if (!process.exitCode) console.log("[migrate] database is up to date");
 } finally {
   await db.end();
