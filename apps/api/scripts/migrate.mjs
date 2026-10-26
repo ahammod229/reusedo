@@ -89,6 +89,21 @@ try {
       has_table_privilege('authenticated', 'public.categories', 'select') as authenticated_can_read,
       has_function_privilege('service_role', 'public.feed(uuid,text,text,text,text,text,text[],text,integer,boolean,boolean,boolean,boolean,text,uuid,uuid[],integer,integer)', 'execute') as service_role_can_run_feed`);
   console.log(`[migrate] postgrest: ${JSON.stringify(rest[0])}`);
+  // PostgREST settings kept inside the database (role settings or a pre-config function).
+  const { rows: cfg } = await db.query(`select
+      (select string_agg(n.nspname || '.' || p.proname || ': ' || left(regexp_replace(pg_get_functiondef(p.oid), '\\s+', ' ', 'g'), 400), ' | ')
+         from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname in ('postgrest', 'pgrst') or p.proname ilike '%pre_config%') as pre_config,
+      (select string_agg(r.rolname || '=' || array_to_string(s.setconfig, ' '), ' | ')
+         from pg_db_role_setting s left join pg_roles r on r.oid = s.setrole
+        where array_to_string(s.setconfig, ' ') ilike '%pgrst%') as pgrst_settings`);
+  console.log(`[migrate] postgrest config: ${JSON.stringify(cfg[0])}`);
+
+  // The API reads through PostgREST, which caches the table list: make it look again.
+  await db.query("notify pgrst, 'reload config'");
+  await db.query("notify pgrst, 'reload schema'");
+  await new Promise((r) => setTimeout(r, 5000));
+
   const apiUrl = process.env.SUPABASE_URL || process.env.reusedo_SUPABASE_URL;
   const apiKey =
     process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.reusedo_SUPABASE_SERVICE_ROLE_KEY;
@@ -107,8 +122,6 @@ try {
     console.log(`[migrate] rest root: ${root.status} ${paths}`);
   }
 
-  // The API reads through PostgREST, which caches the table list: make it look again.
-  await db.query("notify pgrst, 'reload schema'");
   if (!process.exitCode) console.log("[migrate] database is up to date");
 } finally {
   await db.end();
