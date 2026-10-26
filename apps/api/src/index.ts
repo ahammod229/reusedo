@@ -16,3 +16,6 @@ const server = app.listen(PORT, () => {
 });
 
 SocketService.initialize(server);
+
+// Vercel serves this server (HTTP and WebSocket upgrades) when it is the default export.
+export default server;

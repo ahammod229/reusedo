@@ -35,14 +35,21 @@ const allowedOrigins = [
 
 class CorsError extends Error {}
 
+// On Vercel the web app and API share one domain, so the site's own origin is always allowed.
+const isSameOrigin = (origin: string, host: string | undefined) =>
+  !!host && (origin === `https://${host}` || origin === `http://${host}`);
+
 app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) callback(null, true);
-      else callback(new CorsError("Origin not allowed"));
-    },
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-    credentials: true,
+  cors((req, callback) => {
+    const origin = req.headers.origin;
+    const ok = !origin || allowedOrigins.includes(origin) || isSameOrigin(origin, req.headers.host);
+    if (ok)
+      callback(null, {
+        origin: true,
+        methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+        credentials: true,
+      });
+    else callback(new CorsError("Origin not allowed"));
   }),
 );
 

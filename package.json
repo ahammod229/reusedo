@@ -16,6 +16,11 @@
     "turbo": "^2.0.12",
     "typescript": "^5.5.4"
   },
+  "pnpm": {
+    "overrides": {
+      "jwks-rsa>jose": "^5.10.0"
+    }
+  },
   "packageManager": "pnpm@9.7.0",
   "engines": {
     "node": ">=20.0.0"

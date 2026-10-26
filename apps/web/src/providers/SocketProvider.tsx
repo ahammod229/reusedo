@@ -15,10 +15,14 @@ const SocketContext = createContext<SocketContextType>({
   isConnected: false,
 });
 
-// VITE_API_URL points at ".../api"; socket.io would read that path as a namespace, so connect to the origin only.
+// VITE_API_URL points at ".../api" (or just "/api" when served from the same domain); socket.io
+// would read that path as a namespace, so connect to the origin only.
 const socketOrigin = () => {
   try {
-    return new URL(import.meta.env.VITE_API_URL || "http://localhost:8080/api").origin;
+    return new URL(
+      import.meta.env.VITE_API_URL || "http://localhost:8080/api",
+      window.location.origin,
+    ).origin;
   } catch {
     return "http://localhost:8080";
   }
@@ -37,7 +41,8 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
     // The server verifies this Firebase token on every connect; it ignores any user id we might send.
     const s = io(socketOrigin(), {
-      transports: ["websocket", "polling"],
+      // WebSocket only: Vercel Functions can't serve socket.io's long-polling fallback.
+      transports: ["websocket"],
       auth: (cb) => {
         AuthService.getIdToken().then((token) => cb({ token }));
       },

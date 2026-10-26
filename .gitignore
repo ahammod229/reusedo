@@ -9,3 +9,5 @@ build
 coverage
 .env.production
 .firebase
+.vercel
+.env*
