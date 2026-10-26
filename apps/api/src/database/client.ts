@@ -8,10 +8,12 @@ export const getSupabaseClient = (useServiceRole = true): SupabaseClient => {
   if (useServiceRole && supabaseServiceRoleInstance) return supabaseServiceRoleInstance;
   if (!useServiceRole && supabaseAnonInstance) return supabaseAnonInstance;
 
-  const supabaseUrl = process.env.SUPABASE_URL;
+  // The Vercel Supabase integration names its variables with a "reusedo_" prefix.
+  const env = process.env;
+  const supabaseUrl = env.SUPABASE_URL ?? env.reusedo_SUPABASE_URL;
   const supabaseKey = useServiceRole
-    ? process.env.SUPABASE_SERVICE_ROLE_KEY
-    : process.env.SUPABASE_ANON_KEY;
+    ? (env.SUPABASE_SERVICE_ROLE_KEY ?? env.reusedo_SUPABASE_SERVICE_ROLE_KEY)
+    : (env.SUPABASE_ANON_KEY ?? env.reusedo_SUPABASE_ANON_KEY);
 
   if (!supabaseUrl || !supabaseKey) {
     throw new Error(
