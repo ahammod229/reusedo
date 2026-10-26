@@ -170,6 +170,14 @@ try {
             'query', left(regexp_replace(query, '\\s+', ' ', 'g'), 80)))
           as s from pg_stat_activity where pid <> pg_backend_pid() and usename is not null`);
       console.log(`[migrate] sessions during a request: ${JSON.stringify(during[0].s)}`);
+      // Can PostgREST see anything new at all? A throwaway one-row view.
+      await db.query("create or replace view public._pgrst_ping as select 1 as ok");
+      await db.query("grant select on public._pgrst_ping to service_role");
+      await db.query("notify pgrst, 'reload schema'");
+      await new Promise((r) => setTimeout(r, 8000));
+      const ping = await fetch(`${apiUrl}/rest/v1/_pgrst_ping`, { headers: h });
+      console.log(`[migrate] ping view: ${ping.status} ${(await ping.text()).slice(0, 160)}`);
+      await db.query("drop view public._pgrst_ping");
       const late = await pending;
       console.log(
         `[migrate] 30s later: ${late.status} ${(await late.text()).slice(0, 120)} | ${JSON.stringify(after[0])}`,
