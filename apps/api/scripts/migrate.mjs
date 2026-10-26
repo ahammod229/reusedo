@@ -107,6 +107,10 @@ try {
   await db.query("notify pgrst, 'reload config'");
   await db.query("notify pgrst, 'reload schema'");
   await new Promise((r) => setTimeout(r, 5000));
+  const { rows: sessions } = await db.query(`select pid, state, wait_event_type, wait_event,
+      now() - backend_start as age, left(regexp_replace(query, '\\s+', ' ', 'g'), 120) as query
+    from pg_stat_activity where usename = 'authenticator'`);
+  console.log(`[migrate] postgrest sessions: ${JSON.stringify(sessions)}`);
 
   const apiUrl = process.env.SUPABASE_URL || process.env.reusedo_SUPABASE_URL;
   const apiKey =
@@ -129,6 +133,20 @@ try {
       headers: { ...h, "Accept-Profile": "no_such_schema" },
     });
     console.log(`[migrate] rest schemas: ${prof.status} ${(await prof.text()).slice(0, 300)}`);
+
+    // Still blind: drop PostgREST's database sessions. It reconnects on its own and
+    // rebuilds the schema cache from scratch when it does.
+    if (one.status === 404) {
+      const { rows: killed } = await db.query(
+        "select count(*) filter (where pg_terminate_backend(pid))::int as n from pg_stat_activity where usename = 'authenticator'",
+      );
+      console.log(`[migrate] restarted ${killed[0].n} PostgREST session(s)`);
+      await new Promise((r) => setTimeout(r, 10000));
+      const again = await fetch(`${apiUrl}/rest/v1/categories?select=id&limit=1`, { headers: h });
+      console.log(
+        `[migrate] rest categories after restart: ${again.status} ${(await again.text()).slice(0, 200)}`,
+      );
+    }
   }
 
   if (!process.exitCode) console.log("[migrate] database is up to date");
