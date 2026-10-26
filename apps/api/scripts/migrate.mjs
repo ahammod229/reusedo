@@ -156,6 +156,16 @@ try {
       console.log(
         `[migrate] rest categories after restart: ${again.status} ${(await again.text()).slice(0, 200)}`,
       );
+      await new Promise((r) => setTimeout(r, 20000));
+      const { rows: after } = await db.query(`select
+          (select json_agg(json_build_object('pid', pid, 'age', (now() - backend_start)::text, 'query', left(query, 60)))
+             from pg_stat_activity where usename = 'authenticator') as sessions,
+          has_schema_privilege('authenticator', 'public', 'usage') as authenticator_public_usage,
+          has_schema_privilege('service_role', 'public', 'usage') as service_role_public_usage`);
+      const late = await fetch(`${apiUrl}/rest/v1/categories?select=id&limit=1`, { headers: h });
+      console.log(
+        `[migrate] 30s later: ${late.status} ${(await late.text()).slice(0, 120)} | ${JSON.stringify(after[0])}`,
+      );
     }
   }
 
