@@ -98,6 +98,10 @@ try {
          from pg_db_role_setting s left join pg_roles r on r.oid = s.setrole
         where array_to_string(s.setconfig, ' ') ilike '%pgrst%') as pgrst_settings`);
   console.log(`[migrate] postgrest config: ${JSON.stringify(cfg[0])}`);
+  const { rows: dbs } = await db.query(`select current_database() as migrated_into,
+      (select string_agg(distinct datname, ', ') from pg_stat_activity where usename = 'authenticator') as postgrest_reads,
+      (select string_agg(datname, ', ') from pg_database where not datistemplate) as all_databases`);
+  console.log(`[migrate] databases: ${JSON.stringify(dbs[0])}`);
 
   // The API reads through PostgREST, which caches the table list: make it look again.
   await db.query("notify pgrst, 'reload config'");
@@ -120,6 +124,11 @@ try {
         .join(" ");
     } catch {}
     console.log(`[migrate] rest root: ${root.status} ${paths}`);
+    // An unknown profile makes PostgREST list the schemas it exposes.
+    const prof = await fetch(`${apiUrl}/rest/v1/categories?select=id&limit=1`, {
+      headers: { ...h, "Accept-Profile": "no_such_schema" },
+    });
+    console.log(`[migrate] rest schemas: ${prof.status} ${(await prof.text()).slice(0, 300)}`);
   }
 
   if (!process.exitCode) console.log("[migrate] database is up to date");
