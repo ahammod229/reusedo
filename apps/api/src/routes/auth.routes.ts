@@ -29,12 +29,25 @@ router.post("/logout", requireAuth, (req, res) => {
 // Per person: the service also enforces a 1-minute resend gap and 5 wrong tries.
 const codeLimit = userLimit(15, 10);
 
+// Our 6-digit codes need an email provider to send them and the Firebase service
+// account to mark the address verified. Without both, the web app uses Firebase's
+// own verification link instead, which needs neither.
+const codesReady = () =>
+  process.env.NODE_ENV !== "production" ||
+  (!!process.env.RESEND_API_KEY && !!process.env.FIREBASE_PRIVATE_KEY);
+
 router.post("/email-code/send", requireAuth, codeLimit, async (req, res) => {
   try {
     const { uid, email, email_verified } = req.user ?? {};
     if (!uid || !email)
       return res.status(400).json({ success: false, message: "No email on account" });
     if (email_verified) return res.status(200).json({ success: true, alreadyVerified: true });
+    if (!codesReady())
+      return res.status(503).json({
+        success: false,
+        code: "use_link",
+        message: "Email codes are not set up; use the Firebase verification link",
+      });
     await emailCodeService.send(uid, email);
     res.status(200).json({ success: true });
   } catch (error) {

@@ -1,5 +1,5 @@
 import { AuthService, useAuthStore } from "@/features/auth";
-import { useNum, useT, useTr } from "@/features/feed/i18n";
+import { useLang, useNum, useT, useTr } from "@/features/feed/i18n";
 import { Button } from "@/shared/components/ui";
 import { MailCheck } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -23,9 +23,17 @@ export const VerifyEmail = () => {
   const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [left, setLeft] = useState(RESEND_SECONDS);
+  // "link" when the server can't send codes yet: Firebase emails a verification link instead.
+  const [mode, setMode] = useState<"code" | "link">("code");
+  const lang = useLang((s) => s.lang);
 
   const explain = (e: unknown) => {
     const code = (e as Error).message;
+    if (code.includes("auth/too-many-requests"))
+      return tr(
+        "অনেকবার চাওয়া হয়েছে — কিছুক্ষণ পরে আবার চেষ্টা করুন।",
+        "Too many requests — try again in a while.",
+      );
     if (code === "expired")
       return tr("কোডের মেয়াদ শেষ — নতুন কোড নিন।", "Code expired — request a new one.");
     if (code === "too_many_attempts")
@@ -41,10 +49,54 @@ export const VerifyEmail = () => {
   // Send the first code as soon as the screen opens. A "cooldown" reply just means one was sent moments ago.
   // biome-ignore lint/correctness/useExhaustiveDependencies: run once on mount
   useEffect(() => {
-    sendEmailCode().catch((e) => {
-      if ((e as Error).message !== "cooldown") setError(explain(e));
-    });
+    (async () => {
+      // Back from the link already verified (or verified in another tab): go straight on.
+      if (await AuthService.refreshVerification().catch(() => false)) {
+        navigate("/onboarding");
+        return;
+      }
+      try {
+        await sendEmailCode();
+      } catch (e) {
+        const reason = (e as Error).message;
+        if (reason === "use_link") {
+          setMode("link");
+          await AuthService.sendVerificationLink(lang).catch((err) => setError(explain(err)));
+        } else if (reason !== "cooldown") setError(explain(e));
+      }
+    })();
   }, []);
+
+  // In link mode, check again whenever they come back to this tab from their inbox.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: navigate is stable
+  useEffect(() => {
+    if (mode !== "link") return;
+    const recheck = async () => {
+      if (document.visibilityState === "visible" && (await AuthService.refreshVerification()))
+        navigate("/onboarding");
+    };
+    document.addEventListener("visibilitychange", recheck);
+    return () => document.removeEventListener("visibilitychange", recheck);
+  }, [mode]);
+
+  const checkLink = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      if (await AuthService.refreshVerification()) navigate("/onboarding");
+      else
+        setError(
+          tr(
+            "এখনো যাচাই হয়নি। ইমেইলের লিংকে ক্লিক করে আবার চাপুন।",
+            "Not verified yet. Click the link in the email, then try again.",
+          ),
+        );
+    } catch (e) {
+      setError(explain(e));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (left <= 0) return;
@@ -80,8 +132,13 @@ export const VerifyEmail = () => {
   const resend = async () => {
     setError(null);
     try {
-      await sendEmailCode();
-      setInfo(t("codeSentAgain"));
+      if (mode === "link") await AuthService.sendVerificationLink(lang);
+      else await sendEmailCode();
+      setInfo(
+        mode === "link"
+          ? tr("নতুন লিংক পাঠানো হয়েছে", "A new link has been sent")
+          : t("codeSentAgain"),
+      );
       setLeft(RESEND_SECONDS);
     } catch (e) {
       setError(explain(e));
@@ -109,26 +166,43 @@ export const VerifyEmail = () => {
           <MailCheck className="h-8 w-8" />
         </div>
         <p className="text-sm text-muted-foreground">
-          {t("verifySent")}
+          {mode === "link"
+            ? tr("আমরা একটি যাচাই লিংক পাঠিয়েছি", "We sent a verification link to")
+            : t("verifySent")}
           <br />
           <span className="font-semibold text-foreground">{email}</span>
         </p>
 
-        <OtpInput value={code} onChange={onChange} invalid={wrong} autoFocus />
+        {mode === "link" ? (
+          <p className="text-sm text-muted-foreground">
+            {tr(
+              "ইমেইলের লিংকে ক্লিক করুন, তারপর এখানে ফিরে নিচের বাটন চাপুন।",
+              "Click the link in the email, then come back and press the button below.",
+            )}
+          </p>
+        ) : (
+          <OtpInput value={code} onChange={onChange} invalid={wrong} autoFocus />
+        )}
 
         <div aria-live="polite" className="min-h-5 space-y-2">
           {error && <ErrorBanner>{error}</ErrorBanner>}
           {info && !error && <p className="text-sm font-medium text-success">{info}</p>}
         </div>
 
-        <Button
-          size="lg"
-          className="w-full"
-          disabled={code.length !== 6 || loading}
-          onClick={() => submit()}
-        >
-          {loading ? t("verifying") : t("verifyBtn")}
-        </Button>
+        {mode === "link" ? (
+          <Button size="lg" className="w-full" disabled={loading} onClick={checkLink}>
+            {loading ? t("verifying") : tr("আমি যাচাই করেছি", "I've verified")}
+          </Button>
+        ) : (
+          <Button
+            size="lg"
+            className="w-full"
+            disabled={code.length !== 6 || loading}
+            onClick={() => submit()}
+          >
+            {loading ? t("verifying") : t("verifyBtn")}
+          </Button>
+        )}
 
         <div className="text-sm text-muted-foreground">
           {left > 0 ? (

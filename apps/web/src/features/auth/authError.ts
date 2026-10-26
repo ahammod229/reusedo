@@ -15,6 +15,21 @@ const MESSAGES: Record<string, [string, string]> = {
   "auth/network-request-failed": ["ইন্টারনেট সংযোগ পরীক্ষা করুন।", "Check your internet connection."],
   "auth/popup-blocked": ["পপ-আপ ব্লক করা আছে — অনুমতি দিন।", "Pop-up blocked — please allow it."],
   "auth/user-disabled": ["এই অ্যাকাউন্ট বন্ধ করা হয়েছে।", "This account has been disabled."],
+  "auth/invalid-email": ["ইমেইল ঠিকানাটা ঠিক নেই।", "That email address isn't valid."],
+  "auth/missing-password": ["পাসওয়ার্ড দিন।", "Enter your password."],
+  // Site setup problems, not the visitor's fault: say so instead of "try again".
+  "auth/unauthorized-domain": [
+    "এই ঠিকানা থেকে লগইন এখনো চালু হয়নি। একটু পরে চেষ্টা করুন।",
+    "Sign-in isn't enabled on this address yet. Please try later.",
+  ],
+  "auth/operation-not-allowed": [
+    "এই পদ্ধতিতে লগইন এখন বন্ধ আছে।",
+    "This sign-in method is turned off right now.",
+  ],
+  "auth/account-exists-with-different-credential": [
+    "এই ইমেইল দিয়ে অন্যভাবে অ্যাকাউন্ট খোলা আছে — ইমেইল-পাসওয়ার্ড দিয়ে ঢুকুন।",
+    "This email already has an account — sign in with email and password.",
+  ],
 };
 
 const FALLBACK: [string, string] = [
