@@ -69,6 +69,18 @@ try {
       break;
     }
   }
+  // What the API will see: same project, tables there, service_role allowed in, schemas exposed.
+  const ref = process.env.reusedo_SUPABASE_URL?.match(/https:\/\/([^.]+)\./)?.[1];
+  const { rows: diag } = await db.query(`select
+      (select count(*) from pg_tables where schemaname = 'public')::int as tables,
+      has_table_privilege('service_role', 'public.categories', 'select') as service_role_can_read,
+      (select array_to_string(rolconfig, ' ') from pg_roles where rolname = 'authenticator') as authenticator_config`);
+  console.log(
+    `[migrate] check: same project as API: ${ref ? raw.includes(ref) : "unknown"}, ` +
+      `public tables: ${diag[0].tables}, service_role can read: ${diag[0].service_role_can_read}, ` +
+      `authenticator: ${diag[0].authenticator_config ?? "(defaults)"}`,
+  );
+
   // The API reads through PostgREST, which caches the table list: make it look again.
   await db.query("notify pgrst, 'reload schema'");
   if (!process.exitCode) console.log("[migrate] database is up to date");
