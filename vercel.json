@@ -5,7 +5,7 @@
       "root": "apps/api",
       "framework": "express",
       "entrypoint": "src/index.ts",
-      "buildCommand": "true"
+      "buildCommand": "node scripts/migrate.mjs"
     },
     "web": {
       "root": "apps/web",
