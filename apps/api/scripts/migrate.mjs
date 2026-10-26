@@ -69,120 +69,31 @@ try {
       break;
     }
   }
-  // What the API will see: same project, tables there, service_role allowed in, schemas exposed.
-  const ref = process.env.reusedo_SUPABASE_URL?.match(/https:\/\/([^.]+)\./)?.[1];
-  const { rows: diag } = await db.query(`select
-      (select count(*) from pg_tables where schemaname = 'public')::int as tables,
-      has_table_privilege('service_role', 'public.categories', 'select') as service_role_can_read,
-      (select array_to_string(rolconfig, ' ') from pg_roles where rolname = 'authenticator') as authenticator_config`);
-  console.log(
-    `[migrate] check: same project as API: ${ref ? raw.includes(ref) : "unknown"}, ` +
-      `public tables: ${diag[0].tables}, service_role can read: ${diag[0].service_role_can_read}, ` +
-      `authenticator: ${diag[0].authenticator_config ?? "(defaults)"}`,
-  );
-  const { rows: rest } = await db.query(`select
-      (select string_agg(distinct coalesce(nullif(application_name, ''), usename::text) || ':' || state, ', ')
-         from pg_stat_activity where usename = 'authenticator') as postgrest_sessions,
-      (select string_agg(evtname, ', ') from pg_event_trigger) as event_triggers,
-      has_schema_privilege('anon', 'public', 'usage') as anon_schema_usage,
-      has_table_privilege('anon', 'public.categories', 'select') as anon_can_read,
-      has_table_privilege('authenticated', 'public.categories', 'select') as authenticated_can_read,
-      has_function_privilege('service_role', 'public.feed(uuid,text,text,text,text,text,text[],text,integer,boolean,boolean,boolean,boolean,text,uuid,uuid[],integer,integer)', 'execute') as service_role_can_run_feed`);
-  console.log(`[migrate] postgrest: ${JSON.stringify(rest[0])}`);
-  // PostgREST settings kept inside the database (role settings or a pre-config function).
-  const { rows: cfg } = await db.query(`select
-      (select string_agg(n.nspname || '.' || p.proname || ': ' || left(regexp_replace(pg_get_functiondef(p.oid), '\\s+', ' ', 'g'), 400), ' | ')
-         from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-        where n.nspname in ('postgrest', 'pgrst') or p.proname ilike '%pre_config%') as pre_config,
-      (select string_agg(r.rolname || '=' || array_to_string(s.setconfig, ' '), ' | ')
-         from pg_db_role_setting s left join pg_roles r on r.oid = s.setrole
-        where array_to_string(s.setconfig, ' ') ilike '%pgrst%') as pgrst_settings`);
-  console.log(`[migrate] postgrest config: ${JSON.stringify(cfg[0])}`);
-  const { rows: dbs } = await db.query(`select current_database() as migrated_into,
-      (select string_agg(distinct datname, ', ') from pg_stat_activity where usename = 'authenticator') as postgrest_reads,
-      (select string_agg(datname, ', ') from pg_database where not datistemplate) as all_databases`);
-  console.log(`[migrate] databases: ${JSON.stringify(dbs[0])}`);
-  // PostgREST lists a table only if its login role passes these checks (SchemaCache allTables).
-  const { rows: own } = await db.query(`select current_user as migrated_as,
-      (select tableowner from pg_tables where schemaname = 'public' and tablename = 'categories') as owner,
-      (select tableowner from pg_tables where schemaname = 'storage' and tablename = 'buckets') as storage_owner,
-      (select rolinherit from pg_roles where rolname = 'authenticator') as authenticator_inherits,
-      (select string_agg(b.rolname, ',') from pg_auth_members m join pg_roles a on a.oid = m.member
-         join pg_roles b on b.oid = m.roleid where a.rolname = 'authenticator') as authenticator_member_of,
-      pg_has_role('authenticator', (select tableowner from pg_tables where schemaname = 'public' and tablename = 'categories'), 'USAGE') as auth_usage_owner,
-      has_table_privilege('authenticator', 'public.categories', 'select') as auth_table_priv`);
-  console.log(`[migrate] ownership: ${JSON.stringify(own[0])}`);
-
   // The API reads through PostgREST, which caches the table list: make it look again.
-  await db.query("notify pgrst, 'reload config'");
   await db.query("notify pgrst, 'reload schema'");
-  await new Promise((r) => setTimeout(r, 5000));
-  const { rows: sessions } = await db.query(`select pid, state, wait_event_type, wait_event,
-      now() - backend_start as age, left(regexp_replace(query, '\\s+', ' ', 'g'), 120) as query
-    from pg_stat_activity where usename = 'authenticator'`);
-  console.log(`[migrate] postgrest sessions: ${JSON.stringify(sessions)}`);
 
+  // Say plainly in the build log whether the API can see the tables.
   const apiUrl = process.env.SUPABASE_URL || process.env.reusedo_SUPABASE_URL;
   const apiKey =
     process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.reusedo_SUPABASE_SERVICE_ROLE_KEY;
   if (apiUrl && apiKey) {
-    const h = { apikey: apiKey, Authorization: `Bearer ${apiKey}` };
-    const one = await fetch(`${apiUrl}/rest/v1/categories?select=id&limit=1`, { headers: h });
-    console.log(`[migrate] rest categories: ${one.status} ${(await one.text()).slice(0, 300)}`);
-    const root = await fetch(`${apiUrl}/rest/v1/`, { headers: h });
-    const body = await root.text();
-    let paths = body.slice(0, 200);
-    try {
-      paths = Object.keys(JSON.parse(body).paths ?? {})
-        .slice(0, 12)
-        .join(" ");
-    } catch {}
-    console.log(`[migrate] rest root: ${root.status} ${paths}`);
-    // An unknown profile makes PostgREST list the schemas it exposes.
-    const prof = await fetch(`${apiUrl}/rest/v1/categories?select=id&limit=1`, {
-      headers: { ...h, "Accept-Profile": "no_such_schema" },
+    await new Promise((r) => setTimeout(r, 3000));
+    const r = await fetch(`${apiUrl}/rest/v1/categories?select=id&limit=1`, {
+      headers: { apikey: apiKey, Authorization: `Bearer ${apiKey}` },
     });
-    console.log(`[migrate] rest schemas: ${prof.status} ${(await prof.text()).slice(0, 300)}`);
-
-    // Still blind: drop PostgREST's database sessions. It reconnects on its own and
-    // rebuilds the schema cache from scratch when it does.
-    if (one.status === 404) {
-      const { rows: killed } = await db.query(
-        "select count(*) filter (where pg_terminate_backend(pid))::int as n from pg_stat_activity where usename = 'authenticator'",
-      );
-      console.log(`[migrate] restarted ${killed[0].n} PostgREST session(s)`);
-      await new Promise((r) => setTimeout(r, 10000));
-      const again = await fetch(`${apiUrl}/rest/v1/categories?select=id&limit=1`, { headers: h });
-      console.log(
-        `[migrate] rest categories after restart: ${again.status} ${(await again.text()).slice(0, 200)}`,
-      );
-      await new Promise((r) => setTimeout(r, 20000));
-      const { rows: after } = await db.query(`select
-          (select json_agg(json_build_object('pid', pid, 'age', (now() - backend_start)::text, 'query', left(query, 60)))
-             from pg_stat_activity where usename = 'authenticator') as sessions,
-          has_schema_privilege('authenticator', 'public', 'usage') as authenticator_public_usage,
-          has_schema_privilege('service_role', 'public', 'usage') as service_role_public_usage`);
-      // Who serves API requests: every other session while one is in flight.
-      const pending = fetch(`${apiUrl}/rest/v1/categories?select=id&limit=1`, { headers: h });
-      await new Promise((r) => setTimeout(r, 300));
-      const { rows: during } = await db.query(`select json_agg(json_build_object(
-            'user', usename, 'app', application_name, 'db', datname, 'state', state,
-            'query', left(regexp_replace(query, '\\s+', ' ', 'g'), 80)))
-          as s from pg_stat_activity where pid <> pg_backend_pid() and usename is not null`);
-      console.log(`[migrate] sessions during a request: ${JSON.stringify(during[0].s)}`);
-      // Can PostgREST see anything new at all? A throwaway one-row view.
-      await db.query("create or replace view public._pgrst_ping as select 1 as ok");
-      await db.query("grant select on public._pgrst_ping to service_role");
-      await db.query("notify pgrst, 'reload schema'");
-      await new Promise((r) => setTimeout(r, 8000));
-      const ping = await fetch(`${apiUrl}/rest/v1/_pgrst_ping`, { headers: h });
-      console.log(`[migrate] ping view: ${ping.status} ${(await ping.text()).slice(0, 160)}`);
-      await db.query("drop view public._pgrst_ping");
-      const late = await pending;
-      console.log(
-        `[migrate] 30s later: ${late.status} ${(await late.text()).slice(0, 120)} | ${JSON.stringify(after[0])}`,
-      );
-    }
+    console.log(
+      r.ok
+        ? "[migrate] the Data API sees the tables"
+        : `[migrate] WARNING: the Data API can't see the tables yet (${r.status} ${(await r.text()).slice(0, 120)}). ` +
+            "Restart the project in the Supabase dashboard.",
+    );
+    // Storage reads the same database directly: our bucket showing up proves the API's
+    // keys and this connection string belong to the same project.
+    const b = await fetch(`${apiUrl}/storage/v1/bucket`, {
+      headers: { apikey: apiKey, Authorization: `Bearer ${apiKey}` },
+    });
+    const ids = b.ok ? (await b.json()).map((x) => x.id).join(", ") : `${b.status}`;
+    console.log(`[migrate] storage buckets: ${ids}`);
   }
 
   if (!process.exitCode) console.log("[migrate] database is up to date");
