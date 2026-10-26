@@ -162,7 +162,15 @@ try {
              from pg_stat_activity where usename = 'authenticator') as sessions,
           has_schema_privilege('authenticator', 'public', 'usage') as authenticator_public_usage,
           has_schema_privilege('service_role', 'public', 'usage') as service_role_public_usage`);
-      const late = await fetch(`${apiUrl}/rest/v1/categories?select=id&limit=1`, { headers: h });
+      // Who serves API requests: every other session while one is in flight.
+      const pending = fetch(`${apiUrl}/rest/v1/categories?select=id&limit=1`, { headers: h });
+      await new Promise((r) => setTimeout(r, 300));
+      const { rows: during } = await db.query(`select json_agg(json_build_object(
+            'user', usename, 'app', application_name, 'db', datname, 'state', state,
+            'query', left(regexp_replace(query, '\\s+', ' ', 'g'), 80)))
+          as s from pg_stat_activity where pid <> pg_backend_pid() and usename is not null`);
+      console.log(`[migrate] sessions during a request: ${JSON.stringify(during[0].s)}`);
+      const late = await pending;
       console.log(
         `[migrate] 30s later: ${late.status} ${(await late.text()).slice(0, 120)} | ${JSON.stringify(after[0])}`,
       );
