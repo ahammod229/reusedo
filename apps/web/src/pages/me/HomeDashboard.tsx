@@ -6,8 +6,8 @@ import { PostTags } from "@/features/feed/PostBits";
 import { useAlerts } from "@/features/feed/alerts";
 import { toParams } from "@/features/feed/feedParams";
 import { levelOf } from "@/features/feed/gamify";
+import { useKm, useLang, useNum, useTr } from "@/features/feed/i18n";
 import { makeImpactCard, shareOrSaveImage } from "@/features/feed/impactCard";
-import { useLang, useNum, useTr, useKm } from "@/features/feed/i18n";
 import { useMe } from "@/features/feed/me";
 import { categoryOf, eduOf } from "@/features/feed/types";
 import { Button, cn } from "@/shared/components/ui";
@@ -48,7 +48,8 @@ export function HomeDashboard() {
   const { data: me } = useUser("rakib");
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-5 px-4 py-5">
+    // Phones: flat white sections separated by thin grey gaps; rounded cards from sm up.
+    <div className="mx-auto w-full max-w-6xl space-y-2 pb-4 sm:space-y-5 sm:px-4 sm:py-5">
       <Helmet>
         <title>ReuseDo — {tr("হোম", "Home")}</title>
       </Helmet>
@@ -56,22 +57,23 @@ export function HomeDashboard() {
         {d && me && (
           <>
             <Hero name={me.name.split(" ")[0]} given={me.stats.given} />
-            <Suspense fallback={<div className="h-80 animate-pulse rounded-3xl bg-muted" />}>
-              <DonationMap />
-            </Suspense>
-            <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
-              <div className="min-w-0 space-y-5">
+            <div className="grid grid-cols-[minmax(0,1fr)] gap-2 sm:gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
+              <div className="min-w-0 space-y-2 sm:space-y-5">
                 <Todo todo={d.todo} />
                 <ForYou posts={d.forYou} />
                 <NeedsNearby posts={d.needsNearby} />
               </div>
-              <div className="space-y-5">
+              <div className="space-y-2 sm:space-y-5">
                 <Impact stats={me.stats} />
                 <Alerts />
                 {d.community && <Community c={d.community} activeNearby={d.activeNearby} />}
                 <Thanks notes={d.recentThanks} />
               </div>
             </div>
+            {/* The big map is a "look around" extra, so it comes after the things to do. */}
+            <Suspense fallback={<div className="h-80 animate-pulse bg-muted sm:rounded-3xl" />}>
+              <DonationMap />
+            </Suspense>
           </>
         )}
       </QueryState>
@@ -85,57 +87,43 @@ function Hero({ name, given }: { name: string; given: number }) {
   const lang = useLang((s) => s.lang);
   const lv = levelOf(given);
   return (
-    <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-[oklch(0.42_0.1_170)] p-5 text-primary-foreground sm:p-6">
-      <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10" />
-      <div className="pointer-events-none absolute -bottom-16 right-16 h-32 w-32 rounded-full bg-white/5" />
-      <p className="text-sm font-medium opacity-90">
+    <section className="bg-card p-4 sm:rounded-2xl sm:border sm:p-5">
+      <p className="text-sm text-muted-foreground">
         {greeting(tr)}, {name} 👋
       </p>
-      <h1 className="mt-1 text-2xl font-extrabold leading-tight sm:text-3xl">
+      <h1 className="mt-0.5 text-xl font-bold leading-snug sm:text-2xl">
         {tr("আজ কারও দিন একটু সহজ করবেন?", "Make someone's day a little easier?")}
       </h1>
 
-      <div
-        className="mt-4 max-w-md rounded-2xl p-3"
-        style={{ background: "rgb(255 255 255 / 0.14)" }}
-      >
-        <div className="flex items-center justify-between gap-2 text-sm">
-          <span className="font-bold">
-            {lv.emoji} {lang === "bn" ? lv.bn : lv.en}
-          </span>
-          {lv.next ? (
-            <span className="text-xs opacity-90">
-              {tr(
-                `আর ${num(lv.toNext)}টি দিলেই ${lv.next.emoji} ${lv.next.bn}`,
-                `${lv.toNext} more to ${lv.next.emoji} ${lv.next.en}`,
-              )}
-            </span>
-          ) : (
-            <span className="text-xs opacity-90">{tr("সর্বোচ্চ লেভেল!", "Top level!")}</span>
-          )}
-        </div>
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/25" aria-hidden>
+      <div className="mt-3 flex items-center gap-3">
+        <span className="shrink-0 text-sm font-semibold">
+          {lv.emoji} {lang === "bn" ? lv.bn : lv.en}
+        </span>
+        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted" aria-hidden>
           <div
-            className="h-full rounded-full bg-white"
+            className="h-full rounded-full bg-primary"
             style={{ width: `${Math.max(6, lv.progress * 100)}%` }}
           />
         </div>
+        <span className="shrink-0 text-xs text-muted-foreground">
+          {lv.next
+            ? tr(
+                `আর ${num(lv.toNext)}টি → ${lv.next.emoji}`,
+                `${lv.toNext} more → ${lv.next.emoji}`,
+              )
+            : tr("সর্বোচ্চ লেভেল!", "Top level!")}
+        </span>
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Button asChild size="lg" className="bg-white text-primary hover:bg-white/90">
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <Button asChild className="rounded-full">
           <Link to="/post/new">
-            <Camera className="mr-2 h-5 w-5" /> {tr("কিছু দিন", "Give something")}
+            <Camera className="mr-1.5 h-4 w-4" /> {tr("কিছু দিন", "Give")}
           </Link>
         </Button>
-        <Button
-          asChild
-          size="lg"
-          variant="outline"
-          className="border-white/50 bg-transparent text-primary-foreground hover:bg-white/10 hover:text-primary-foreground"
-        >
+        <Button asChild variant="secondary" className="rounded-full">
           <Link to="/post/new?kind=need">
-            <HandHeart className="mr-2 h-5 w-5" /> {tr("কিছু চান", "Ask for something")}
+            <HandHeart className="mr-1.5 h-4 w-4" /> {tr("কিছু চান", "Ask")}
           </Link>
         </Button>
       </div>
@@ -155,7 +143,7 @@ function Card({
   className?: string;
 }) {
   return (
-    <section className={cn("rounded-2xl border bg-card p-4", className)}>
+    <section className={cn("bg-card p-4 sm:rounded-2xl sm:border", className)}>
       <div className="mb-3 flex items-center justify-between gap-2">
         <h2 className="font-bold">{title}</h2>
         {action}
@@ -223,7 +211,7 @@ function Todo({ todo }: { todo: import("@/features/data/types").Dashboard["todo"
             <li key={i.label}>
               <Link
                 to={i.to}
-                className="flex items-center gap-3 rounded-xl border p-3 transition-colors hover:bg-accent/60"
+                className="flex items-center gap-3 rounded-xl bg-muted/50 p-3 transition-colors hover:bg-accent/60"
               >
                 <span
                   className={cn(
@@ -455,7 +443,7 @@ function Alerts() {
               <li key={a.id}>
                 <Link
                   to={`/feed?${toParams(a.filters)}`}
-                  className="flex items-center justify-between gap-2 rounded-xl border p-3 text-sm hover:bg-accent/60"
+                  className="flex items-center justify-between gap-2 rounded-xl bg-muted/50 p-3 text-sm hover:bg-accent/60"
                 >
                   <span className="truncate font-medium">{a.label}</span>
                   {n > 0 ? (

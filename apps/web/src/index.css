@@ -51,8 +51,9 @@
 }
 
 :root {
-  /* Warm paper background, deep leaf-green brand. Primary on white = 5.6:1 (AA). */
-  --background: oklch(0.985 0.006 95);
+  /* Soft paper-grey background so white posts stand apart (feed-style), deep leaf-green brand.
+     Primary on white = 5.6:1 (AA). */
+  --background: oklch(0.965 0.006 95);
   --foreground: oklch(0.22 0.02 160);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.22 0.02 160);

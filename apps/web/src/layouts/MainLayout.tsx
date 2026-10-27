@@ -1,12 +1,13 @@
 import { AuthService, useAuthStore, useProfile } from "@/features/auth";
-import { useQueryClient } from "@tanstack/react-query";
 import { LangToggle } from "@/features/feed/LangToggle";
 import { useT } from "@/features/feed/i18n";
 import { Button, Footer, Header, MobileBottomNav, Sidebar } from "@/shared/components/ui";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Bookmark,
   HelpCircle,
   Home,
+  Menu,
   MessageCircle,
   Newspaper,
   PackageOpen,
@@ -46,28 +47,34 @@ export function MainLayout() {
   const mobileItems = [
     { title: t("navHome"), href: "/home", icon: <Home className={ic} /> },
     { title: t("navFeed"), href: "/feed", icon: <Newspaper className={ic} /> },
-    { title: t("navPost"), href: "/post/new", icon: <Plus className="h-7 w-7" />, primary: true },
+    { title: t("navPost"), href: "/post/new", icon: <Plus className="h-5 w-5" />, primary: true },
     { title: t("navMessages"), href: "/messages", icon: <MessageCircle className={ic} /> },
-    { title: t("navProfile"), href: "/profile", icon: <UserIcon className={ic} /> },
+    {
+      title: t("menu"),
+      onClick: () => setMenuOpen(true),
+      active: menuOpen,
+      icon: <Menu className={ic} />,
+    },
   ];
+
+  const logout = async () => {
+    await AuthService.logout();
+    qc.clear();
+    navigate("/login", { replace: true });
+  };
+  const me = user
+    ? {
+        name: profile?.name || user.displayName || "User",
+        email: user.email || "",
+        avatar: profile?.avatarUrl ?? user.photoURL ?? undefined,
+      }
+    : null;
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <Header
-        user={
-          user
-            ? {
-                name: profile?.name || user.displayName || "User",
-                email: user.email || "",
-                avatar: profile?.avatarUrl ?? user.photoURL ?? undefined,
-              }
-            : null
-        }
-        onLogout={async () => {
-          await AuthService.logout();
-          qc.clear();
-          navigate("/login", { replace: true });
-        }}
+        user={me}
+        onLogout={logout}
         labels={{
           menu: t("menu"),
           search: t("searchPlaceholder"),
@@ -76,7 +83,6 @@ export function MainLayout() {
           login: t("login"),
           logout: t("logout"),
         }}
-        onMenuClick={() => setMenuOpen(true)}
         notificationAction={user ? <NotificationBadge /> : null}
         actions={
           <>
@@ -85,30 +91,39 @@ export function MainLayout() {
                 <Plus className="mr-1 h-4 w-4" /> {t("postCta")}
               </Link>
             </Button>
-            <LangToggle />
+            <LangToggle className="hidden items-center md:inline-flex" />
           </>
         }
       />
 
       <div className="mx-auto flex w-full max-w-[88rem] flex-1">
         <Sidebar items={sidebarItems} title={t("menu")} />
-        <main className="min-w-0 flex-1 pb-24 md:pb-0">
+        <main className="min-w-0 flex-1 pb-20 md:pb-0">
           <Outlet />
         </main>
       </div>
 
-      <Footer
-        labels={{
-          rights: t("footerRights"),
-          about: t("footerAbout"),
-          terms: t("footerTerms"),
-          privacy: t("footerPrivacy"),
-          contact: t("footerContact"),
-          note: t("footerNote"),
-        }}
-      />
+      {/* Phones find these links in the Menu tab. */}
+      <div className="hidden md:block">
+        <Footer
+          labels={{
+            rights: t("footerRights"),
+            about: t("footerAbout"),
+            terms: t("footerTerms"),
+            privacy: t("footerPrivacy"),
+            contact: t("footerContact"),
+            note: t("footerNote"),
+          }}
+        />
+      </div>
       <MobileBottomNav items={mobileItems} />
-      <MobileMenu open={menuOpen} onOpenChange={setMenuOpen} items={sidebarItems} />
+      <MobileMenu
+        open={menuOpen}
+        onOpenChange={setMenuOpen}
+        items={sidebarItems.filter((i) => i.href !== "/home" && i.href !== "/feed")}
+        user={me}
+        onLogout={logout}
+      />
     </div>
   );
 }

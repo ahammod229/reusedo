@@ -11,6 +11,7 @@ import {
 } from "@/shared/components/ui";
 import { BellPlus, Check, SlidersHorizontal, X } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
+import { chip } from "./FeedFilters";
 import { useAlerts } from "./alerts";
 import { RESET_ADVANCED } from "./feedParams";
 import { useLang, useNum, useTr } from "./i18n";
@@ -25,13 +26,10 @@ export function FilterButton({ count, onClick }: { count: number; onClick: () =>
       type="button"
       onClick={onClick}
       aria-label={tr("ফিল্টার", "Filters")}
-      className={cn(
-        "relative flex h-11 shrink-0 items-center gap-1.5 rounded-xl border px-3 text-sm font-semibold transition-colors",
-        count ? "border-primary bg-primary/10 text-primary" : "bg-card hover:bg-accent",
-      )}
+      className={cn(chip(), "relative", count > 0 && "bg-primary/10 text-primary")}
     >
       <SlidersHorizontal className="h-4 w-4" />
-      <span className="hidden sm:inline">{tr("ফিল্টার", "Filters")}</span>
+      {tr("ফিল্টার", "Filters")}
       {count > 0 && (
         <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-xs font-bold text-primary-foreground">
           {num(count)}

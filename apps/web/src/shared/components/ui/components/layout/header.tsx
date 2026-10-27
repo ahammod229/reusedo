@@ -1,4 +1,5 @@
-import { Menu, Search } from "lucide-react";
+import { Search } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 
 import { cn } from "../../lib/utils";
@@ -34,7 +35,6 @@ const DEFAULT_LABELS: HeaderLabels = {
 };
 
 export interface HeaderProps {
-  onMenuClick?: () => void;
   user?: {
     name?: string;
     email?: string;
@@ -50,7 +50,6 @@ export interface HeaderProps {
 }
 
 export function Header({
-  onMenuClick,
   user,
   onLogout,
   notificationAction,
@@ -59,14 +58,15 @@ export function Header({
   hideLogoOnDesktop,
 }: HeaderProps) {
   const l = { ...DEFAULT_LABELS, ...labels };
+  const hidden = useHideOnScroll();
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+    <header
+      className={cn(
+        "sticky top-0 z-40 w-full border-b bg-card/95 backdrop-blur transition-transform duration-200 supports-[backdrop-filter]:bg-card/80 md:translate-y-0",
+        hidden && "-translate-y-full",
+      )}
+    >
       <div className="mx-auto flex h-14 max-w-[88rem] items-center gap-2 px-3 sm:h-16 sm:gap-3 md:px-6">
-        <Button variant="ghost" size="icon" className="md:hidden" onClick={onMenuClick}>
-          <Menu className="h-5 w-5" />
-          <span className="sr-only">{l.menu}</span>
-        </Button>
-
         <Link
           to="/"
           className={cn("shrink-0", hideLogoOnDesktop && "md:hidden")}
@@ -92,17 +92,13 @@ export function Header({
         </form>
 
         <nav className="ml-auto flex items-center gap-1 sm:gap-2">
-          {/* Below 360px (small Android phones) there's no room; the feed has its own search. */}
-          <Button
-            asChild
-            variant="ghost"
-            size="icon"
-            className="hidden min-[360px]:inline-flex sm:hidden"
+          <Link
+            to="/search"
+            aria-label={l.search}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-foreground/80 transition-colors active:scale-95 sm:hidden"
           >
-            <Link to="/search" aria-label={l.search}>
-              <Search className="h-5 w-5" />
-            </Link>
-          </Button>
+            <Search className="h-5 w-5" />
+          </Link>
           {actions}
           <span className="hidden sm:inline-flex">
             <ThemeToggle />
@@ -112,7 +108,8 @@ export function Header({
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-9 w-9 rounded-full p-0">
+                {/* Phones reach the profile from the Menu tab instead. */}
+                <Button variant="ghost" className="hidden h-9 w-9 rounded-full p-0 md:inline-flex">
                   <Avatar className="h-9 w-9">
                     <AvatarImage src={user.avatar} alt={user.name || "User"} />
                     <AvatarFallback className="bg-primary/15 font-semibold text-primary">
@@ -148,4 +145,21 @@ export function Header({
       </div>
     </header>
   );
+}
+
+/** Phones get the whole screen while scrolling down; the header slides back on the way up. */
+function useHideOnScroll() {
+  const [hidden, setHidden] = useState(false);
+  useEffect(() => {
+    let last = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      if (Math.abs(y - last) < 8) return;
+      setHidden(y > last && y > 120);
+      last = y;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  return hidden;
 }

@@ -105,7 +105,7 @@ export default function DonationMap() {
   };
 
   return (
-    <section className="overflow-hidden rounded-3xl border bg-card">
+    <section className="overflow-hidden bg-card sm:rounded-3xl sm:border">
       <div className="flex flex-wrap items-center justify-between gap-3 p-4 pb-3">
         <div className="flex min-w-0 items-center gap-2.5">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-offer-soft text-offer">

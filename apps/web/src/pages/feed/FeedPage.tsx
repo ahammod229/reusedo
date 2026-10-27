@@ -2,7 +2,8 @@ import { QueryState } from "@/features/data/QueryState";
 import { advancedCount, matchesFilters } from "@/features/data/filtering";
 import { useAdConfig, useFeed } from "@/features/data/hooks";
 import { AdCard } from "@/features/feed/AdCard";
-import { CategoryStrip, FeedToolbar } from "@/features/feed/FeedFilters";
+import { Composer } from "@/features/feed/Composer";
+import { CategoryStrip, FeedToolbar, chip } from "@/features/feed/FeedFilters";
 import { FeedRail } from "@/features/feed/FeedRail";
 import { ActiveFilters, FilterButton, FilterSheet } from "@/features/feed/FilterSheet";
 import { PostCard } from "@/features/feed/PostCard";
@@ -10,7 +11,7 @@ import { type FeedView, RESET_ADVANCED, useFeedParams } from "@/features/feed/fe
 import { useT, useTr } from "@/features/feed/i18n";
 import type { CategoryId } from "@/features/feed/types";
 import { Button, cn } from "@/shared/components/ui";
-import { Camera, HandHeart, List, Map as MapIcon } from "lucide-react";
+import { List, Map as MapIcon } from "lucide-react";
 import { Fragment, Suspense, lazy, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router";
@@ -18,36 +19,20 @@ import { Link } from "react-router";
 // Leaflet is ~150 KB; only load it when someone opens the map.
 const PostMap = lazy(() => import("@/features/geo/PostMap"));
 
+/** One pill that flips between the list and the map. */
 function ViewToggle({ view, onChange }: { view: FeedView; onChange: (v: FeedView) => void }) {
   const tr = useTr();
-  const opts = [
-    ["list", List, tr("তালিকা", "List")],
-    ["map", MapIcon, tr("ম্যাপ", "Map")],
-  ] as const;
+  const toMap = view === "list";
   return (
-    <fieldset
-      className="m-0 flex h-11 shrink-0 rounded-xl border bg-card p-1"
-      aria-label={tr("দেখার ধরন", "View")}
+    <button
+      type="button"
+      onClick={() => onChange(toMap ? "map" : "list")}
+      className={chip(!toMap)}
+      aria-pressed={!toMap}
     >
-      {opts.map(([v, Icon, label]) => (
-        <button
-          key={v}
-          type="button"
-          aria-pressed={view === v}
-          aria-label={label}
-          onClick={() => onChange(v)}
-          className={cn(
-            "flex items-center gap-1.5 rounded-lg px-2.5 text-sm font-semibold transition-colors",
-            view === v
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          <Icon className="h-4 w-4" />
-          <span className="hidden lg:inline">{label}</span>
-        </button>
-      ))}
-    </fieldset>
+      {toMap ? <MapIcon className="h-4 w-4" /> : <List className="h-4 w-4" />}
+      {toMap ? tr("ম্যাপে দেখুন", "Map") : tr("তালিকা", "List")}
+    </button>
   );
 }
 
@@ -77,63 +62,37 @@ export function FeedPage() {
   return (
     <div
       className={cn(
-        "mx-auto flex w-full justify-center gap-6 px-4 py-4",
+        // Phones: posts run edge to edge with thin grey gaps between them, like a social feed.
+        "mx-auto flex w-full justify-center gap-6 pb-4 sm:px-4 sm:pt-4",
         view === "map" ? "max-w-6xl" : "max-w-[64rem]",
       )}
     >
-      <div className={cn("w-full min-w-0 space-y-4", view === "list" && "max-w-2xl")}>
+      <div className={cn("w-full min-w-0 space-y-2 sm:space-y-4", view === "list" && "max-w-2xl")}>
         <Helmet>
           <title>ReuseDo — {t("feed")}</title>
         </Helmet>
 
-        <div className={cn("grid grid-cols-2 gap-2", view === "map" && "hidden")}>
-          <Link
-            to="/post/new"
-            className="flex items-center gap-2.5 rounded-2xl border bg-card p-3 shadow-sm transition-colors hover:border-offer/40 hover:bg-offer-soft/50"
-          >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-offer-soft text-offer">
-              <Camera className="h-5 w-5" />
-            </span>
-            <span className="min-w-0">
-              <span className="block text-sm font-bold">{tr("কিছু দিন", "Give something")}</span>
-              <span className="block truncate text-xs text-muted-foreground">
-                {tr("ছবি তুলে ১ মিনিটে", "Photo, 1 minute")}
-              </span>
-            </span>
-          </Link>
-          <Link
-            to="/post/new?kind=need"
-            className="flex items-center gap-2.5 rounded-2xl border bg-card p-3 shadow-sm transition-colors hover:border-need/40 hover:bg-need-soft/50"
-          >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-need-soft text-need">
-              <HandHeart className="h-5 w-5" />
-            </span>
-            <span className="min-w-0">
-              <span className="block text-sm font-bold">{tr("কিছু চান", "Ask for something")}</span>
-              <span className="block truncate text-xs text-muted-foreground">
-                {tr("লিখেই পোস্ট", "Just type it")}
-              </span>
-            </span>
-          </Link>
-        </div>
+        {view === "list" && <Composer />}
 
-        <CategoryStrip
-          value={filters.category as CategoryId | "all"}
-          onChange={(c) => update({ category: c })}
-        />
-        <FeedToolbar
-          kind={filters.kind}
-          onKind={(k) => update({ kind: k })}
-          scope={filters.scope}
-          onScope={(s) => update({ scope: s })}
-          extra={
-            <>
-              <ViewToggle view={view} onChange={setView} />
-              <FilterButton count={advancedCount(filters)} onClick={() => setSheet(true)} />
-            </>
-          }
-        />
-        <ActiveFilters filters={filters} onChange={update} />
+        <section className="space-y-2.5 bg-card px-4 py-3 sm:bg-transparent sm:p-0">
+          <FeedToolbar
+            kind={filters.kind}
+            onKind={(k) => update({ kind: k })}
+            scope={filters.scope}
+            onScope={(s) => update({ scope: s })}
+            extra={
+              <>
+                <ViewToggle view={view} onChange={setView} />
+                <FilterButton count={advancedCount(filters)} onClick={() => setSheet(true)} />
+              </>
+            }
+          />
+          <CategoryStrip
+            value={filters.category as CategoryId | "all"}
+            onChange={(c) => update({ category: c })}
+          />
+          <ActiveFilters filters={filters} onChange={update} />
+        </section>
 
         <QueryState isLoading={isLoading} error={error} onRetry={refetch}>
           {view === "map" ? (
@@ -142,11 +101,11 @@ export function FeedPage() {
             >
               <PostMap
                 posts={posts}
-                className="h-[calc(100dvh-20rem)] min-h-[24rem] md:h-[calc(100dvh-17rem)]"
+                className="h-[calc(100dvh-16rem)] min-h-[24rem] md:h-[calc(100dvh-17rem)]"
               />
             </Suspense>
           ) : posts.length === 0 ? (
-            <div className="rounded-2xl border border-dashed py-14 text-center">
+            <div className="mx-4 rounded-2xl border border-dashed bg-card py-14 text-center sm:mx-0">
               <div className="mb-2 text-4xl">🔍</div>
               <p className="font-semibold">
                 {tr("এই ফিল্টারে কিছু নেই", "Nothing matches these filters")}
@@ -182,7 +141,7 @@ export function FeedPage() {
           ) : (
             posts.map((p, i) => (
               <Fragment key={p.id}>
-                <PostCard post={p} />
+                <PostCard post={p} flush />
                 {adAfter(i) && <AdCard placement="feed" slot={(i + 1) / every - 1} />}
               </Fragment>
             ))

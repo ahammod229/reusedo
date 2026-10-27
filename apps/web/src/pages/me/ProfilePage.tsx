@@ -103,7 +103,8 @@ function ProfileView({ u, own }: { u: UserProfile; own: boolean }) {
         <title>{u.name} — ReuseDo</title>
       </Helmet>
 
-      <section className="overflow-hidden rounded-3xl border bg-card">
+      {/* Edge to edge on phones, like a social profile; a rounded card from sm up. */}
+      <section className="-mx-4 -mt-5 overflow-hidden bg-card sm:mx-0 sm:mt-0 sm:rounded-3xl sm:border">
         <div className="h-24 bg-gradient-to-r from-primary/80 via-primary/60 to-offer/60 sm:h-32" />
         <div className="px-5 pb-5">
           <div className="-mt-10 flex items-end gap-4 sm:-mt-12">
@@ -200,7 +201,7 @@ function ProfileView({ u, own }: { u: UserProfile; own: boolean }) {
             </div>
           )}
 
-          <dl className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <dl className="mt-4 grid grid-cols-4 divide-x border-t pt-3">
             {[
               { icon: Gift, v: num(s.given), l: tr("দিয়েছেন", "Given"), tone: "text-offer" },
               {
@@ -222,12 +223,12 @@ function ProfileView({ u, own }: { u: UserProfile; own: boolean }) {
                 tone: "text-need",
               },
             ].map((x) => (
-              <div key={x.l} className="rounded-2xl bg-muted/60 p-3 text-center">
-                <dd className="flex items-center justify-center gap-1 text-xl font-extrabold">
+              <div key={x.l} className="flex flex-col px-1 text-center">
+                <dd className="flex items-center justify-center gap-1 text-lg font-extrabold">
                   <x.icon className={cn("h-4 w-4", x.tone)} />
                   {x.v}
                 </dd>
-                <dt className="text-xs text-muted-foreground">{x.l}</dt>
+                <dt className="truncate text-[11px] text-muted-foreground">{x.l}</dt>
               </div>
             ))}
           </dl>
