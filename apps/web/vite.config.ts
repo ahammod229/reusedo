@@ -13,6 +13,8 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg", "apple-touch-icon.png"],
       manifest: {
+        // Stable identity, so a changed start_url never shows up as a second app.
+        id: "/",
         name: "ReuseDo — কিছুই ফেলবেন না",
         short_name: "ReuseDo",
         description: "ব্যবহৃত জিনিস বিনামূল্যে দিন ও নিন — আপনার এলাকার যাচাই করা মানুষের সাথে।",
@@ -21,6 +23,7 @@ export default defineConfig({
         start_url: "/feed",
         scope: "/",
         display: "standalone",
+        display_override: ["standalone", "minimal-ui"],
         orientation: "portrait",
         background_color: "#fbfaf6",
         theme_color: "#1f7a4d",

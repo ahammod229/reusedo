@@ -1,4 +1,5 @@
 import { useLang, useT, useTr } from "@/features/feed/i18n";
+import { useStartInstall } from "@/features/pwa/InstallBanner";
 import {
   Avatar,
   AvatarFallback,
@@ -12,7 +13,7 @@ import {
   useTheme,
 } from "@/shared/components/ui";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, Globe, LogOut, Moon, Sun } from "lucide-react";
+import { ChevronRight, Download, Globe, LogOut, Moon, Sun } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 
@@ -52,6 +53,7 @@ export function MobileMenu({
   const { lang, setLang } = useLang();
   const { theme, setTheme } = useTheme();
   const qc = useQueryClient();
+  const installer = useStartInstall();
   const dark =
     theme === "dark" ||
     (theme === "system" && window.matchMedia?.("(prefers-color-scheme: dark)").matches);
@@ -127,6 +129,12 @@ export function MobileMenu({
           </nav>
 
           <div className="rounded-2xl bg-card p-1 shadow-sm">
+            {installer.mode && (
+              <button type="button" className={cn(row, "text-primary")} onClick={installer.start}>
+                <Download className="h-5 w-5" />
+                <span className="flex-1">{tr("অ্যাপ ইনস্টল করুন", "Install the app")}</span>
+              </button>
+            )}
             <button
               type="button"
               className={row}
@@ -182,6 +190,7 @@ export function MobileMenu({
             </Link>
           </div>
           <p className="text-center text-xs text-muted-foreground">© ReuseDo</p>
+          {installer.dialog}
         </div>
       </SheetContent>
     </Sheet>

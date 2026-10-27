@@ -10,6 +10,7 @@ import { PostCard } from "@/features/feed/PostCard";
 import { type FeedView, RESET_ADVANCED, useFeedParams } from "@/features/feed/feedParams";
 import { useT, useTr } from "@/features/feed/i18n";
 import type { CategoryId } from "@/features/feed/types";
+import { InstallBanner } from "@/features/pwa/InstallBanner";
 import { Button, cn } from "@/shared/components/ui";
 import { List, Map as MapIcon } from "lucide-react";
 import { Fragment, Suspense, lazy, useState } from "react";
@@ -73,6 +74,7 @@ export function FeedPage() {
         </Helmet>
 
         {view === "list" && <Composer />}
+        {view === "list" && <InstallBanner />}
 
         <section className="space-y-2.5 bg-card px-4 py-3 sm:bg-transparent sm:p-0">
           <FeedToolbar
